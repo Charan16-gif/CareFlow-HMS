@@ -1,0 +1,35 @@
+# Root .gitignore for CareFlow-HMS
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Python / Django
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.log
+backend/venv/
+backend/env/
+backend/staticfiles/
+backend/media/
+
+# Node / React
+node_modules/
+frontend/node_modules/
+frontend/build/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+frontend/test_output*.txt
+frontend/*.log
+
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

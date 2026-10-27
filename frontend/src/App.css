@@ -1,0 +1,13 @@
+/* CareFlow-HMS Main Layout Styles */
+.careflow-app-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.careflow-main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}

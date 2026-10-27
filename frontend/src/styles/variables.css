@@ -1,0 +1,208 @@
+/* CareFlow-HMS Visual Identity & Design Tokens */
+:root {
+  /* Brand Palette: Teal, Cyan, Soft Blue & Medical Slate */
+  --primary-teal: #0d9488;
+  --primary-teal-light: #14b8a6;
+  --primary-teal-dark: #0f766e;
+  --primary-cyan: #06b6d4;
+  --primary-cyan-light: #22d3ee;
+  --primary-sky: #38bdf8;
+  --soft-blue: #3b82f6;
+  --soft-blue-dark: #1d4ed8;
+
+  /* Ambient & Background Gradients */
+  --bg-deep-slate: #090e1a;
+  --bg-dark-mesh-1: #0a1128;
+  --bg-dark-mesh-2: #07192f;
+  --bg-dark-mesh-3: #082436;
+
+  /* Glassmorphism Surface Tokens */
+  --glass-bg-primary: rgba(15, 23, 42, 0.72);
+  --glass-bg-secondary: rgba(30, 41, 59, 0.55);
+  --glass-bg-card: rgba(15, 27, 48, 0.65);
+  --glass-bg-card-hover: rgba(18, 35, 64, 0.78);
+  --glass-bg-highlight: rgba(6, 182, 212, 0.08);
+
+  /* Glass Borders */
+  --glass-border-subtle: rgba(255, 255, 255, 0.08);
+  --glass-border-regular: rgba(255, 255, 255, 0.14);
+  --glass-border-highlight: rgba(34, 211, 238, 0.35);
+  --glass-border-teal: rgba(13, 148, 136, 0.4);
+
+  /* Backdrop Blur Radii */
+  --glass-blur-sm: blur(8px);
+  --glass-blur-md: blur(16px);
+  --glass-blur-lg: blur(24px);
+
+  /* High Contrast Accessible Typography Colors */
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  --text-accent: #38bdf8;
+  --text-teal: #2dd4bf;
+
+  /* Semantic Status Tokens */
+  --status-success: #10b981;
+  --status-success-bg: rgba(16, 185, 129, 0.12);
+  --status-success-border: rgba(16, 185, 129, 0.3);
+
+  --status-warning: #f59e0b;
+  --status-warning-bg: rgba(245, 158, 11, 0.12);
+  --status-warning-border: rgba(245, 158, 11, 0.3);
+
+  --status-danger: #ef4444;
+  --status-danger-bg: rgba(239, 68, 68, 0.12);
+  --status-danger-border: rgba(239, 68, 68, 0.3);
+
+  --status-info: #06b6d4;
+  --status-info-bg: rgba(6, 182, 212, 0.12);
+  --status-info-border: rgba(6, 182, 212, 0.3);
+
+  /* Shadows */
+  --glass-shadow-sm: 0 4px 16px 0 rgba(0, 0, 0, 0.3);
+  --glass-shadow-md: 0 10px 30px -5px rgba(0, 0, 0, 0.45);
+  --glass-shadow-lg: 0 20px 45px -10px rgba(0, 0, 0, 0.55);
+  --glow-teal: 0 0 24px -4px rgba(13, 148, 136, 0.45);
+  --glow-cyan: 0 0 24px -4px rgba(6, 182, 212, 0.45);
+
+  /* Typography */
+  --font-heading: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Semantic Landing Page Theme Tokens (Default Baseline) */
+  --navbar-bg: rgba(9, 14, 26, 0.88);
+  --footer-bg: rgba(9, 14, 26, 0.95);
+  --hero-glow-opacity: 0.65;
+  --heading-color: #ffffff;
+  --panel-elevated-bg: linear-gradient(145deg, rgba(15, 27, 48, 0.9) 0%, rgba(9, 14, 26, 0.95) 100%);
+  --panel-inner-bg: rgba(15, 23, 42, 0.75);
+  --ecg-box-bg: rgba(5, 10, 20, 0.75);
+  --ecg-stroke: #22d3ee;
+  --tag-bg: rgba(6, 182, 212, 0.12);
+  --tag-border: rgba(6, 182, 212, 0.3);
+  --hero-radial-1: rgba(6, 182, 212, 0.15);
+  --hero-radial-2: rgba(13, 148, 136, 0.12);
+  --hero-radial-3: rgba(59, 130, 246, 0.08);
+
+  /* Border Radii */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 350ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ==========================================================================
+   CareFlow Landing Page Theme 2: Premium White Glassmorphism
+   ========================================================================== */
+[data-theme="white"] {
+  /* Ambient & Background */
+  --bg-deep-slate: #f8fafc;
+  --bg-dark-mesh-1: #f1f5f9;
+  --bg-dark-mesh-2: #e2e8f0;
+  --bg-dark-mesh-3: #ecfeff;
+
+  /* Glassmorphism Surface Tokens */
+  --glass-bg-primary: rgba(255, 255, 255, 0.88);
+  --glass-bg-secondary: rgba(241, 245, 249, 0.9);
+  --glass-bg-card: rgba(255, 255, 255, 0.82);
+  --glass-bg-card-hover: rgba(255, 255, 255, 0.96);
+  --glass-bg-highlight: rgba(14, 165, 233, 0.08);
+
+  /* Glass Borders */
+  --glass-border-subtle: rgba(15, 23, 42, 0.08);
+  --glass-border-regular: rgba(15, 23, 42, 0.13);
+  --glass-border-highlight: rgba(14, 165, 233, 0.45);
+  --glass-border-teal: rgba(13, 148, 136, 0.4);
+
+  /* Typography Colors */
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --text-dim: #94a3b8;
+  --text-accent: #0284c7;
+  --text-teal: #0f766e;
+  --heading-color: #0f172a;
+
+  /* Semantic Landing Elements */
+  --navbar-bg: rgba(255, 255, 255, 0.9);
+  --footer-bg: rgba(248, 250, 252, 0.96);
+  --hero-glow-opacity: 0.22;
+  --panel-elevated-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.96) 0%, rgba(241, 245, 249, 0.96) 100%);
+  --panel-inner-bg: rgba(248, 250, 252, 0.92);
+  --ecg-box-bg: rgba(241, 245, 249, 0.88);
+  --ecg-stroke: #0891b2;
+  --tag-bg: rgba(6, 182, 212, 0.1);
+  --tag-border: rgba(6, 182, 212, 0.35);
+  --hero-radial-1: rgba(6, 182, 212, 0.08);
+  --hero-radial-2: rgba(13, 148, 136, 0.06);
+  --hero-radial-3: rgba(59, 130, 246, 0.05);
+
+  /* Shadows */
+  --glass-shadow-sm: 0 4px 16px 0 rgba(15, 23, 42, 0.05);
+  --glass-shadow-md: 0 10px 30px -5px rgba(15, 23, 42, 0.08);
+  --glass-shadow-lg: 0 20px 45px -10px rgba(15, 23, 42, 0.11);
+  --glow-teal: 0 0 24px -4px rgba(13, 148, 136, 0.18);
+  --glow-cyan: 0 0 24px -4px rgba(6, 182, 212, 0.18);
+}
+
+/* ==========================================================================
+   CareFlow Landing Page Theme 3: Premium Black Glassmorphism
+   ========================================================================== */
+[data-theme="black"] {
+  /* Ambient & Background */
+  --bg-deep-slate: #000000;
+  --bg-dark-mesh-1: #05070c;
+  --bg-dark-mesh-2: #080c14;
+  --bg-dark-mesh-3: #0a101b;
+
+  /* Glassmorphism Surface Tokens */
+  --glass-bg-primary: rgba(10, 14, 22, 0.9);
+  --glass-bg-secondary: rgba(16, 21, 31, 0.78);
+  --glass-bg-card: rgba(8, 11, 18, 0.85);
+  --glass-bg-card-hover: rgba(14, 19, 29, 0.96);
+  --glass-bg-highlight: rgba(34, 211, 238, 0.07);
+
+  /* Glass Borders */
+  --glass-border-subtle: rgba(255, 255, 255, 0.07);
+  --glass-border-regular: rgba(255, 255, 255, 0.13);
+  --glass-border-highlight: rgba(34, 211, 238, 0.45);
+  --glass-border-teal: rgba(20, 184, 166, 0.45);
+
+  /* Typography Colors */
+  --text-primary: #ffffff;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  --text-accent: #38bdf8;
+  --text-teal: #2dd4bf;
+  --heading-color: #ffffff;
+
+  /* Semantic Landing Elements */
+  --navbar-bg: rgba(0, 0, 0, 0.94);
+  --footer-bg: rgba(2, 4, 8, 0.98);
+  --hero-glow-opacity: 0.5;
+  --panel-elevated-bg: linear-gradient(145deg, rgba(10, 14, 22, 0.96) 0%, rgba(4, 6, 11, 0.98) 100%);
+  --panel-inner-bg: rgba(8, 11, 18, 0.88);
+  --ecg-box-bg: rgba(2, 4, 8, 0.92);
+  --ecg-stroke: #22d3ee;
+  --tag-bg: rgba(6, 182, 212, 0.14);
+  --tag-border: rgba(6, 182, 212, 0.35);
+  --hero-radial-1: rgba(6, 182, 212, 0.12);
+  --hero-radial-2: rgba(13, 148, 136, 0.1);
+  --hero-radial-3: rgba(59, 130, 246, 0.06);
+
+  /* Shadows */
+  --glass-shadow-sm: 0 4px 16px 0 rgba(0, 0, 0, 0.6);
+  --glass-shadow-md: 0 10px 30px -5px rgba(0, 0, 0, 0.8);
+  --glass-shadow-lg: 0 20px 45px -10px rgba(0, 0, 0, 0.92);
+  --glow-teal: 0 0 24px -4px rgba(13, 148, 136, 0.4);
+  --glow-cyan: 0 0 24px -4px rgba(6, 182, 212, 0.4);
+}

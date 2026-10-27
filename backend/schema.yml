@@ -1,0 +1,6698 @@
+openapi: 3.0.3
+info:
+  title: CareFlow-HMS API
+  version: 1.0.0
+  description: CareFlow Hospital Management System REST API documentation
+paths:
+  /api/appointments/:
+    get:
+      operationId: appointments_list
+      description: |-
+        CareFlow HMS Appointment Lifecycle.
+        Enforces role-based permissions:
+        - Receptionist: Full appointment scheduling and management.
+        - Doctor: View their appointments; record clinical notes; mark completed.
+        - Patient: View their appointments; book appointments; cancel scheduled slots. Cannot modify notes or status.
+        - Admin: Oversight and administrative auditing.
+      summary: List appointments
+      parameters:
+      - in: query
+        name: appointment_date
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: doctor
+        schema:
+          type: integer
+      - in: query
+        name: is_checked_in
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: patient
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - CANCELLED
+          - COMPLETED
+          - CONFIRMED
+          - IN_PROGRESS
+          - NO_SHOW
+          - SCHEDULED
+        description: |-
+          * `SCHEDULED` - Scheduled
+          * `CONFIRMED` - Confirmed
+          * `IN_PROGRESS` - In Progress
+          * `COMPLETED` - Completed
+          * `CANCELLED` - Cancelled
+          * `NO_SHOW` - No Show
+      tags:
+      - appointments
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAppointmentList'
+          description: ''
+    post:
+      operationId: appointments_create
+      description: |-
+        CareFlow HMS Appointment Lifecycle.
+        Enforces role-based permissions:
+        - Receptionist: Full appointment scheduling and management.
+        - Doctor: View their appointments; record clinical notes; mark completed.
+        - Patient: View their appointments; book appointments; cancel scheduled slots. Cannot modify notes or status.
+        - Admin: Oversight and administrative auditing.
+      summary: Schedule appointment (Receptionist or Patient)
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+          description: ''
+  /api/appointments/{id}/:
+    get:
+      operationId: appointments_retrieve
+      description: |-
+        CareFlow HMS Appointment Lifecycle.
+        Enforces role-based permissions:
+        - Receptionist: Full appointment scheduling and management.
+        - Doctor: View their appointments; record clinical notes; mark completed.
+        - Patient: View their appointments; book appointments; cancel scheduled slots. Cannot modify notes or status.
+        - Admin: Oversight and administrative auditing.
+      summary: Retrieve specific appointment
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this appointment.
+        required: true
+      tags:
+      - appointments
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+          description: ''
+    put:
+      operationId: appointments_update
+      description: |-
+        CareFlow HMS Appointment Lifecycle.
+        Enforces role-based permissions:
+        - Receptionist: Full appointment scheduling and management.
+        - Doctor: View their appointments; record clinical notes; mark completed.
+        - Patient: View their appointments; book appointments; cancel scheduled slots. Cannot modify notes or status.
+        - Admin: Oversight and administrative auditing.
+      summary: Update appointment details or status
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this appointment.
+        required: true
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+          description: ''
+    patch:
+      operationId: appointments_partial_update
+      description: |-
+        CareFlow HMS Appointment Lifecycle.
+        Enforces role-based permissions:
+        - Receptionist: Full appointment scheduling and management.
+        - Doctor: View their appointments; record clinical notes; mark completed.
+        - Patient: View their appointments; book appointments; cancel scheduled slots. Cannot modify notes or status.
+        - Admin: Oversight and administrative auditing.
+      summary: Partial update appointment
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this appointment.
+        required: true
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAppointment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAppointment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAppointment'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+          description: ''
+    delete:
+      operationId: appointments_destroy
+      description: |-
+        CareFlow HMS Appointment Lifecycle.
+        Enforces role-based permissions:
+        - Receptionist: Full appointment scheduling and management.
+        - Doctor: View their appointments; record clinical notes; mark completed.
+        - Patient: View their appointments; book appointments; cancel scheduled slots. Cannot modify notes or status.
+        - Admin: Oversight and administrative auditing.
+      summary: Cancel appointment
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this appointment.
+        required: true
+      tags:
+      - appointments
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/appointments/{id}/cancel-appointment/:
+    post:
+      operationId: appointments_cancel_appointment_create
+      description: |-
+        Cancels appointment with confirmation and records cancellation reason.
+        Preserves appointment record instead of permanently deleting.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this appointment.
+        required: true
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+          description: ''
+  /api/appointments/{id}/check-in/:
+    post:
+      operationId: appointments_check_in_create
+      description: |-
+        Check in patient upon arrival at the hospital front desk.
+        Enforces:
+        - Only Receptionist or Admin can check in patients.
+        - Appointment must not be cancelled, completed, or no-show.
+        - Prevents duplicate check-in.
+        - Records exact check_in_time and transitions SCHEDULED to CONFIRMED.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this appointment.
+        required: true
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+          description: ''
+  /api/appointments/{id}/undo-check-in/:
+    post:
+      operationId: appointments_undo_check_in_create
+      description: Reverts an accidental check-in.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this appointment.
+        required: true
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+          description: ''
+  /api/appointments/available-slots/:
+    get:
+      operationId: appointments_available_slots_retrieve
+      description: |-
+        CareFlow HMS Appointment Lifecycle.
+        Enforces role-based permissions:
+        - Receptionist: Full appointment scheduling and management.
+        - Doctor: View their appointments; record clinical notes; mark completed.
+        - Patient: View their appointments; book appointments; cancel scheduled slots. Cannot modify notes or status.
+        - Admin: Oversight and administrative auditing.
+      tags:
+      - appointments
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+          description: ''
+  /api/appointments/receptionist-stats/:
+    get:
+      operationId: appointments_receptionist_stats_retrieve
+      description: |-
+        Real-time backend statistics for the Receptionist Overview dashboard:
+        - Today's Appointments
+        - Upcoming Appointments
+        - Registered Patients
+        - Checked-in Patients Today
+        - Patients Waiting Today
+        - Completed Today
+        - Cancelled Today
+      tags:
+      - appointments
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+          description: ''
+  /api/auth/change-password/:
+    post:
+      operationId: auth_change_password_create
+      description: Changes password for current user after verifying their current
+        password.
+      summary: Change user password
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/auth/email-status/:
+    get:
+      operationId: auth_email_status_retrieve
+      description: Verifies whether real SMTP credentials are set in the backend environment.
+      summary: Check SMTP email service configuration
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/auth/password-reset/:
+    post:
+      operationId: auth_password_reset_create
+      description: Generates a 24-hour reset token and emails a direct link to the
+        user's registered email.
+      summary: Request password reset link
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/auth/password-reset/confirm/:
+    post:
+      operationId: auth_password_reset_confirm_create
+      description: Validates the token from the email link and resets the account
+        password.
+      summary: Confirm password reset
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/auth/profile/:
+    get:
+      operationId: auth_profile_retrieve
+      description: Returns username, email, full name, role, and phone number for
+        current user.
+      summary: Get authenticated user profile
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+    patch:
+      operationId: auth_profile_partial_update
+      description: Updates first name, last name, email, and phone number for current
+        user.
+      summary: Update authenticated user profile
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfile'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/auth/register/:
+    post:
+      operationId: auth_register_create
+      description: Creates an unverified patient account and sends a real 6-digit
+        OTP to their email address.
+      summary: Register user & send OTP
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Register'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Register'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Register'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          description: User created and OTP dispatched
+        '400':
+          description: Validation error
+  /api/auth/resend-otp/:
+    post:
+      operationId: auth_resend_otp_create
+      description: Sends a fresh 6-digit OTP code to the specified email address with
+        a 45-second rate limiter.
+      summary: Resend verification OTP
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendOTP'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResendOTP'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResendOTP'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: New OTP generated and sent
+        '400':
+          description: Rate limited or validation error
+  /api/auth/test-email/:
+    post:
+      operationId: auth_test_email_create
+      description: Tests real SMTP sending to verify email delivery from backend.
+      summary: Send test verification email
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestEmail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TestEmail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TestEmail'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '502':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/auth/token/:
+    post:
+      operationId: auth_token_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/auth/token/refresh/:
+    post:
+      operationId: auth_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/auth/token/verify/:
+    post:
+      operationId: auth_token_verify_create
+      description: |-
+        Takes a token and indicates if it is valid.  This view provides no
+        information about a token's fitness for a particular use.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenVerify'
+          description: ''
+  /api/auth/verify-otp/:
+    post:
+      operationId: auth_verify_otp_create
+      description: Verifies the 6-digit OTP code, marks email verified, activates
+        user, and returns JWT tokens.
+      summary: Verify email OTP
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyOTP'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VerifyOTP'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VerifyOTP'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: OTP verified successfully, JWT tokens issued
+        '400':
+          description: Invalid or expired OTP
+  /api/billing/invoices/:
+    get:
+      operationId: billing_invoices_list
+      description: |-
+        CareFlow HMS Billing & Financial Invoices.
+        - Receptionist & Pharmacist: Create and manage outpatient invoices.
+        - Patient: View only their own bills and balances.
+        - Doctor: View bills associated with their consultations.
+        - Admin: Oversight and administrative auditing.
+        - Completely excludes bed/ward/inpatient charges.
+      summary: List patient bills and invoices
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: patient
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - CANCELLED
+          - PAID
+          - PARTIALLY_PAID
+          - UNPAID
+        description: |-
+          * `UNPAID` - Unpaid
+          * `PARTIALLY_PAID` - Partially Paid
+          * `PAID` - Fully Paid
+          * `CANCELLED` - Cancelled
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBillList'
+          description: ''
+    post:
+      operationId: billing_invoices_create
+      description: |-
+        CareFlow HMS Billing & Financial Invoices.
+        - Receptionist & Pharmacist: Create and manage outpatient invoices.
+        - Patient: View only their own bills and balances.
+        - Doctor: View bills associated with their consultations.
+        - Admin: Oversight and administrative auditing.
+        - Completely excludes bed/ward/inpatient charges.
+      summary: Create patient bill (Receptionist, Pharmacist, Admin)
+      tags:
+      - billing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Bill'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Bill'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Bill'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bill'
+          description: ''
+  /api/billing/invoices/{id}/:
+    get:
+      operationId: billing_invoices_retrieve
+      description: |-
+        CareFlow HMS Billing & Financial Invoices.
+        - Receptionist & Pharmacist: Create and manage outpatient invoices.
+        - Patient: View only their own bills and balances.
+        - Doctor: View bills associated with their consultations.
+        - Admin: Oversight and administrative auditing.
+        - Completely excludes bed/ward/inpatient charges.
+      summary: Retrieve invoice details
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this bill.
+        required: true
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bill'
+          description: ''
+    put:
+      operationId: billing_invoices_update
+      description: |-
+        CareFlow HMS Billing & Financial Invoices.
+        - Receptionist & Pharmacist: Create and manage outpatient invoices.
+        - Patient: View only their own bills and balances.
+        - Doctor: View bills associated with their consultations.
+        - Admin: Oversight and administrative auditing.
+        - Completely excludes bed/ward/inpatient charges.
+      summary: Update invoice
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this bill.
+        required: true
+      tags:
+      - billing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Bill'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Bill'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Bill'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bill'
+          description: ''
+    patch:
+      operationId: billing_invoices_partial_update
+      description: |-
+        CareFlow HMS Billing & Financial Invoices.
+        - Receptionist & Pharmacist: Create and manage outpatient invoices.
+        - Patient: View only their own bills and balances.
+        - Doctor: View bills associated with their consultations.
+        - Admin: Oversight and administrative auditing.
+        - Completely excludes bed/ward/inpatient charges.
+      summary: Partial update invoice
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this bill.
+        required: true
+      tags:
+      - billing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBill'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBill'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBill'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bill'
+          description: ''
+    delete:
+      operationId: billing_invoices_destroy
+      description: |-
+        CareFlow HMS Billing & Financial Invoices.
+        - Receptionist & Pharmacist: Create and manage outpatient invoices.
+        - Patient: View only their own bills and balances.
+        - Doctor: View bills associated with their consultations.
+        - Admin: Oversight and administrative auditing.
+        - Completely excludes bed/ward/inpatient charges.
+      summary: Cancel or remove invoice
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this bill.
+        required: true
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/billing/invoices/checkout/:
+    post:
+      operationId: billing_invoices_checkout_create
+      description: |-
+        Secure Patient Pharmacy Purchase & Instant Receipt Generation.
+        - Recalculates all pricing on backend with trusted Medicine unit price.
+        - Validates stock and prevents negative inventory.
+        - Validates prescription association and remaining prescribed quantities.
+        - Atomically creates Bill, BillItem, and successful Payment transaction.
+        - Generates immutable StockMovement audit record.
+        - Returns official verified payment receipt.
+      tags:
+      - billing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Bill'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Bill'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Bill'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bill'
+          description: ''
+  /api/billing/items/:
+    get:
+      operationId: billing_items_list
+      description: |-
+        Dedicated endpoint for managing individual bill line items.
+        Automatically recalculates the parent bill totals and balances upon any modification.
+      summary: List invoice line items
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBillItemList'
+          description: ''
+    post:
+      operationId: billing_items_create
+      description: |-
+        Dedicated endpoint for managing individual bill line items.
+        Automatically recalculates the parent bill totals and balances upon any modification.
+      summary: Add line item to invoice (Receptionist, Pharmacist, Admin)
+      tags:
+      - billing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BillItem'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BillItem'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BillItem'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillItem'
+          description: ''
+  /api/billing/items/{id}/:
+    get:
+      operationId: billing_items_retrieve
+      description: |-
+        Dedicated endpoint for managing individual bill line items.
+        Automatically recalculates the parent bill totals and balances upon any modification.
+      summary: Retrieve invoice line item
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this bill item.
+        required: true
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillItem'
+          description: ''
+    put:
+      operationId: billing_items_update
+      description: |-
+        Dedicated endpoint for managing individual bill line items.
+        Automatically recalculates the parent bill totals and balances upon any modification.
+      summary: Update line item
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this bill item.
+        required: true
+      tags:
+      - billing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BillItem'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BillItem'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BillItem'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillItem'
+          description: ''
+    patch:
+      operationId: billing_items_partial_update
+      description: |-
+        Dedicated endpoint for managing individual bill line items.
+        Automatically recalculates the parent bill totals and balances upon any modification.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this bill item.
+        required: true
+      tags:
+      - billing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBillItem'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBillItem'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBillItem'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillItem'
+          description: ''
+    delete:
+      operationId: billing_items_destroy
+      description: |-
+        Dedicated endpoint for managing individual bill line items.
+        Automatically recalculates the parent bill totals and balances upon any modification.
+      summary: Remove line item
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this bill item.
+        required: true
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/billing/payments/:
+    get:
+      operationId: billing_payments_list
+      description: |-
+        CareFlow HMS Payments & Receipts.
+        - Receptionist & Pharmacist: Record payments for bills.
+        - Patient: View their own receipts.
+        - Atomically updates invoice balance and status.
+        - Immutable audit logs: payments cannot be edited or deleted.
+      summary: List payments and receipts
+      parameters:
+      - in: query
+        name: bill
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: payment_method
+        schema:
+          type: string
+          enum:
+          - CARD
+          - CASH
+          - INSURANCE
+          - NET_BANKING
+          - UPI
+        description: |-
+          * `CASH` - Cash
+          * `CARD` - Credit / Debit Card
+          * `UPI` - UPI Payment
+          * `NET_BANKING` - Net Banking
+          * `INSURANCE` - Health Insurance
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - FAILED
+          - REFUNDED
+          - SUCCESS
+        description: |-
+          * `SUCCESS` - Success
+          * `FAILED` - Failed
+          * `REFUNDED` - Refunded
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPaymentList'
+          description: ''
+    post:
+      operationId: billing_payments_create
+      description: |-
+        CareFlow HMS Payments & Receipts.
+        - Receptionist & Pharmacist: Record payments for bills.
+        - Patient: View their own receipts.
+        - Atomically updates invoice balance and status.
+        - Immutable audit logs: payments cannot be edited or deleted.
+      summary: Record payment against bill (Receptionist, Pharmacist, Admin)
+      tags:
+      - billing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Payment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Payment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Payment'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+          description: ''
+  /api/billing/payments/{id}/:
+    get:
+      operationId: billing_payments_retrieve
+      description: |-
+        CareFlow HMS Payments & Receipts.
+        - Receptionist & Pharmacist: Record payments for bills.
+        - Patient: View their own receipts.
+        - Atomically updates invoice balance and status.
+        - Immutable audit logs: payments cannot be edited or deleted.
+      summary: Retrieve payment receipt
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this payment.
+        required: true
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+          description: ''
+    put:
+      operationId: billing_payments_update
+      description: |-
+        CareFlow HMS Payments & Receipts.
+        - Receptionist & Pharmacist: Record payments for bills.
+        - Patient: View their own receipts.
+        - Atomically updates invoice balance and status.
+        - Immutable audit logs: payments cannot be edited or deleted.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this payment.
+        required: true
+      tags:
+      - billing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Payment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Payment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Payment'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+          description: ''
+    patch:
+      operationId: billing_payments_partial_update
+      description: |-
+        CareFlow HMS Payments & Receipts.
+        - Receptionist & Pharmacist: Record payments for bills.
+        - Patient: View their own receipts.
+        - Atomically updates invoice balance and status.
+        - Immutable audit logs: payments cannot be edited or deleted.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this payment.
+        required: true
+      tags:
+      - billing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPayment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPayment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPayment'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+          description: ''
+    delete:
+      operationId: billing_payments_destroy
+      description: |-
+        CareFlow HMS Payments & Receipts.
+        - Receptionist & Pharmacist: Record payments for bills.
+        - Patient: View their own receipts.
+        - Atomically updates invoice balance and status.
+        - Immutable audit logs: payments cannot be edited or deleted.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this payment.
+        required: true
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/health/:
+    get:
+      operationId: health_retrieve
+      description: Returns backend health and service status
+      summary: Health check
+      tags:
+      - health
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheckResponse'
+          description: ''
+  /api/laboratory/orders/:
+    get:
+      operationId: laboratory_orders_list
+      description: |-
+        CareFlow HMS Laboratory Orders & Results Workflow.
+        - Doctor: Order diagnostic tests for connected patients, request cancellation.
+        - Admin: Read-only access to laboratory reports and metadata. Cannot modify orders/results.
+        - Lab Staff: View orders, collect specimens, update test status, record/upload results, process cancellations.
+        - Patient: View only their own test results and reports. Cannot modify clinical orders.
+      summary: List laboratory test orders
+      parameters:
+      - in: query
+        name: cancellation_requested
+        schema:
+          type: boolean
+      - in: query
+        name: doctor
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: patient
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ACCEPTED
+          - CANCELLED
+          - COMPLETED
+          - IN_PROGRESS
+          - ORDERED
+          - REQUESTED
+          - SAMPLE_COLLECTED
+        description: |-
+          * `REQUESTED` - Requested
+          * `ACCEPTED` - Accepted
+          * `IN_PROGRESS` - In Progress
+          * `COMPLETED` - Completed
+          * `CANCELLED` - Cancelled
+          * `ORDERED` - Ordered
+          * `SAMPLE_COLLECTED` - Sample Collected
+      - in: query
+        name: test
+        schema:
+          type: integer
+      tags:
+      - laboratory
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLabOrderList'
+          description: ''
+    post:
+      operationId: laboratory_orders_create
+      description: |-
+        CareFlow HMS Laboratory Orders & Results Workflow.
+        - Doctor: Order diagnostic tests for connected patients, request cancellation.
+        - Admin: Read-only access to laboratory reports and metadata. Cannot modify orders/results.
+        - Lab Staff: View orders, collect specimens, update test status, record/upload results, process cancellations.
+        - Patient: View only their own test results and reports. Cannot modify clinical orders.
+      summary: Order laboratory test (Doctor only)
+      tags:
+      - laboratory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabOrder'
+          description: ''
+  /api/laboratory/orders/{id}/:
+    get:
+      operationId: laboratory_orders_retrieve
+      description: |-
+        CareFlow HMS Laboratory Orders & Results Workflow.
+        - Doctor: Order diagnostic tests for connected patients, request cancellation.
+        - Admin: Read-only access to laboratory reports and metadata. Cannot modify orders/results.
+        - Lab Staff: View orders, collect specimens, update test status, record/upload results, process cancellations.
+        - Patient: View only their own test results and reports. Cannot modify clinical orders.
+      summary: Retrieve laboratory order details
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lab order.
+        required: true
+      tags:
+      - laboratory
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabOrder'
+          description: ''
+    put:
+      operationId: laboratory_orders_update
+      description: |-
+        CareFlow HMS Laboratory Orders & Results Workflow.
+        - Doctor: Order diagnostic tests for connected patients, request cancellation.
+        - Admin: Read-only access to laboratory reports and metadata. Cannot modify orders/results.
+        - Lab Staff: View orders, collect specimens, update test status, record/upload results, process cancellations.
+        - Patient: View only their own test results and reports. Cannot modify clinical orders.
+      summary: Update laboratory test order
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lab order.
+        required: true
+      tags:
+      - laboratory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabOrder'
+          description: ''
+    patch:
+      operationId: laboratory_orders_partial_update
+      description: |-
+        CareFlow HMS Laboratory Orders & Results Workflow.
+        - Doctor: Order diagnostic tests for connected patients, request cancellation.
+        - Admin: Read-only access to laboratory reports and metadata. Cannot modify orders/results.
+        - Lab Staff: View orders, collect specimens, update test status, record/upload results, process cancellations.
+        - Patient: View only their own test results and reports. Cannot modify clinical orders.
+      summary: Update status / results (Lab Staff)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lab order.
+        required: true
+      tags:
+      - laboratory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedLabOrder'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedLabOrder'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedLabOrder'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabOrder'
+          description: ''
+    delete:
+      operationId: laboratory_orders_destroy
+      description: |-
+        CareFlow HMS Laboratory Orders & Results Workflow.
+        - Doctor: Order diagnostic tests for connected patients, request cancellation.
+        - Admin: Read-only access to laboratory reports and metadata. Cannot modify orders/results.
+        - Lab Staff: View orders, collect specimens, update test status, record/upload results, process cancellations.
+        - Patient: View only their own test results and reports. Cannot modify clinical orders.
+      summary: Cancel laboratory order
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lab order.
+        required: true
+      tags:
+      - laboratory
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/laboratory/orders/{id}/download-report/:
+    get:
+      operationId: laboratory_orders_download_report_retrieve
+      description: |-
+        Secure, authorized endpoint to retrieve or download the attached laboratory report.
+        Strictly verifies that caller is the patient, requesting doctor, lab staff, or admin.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lab order.
+        required: true
+      tags:
+      - laboratory
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabOrder'
+          description: ''
+  /api/laboratory/orders/{id}/process-cancellation/:
+    post:
+      operationId: laboratory_orders_process_cancellation_create
+      description: Allows Laboratory Staff to approve or reject a doctor's cancellation
+        request.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lab order.
+        required: true
+      tags:
+      - laboratory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabOrder'
+          description: ''
+  /api/laboratory/orders/{id}/request-cancellation/:
+    post:
+      operationId: laboratory_orders_request_cancellation_create
+      description: |-
+        Allows an authorized Doctor to submit a cancellation request for an eligible test.
+        Does not directly cancel the test; records the request for laboratory processing.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lab order.
+        required: true
+      tags:
+      - laboratory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabOrder'
+          description: ''
+  /api/laboratory/orders/{id}/upload-report/:
+    post:
+      operationId: laboratory_orders_upload_report_create
+      description: |-
+        Allows Laboratory Staff to upload or replace a diagnostic report file.
+        Validates file size (max 5MB) and type (PDF, JPEG, PNG).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lab order.
+        required: true
+      tags:
+      - laboratory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabOrder'
+          description: ''
+  /api/laboratory/orders/stats/:
+    get:
+      operationId: laboratory_orders_stats_retrieve
+      description: |-
+        Real database statistics for the Laboratory Staff Overview dashboard.
+        Returns actual PostgreSQL counts of orders by status, pending cancellations, and reports.
+      tags:
+      - laboratory
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabOrder'
+          description: ''
+  /api/laboratory/tests/:
+    get:
+      operationId: laboratory_tests_list
+      description: |-
+        CareFlow HMS Laboratory Test Catalogue.
+        - Admin & Lab Staff: Manage catalogue.
+        - Doctors & Receptionists: Read-only access to catalogue for ordering.
+      summary: List diagnostic tests in laboratory catalogue
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+          enum:
+          - BIOCHEMISTRY
+          - HEMATOLOGY
+          - IMMUNOLOGY
+          - MICROBIOLOGY
+          - OTHER
+          - PATHOLOGY
+          - RADIOLOGY
+          - URINALYSIS
+        description: |-
+          * `HEMATOLOGY` - Hematology
+          * `BIOCHEMISTRY` - Biochemistry
+          * `MICROBIOLOGY` - Microbiology
+          * `PATHOLOGY` - Pathology
+          * `RADIOLOGY` - Radiology / Imaging
+          * `IMMUNOLOGY` - Immunology
+          * `URINALYSIS` - Urinalysis
+          * `OTHER` - Other Diagnostic
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - laboratory
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLabTestList'
+          description: ''
+    post:
+      operationId: laboratory_tests_create
+      description: |-
+        CareFlow HMS Laboratory Test Catalogue.
+        - Admin & Lab Staff: Manage catalogue.
+        - Doctors & Receptionists: Read-only access to catalogue for ordering.
+      summary: Add test to catalogue (Admin or Lab Staff)
+      tags:
+      - laboratory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabTest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LabTest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LabTest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabTest'
+          description: ''
+  /api/laboratory/tests/{id}/:
+    get:
+      operationId: laboratory_tests_retrieve
+      description: |-
+        CareFlow HMS Laboratory Test Catalogue.
+        - Admin & Lab Staff: Manage catalogue.
+        - Doctors & Receptionists: Read-only access to catalogue for ordering.
+      summary: Retrieve laboratory test details
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lab test.
+        required: true
+      tags:
+      - laboratory
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabTest'
+          description: ''
+    put:
+      operationId: laboratory_tests_update
+      description: |-
+        CareFlow HMS Laboratory Test Catalogue.
+        - Admin & Lab Staff: Manage catalogue.
+        - Doctors & Receptionists: Read-only access to catalogue for ordering.
+      summary: Update laboratory test details
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lab test.
+        required: true
+      tags:
+      - laboratory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabTest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LabTest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LabTest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabTest'
+          description: ''
+    patch:
+      operationId: laboratory_tests_partial_update
+      description: |-
+        CareFlow HMS Laboratory Test Catalogue.
+        - Admin & Lab Staff: Manage catalogue.
+        - Doctors & Receptionists: Read-only access to catalogue for ordering.
+      summary: Partial update laboratory test
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lab test.
+        required: true
+      tags:
+      - laboratory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedLabTest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedLabTest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedLabTest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabTest'
+          description: ''
+    delete:
+      operationId: laboratory_tests_destroy
+      description: |-
+        CareFlow HMS Laboratory Test Catalogue.
+        - Admin & Lab Staff: Manage catalogue.
+        - Doctors & Receptionists: Read-only access to catalogue for ordering.
+      summary: Deactivate laboratory test
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lab test.
+        required: true
+      tags:
+      - laboratory
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/patients/:
+    get:
+      operationId: patients_list
+      description: |-
+        CareFlow HMS Patient Management ViewSet.
+        Enforces strict role-based and object-level permissions:
+        - Receptionist: Registers and manages patient records.
+        - Admin: View/update administrative records, but CANNOT perform receptionist intake.
+        - Doctor: View authorized patient clinical records (connected via appointments or treatment).
+        - Patient: View their own record only. Cannot modify medical history, allergies, or delete records.
+      summary: List patient records
+      parameters:
+      - in: query
+        name: blood_group
+        schema:
+          type: string
+          nullable: true
+          enum:
+          - A+
+          - A-
+          - AB+
+          - AB-
+          - B+
+          - B-
+          - O+
+          - O-
+        description: |-
+          * `A+` - A+
+          * `A-` - A-
+          * `B+` - B+
+          * `B-` - B-
+          * `AB+` - AB+
+          * `AB-` - AB-
+          * `O+` - O+
+          * `O-` - O-
+      - in: query
+        name: gender
+        schema:
+          type: string
+          enum:
+          - FEMALE
+          - MALE
+          - OTHER
+        description: |-
+          * `MALE` - Male
+          * `FEMALE` - Female
+          * `OTHER` - Other
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: registration_date
+        schema:
+          type: string
+          format: date
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - patients
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPatientList'
+          description: ''
+    post:
+      operationId: patients_create
+      description: |-
+        CareFlow HMS Patient Management ViewSet.
+        Enforces strict role-based and object-level permissions:
+        - Receptionist: Registers and manages patient records.
+        - Admin: View/update administrative records, but CANNOT perform receptionist intake.
+        - Doctor: View authorized patient clinical records (connected via appointments or treatment).
+        - Patient: View their own record only. Cannot modify medical history, allergies, or delete records.
+      summary: Register a new patient (Receptionist only)
+      tags:
+      - patients
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Patient'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Patient'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Patient'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+          description: ''
+  /api/patients/{id}/:
+    get:
+      operationId: patients_retrieve
+      description: |-
+        CareFlow HMS Patient Management ViewSet.
+        Enforces strict role-based and object-level permissions:
+        - Receptionist: Registers and manages patient records.
+        - Admin: View/update administrative records, but CANNOT perform receptionist intake.
+        - Doctor: View authorized patient clinical records (connected via appointments or treatment).
+        - Patient: View their own record only. Cannot modify medical history, allergies, or delete records.
+      summary: Retrieve specific patient record
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this patient.
+        required: true
+      tags:
+      - patients
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+          description: ''
+    put:
+      operationId: patients_update
+      description: |-
+        CareFlow HMS Patient Management ViewSet.
+        Enforces strict role-based and object-level permissions:
+        - Receptionist: Registers and manages patient records.
+        - Admin: View/update administrative records, but CANNOT perform receptionist intake.
+        - Doctor: View authorized patient clinical records (connected via appointments or treatment).
+        - Patient: View their own record only. Cannot modify medical history, allergies, or delete records.
+      summary: Update patient record (Receptionist only)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this patient.
+        required: true
+      tags:
+      - patients
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Patient'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Patient'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Patient'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+          description: ''
+    patch:
+      operationId: patients_partial_update
+      description: |-
+        CareFlow HMS Patient Management ViewSet.
+        Enforces strict role-based and object-level permissions:
+        - Receptionist: Registers and manages patient records.
+        - Admin: View/update administrative records, but CANNOT perform receptionist intake.
+        - Doctor: View authorized patient clinical records (connected via appointments or treatment).
+        - Patient: View their own record only. Cannot modify medical history, allergies, or delete records.
+      summary: Partial update patient record (Receptionist only)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this patient.
+        required: true
+      tags:
+      - patients
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPatient'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPatient'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPatient'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+          description: ''
+    delete:
+      operationId: patients_destroy
+      description: |-
+        CareFlow HMS Patient Management ViewSet.
+        Enforces strict role-based and object-level permissions:
+        - Receptionist: Registers and manages patient records.
+        - Admin: View/update administrative records, but CANNOT perform receptionist intake.
+        - Doctor: View authorized patient clinical records (connected via appointments or treatment).
+        - Patient: View their own record only. Cannot modify medical history, allergies, or delete records.
+      summary: Deactivate patient record (Receptionist or Admin only)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this patient.
+        required: true
+      tags:
+      - patients
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/pharmacy/dispensations/:
+    get:
+      operationId: pharmacy_dispensations_list
+      description: |-
+        CareFlow HMS Pharmacy Dispensing Workflow.
+        - Pharmacist: Dispense medicines, atomically decrementing inventory and preventing negative stock.
+        - Immutable audit records: modifications and deletions are disallowed.
+      summary: List dispensing events
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - pharmacy
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMedicineDispenseList'
+          description: ''
+    post:
+      operationId: pharmacy_dispensations_create
+      description: |-
+        CareFlow HMS Pharmacy Dispensing Workflow.
+        - Pharmacist: Dispense medicines, atomically decrementing inventory and preventing negative stock.
+        - Immutable audit records: modifications and deletions are disallowed.
+      summary: Dispense medicines for prescription (Pharmacist only)
+      tags:
+      - pharmacy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MedicineDispense'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MedicineDispense'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MedicineDispense'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicineDispense'
+          description: ''
+  /api/pharmacy/dispensations/{id}/:
+    get:
+      operationId: pharmacy_dispensations_retrieve
+      description: |-
+        CareFlow HMS Pharmacy Dispensing Workflow.
+        - Pharmacist: Dispense medicines, atomically decrementing inventory and preventing negative stock.
+        - Immutable audit records: modifications and deletions are disallowed.
+      summary: Retrieve dispensing event details
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this medicine dispense.
+        required: true
+      tags:
+      - pharmacy
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicineDispense'
+          description: ''
+    put:
+      operationId: pharmacy_dispensations_update
+      description: |-
+        CareFlow HMS Pharmacy Dispensing Workflow.
+        - Pharmacist: Dispense medicines, atomically decrementing inventory and preventing negative stock.
+        - Immutable audit records: modifications and deletions are disallowed.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this medicine dispense.
+        required: true
+      tags:
+      - pharmacy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MedicineDispense'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MedicineDispense'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MedicineDispense'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicineDispense'
+          description: ''
+    patch:
+      operationId: pharmacy_dispensations_partial_update
+      description: |-
+        CareFlow HMS Pharmacy Dispensing Workflow.
+        - Pharmacist: Dispense medicines, atomically decrementing inventory and preventing negative stock.
+        - Immutable audit records: modifications and deletions are disallowed.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this medicine dispense.
+        required: true
+      tags:
+      - pharmacy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMedicineDispense'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMedicineDispense'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMedicineDispense'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicineDispense'
+          description: ''
+    delete:
+      operationId: pharmacy_dispensations_destroy
+      description: |-
+        CareFlow HMS Pharmacy Dispensing Workflow.
+        - Pharmacist: Dispense medicines, atomically decrementing inventory and preventing negative stock.
+        - Immutable audit records: modifications and deletions are disallowed.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this medicine dispense.
+        required: true
+      tags:
+      - pharmacy
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/pharmacy/items/:
+    get:
+      operationId: pharmacy_items_list
+      description: Dedicated endpoint for managing individual prescription line items.
+      summary: List prescription items
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - pharmacy
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPrescriptionItemList'
+          description: ''
+    post:
+      operationId: pharmacy_items_create
+      description: Dedicated endpoint for managing individual prescription line items.
+      summary: Add item to prescription (Doctor only)
+      tags:
+      - pharmacy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrescriptionItem'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PrescriptionItem'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PrescriptionItem'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrescriptionItem'
+          description: ''
+  /api/pharmacy/items/{id}/:
+    get:
+      operationId: pharmacy_items_retrieve
+      description: Dedicated endpoint for managing individual prescription line items.
+      summary: Retrieve prescription item
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this prescription item.
+        required: true
+      tags:
+      - pharmacy
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrescriptionItem'
+          description: ''
+    put:
+      operationId: pharmacy_items_update
+      description: Dedicated endpoint for managing individual prescription line items.
+      summary: Update prescription item
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this prescription item.
+        required: true
+      tags:
+      - pharmacy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrescriptionItem'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PrescriptionItem'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PrescriptionItem'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrescriptionItem'
+          description: ''
+    patch:
+      operationId: pharmacy_items_partial_update
+      description: Dedicated endpoint for managing individual prescription line items.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this prescription item.
+        required: true
+      tags:
+      - pharmacy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPrescriptionItem'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPrescriptionItem'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPrescriptionItem'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrescriptionItem'
+          description: ''
+    delete:
+      operationId: pharmacy_items_destroy
+      description: Dedicated endpoint for managing individual prescription line items.
+      summary: Remove prescription item
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this prescription item.
+        required: true
+      tags:
+      - pharmacy
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/pharmacy/medicines/:
+    get:
+      operationId: pharmacy_medicines_list
+      description: |-
+        CareFlow HMS Medicine Catalogue & Inventory.
+        - Admin & Pharmacist: Full catalogue and inventory management.
+        - Doctor & Staff & Patient: Read-only catalogue access.
+        - Strictly prevents negative stock at the database level.
+      summary: List medicines in inventory catalogue
+      parameters:
+      - in: query
+        name: dosage_form
+        schema:
+          type: string
+          enum:
+          - CAPSULE
+          - DROPS
+          - INHALER
+          - INJECTION
+          - OINTMENT
+          - OTHER
+          - SYRUP
+          - TABLET
+        description: |-
+          * `TABLET` - Tablet
+          * `CAPSULE` - Capsule
+          * `SYRUP` - Syrup
+          * `INJECTION` - Injection
+          * `OINTMENT` - Ointment
+          * `DROPS` - Drops
+          * `INHALER` - Inhaler
+          * `OTHER` - Other
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - pharmacy
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMedicineList'
+          description: ''
+    post:
+      operationId: pharmacy_medicines_create
+      description: |-
+        CareFlow HMS Medicine Catalogue & Inventory.
+        - Admin & Pharmacist: Full catalogue and inventory management.
+        - Doctor & Staff & Patient: Read-only catalogue access.
+        - Strictly prevents negative stock at the database level.
+      summary: Add new medicine (Admin or Pharmacist)
+      tags:
+      - pharmacy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Medicine'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Medicine'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Medicine'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Medicine'
+          description: ''
+  /api/pharmacy/medicines/{id}/:
+    get:
+      operationId: pharmacy_medicines_retrieve
+      description: |-
+        CareFlow HMS Medicine Catalogue & Inventory.
+        - Admin & Pharmacist: Full catalogue and inventory management.
+        - Doctor & Staff & Patient: Read-only catalogue access.
+        - Strictly prevents negative stock at the database level.
+      summary: Retrieve medicine details
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this medicine.
+        required: true
+      tags:
+      - pharmacy
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Medicine'
+          description: ''
+    put:
+      operationId: pharmacy_medicines_update
+      description: |-
+        CareFlow HMS Medicine Catalogue & Inventory.
+        - Admin & Pharmacist: Full catalogue and inventory management.
+        - Doctor & Staff & Patient: Read-only catalogue access.
+        - Strictly prevents negative stock at the database level.
+      summary: Update medicine (Admin or Pharmacist)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this medicine.
+        required: true
+      tags:
+      - pharmacy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Medicine'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Medicine'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Medicine'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Medicine'
+          description: ''
+    patch:
+      operationId: pharmacy_medicines_partial_update
+      description: |-
+        CareFlow HMS Medicine Catalogue & Inventory.
+        - Admin & Pharmacist: Full catalogue and inventory management.
+        - Doctor & Staff & Patient: Read-only catalogue access.
+        - Strictly prevents negative stock at the database level.
+      summary: Partial update medicine
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this medicine.
+        required: true
+      tags:
+      - pharmacy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMedicine'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMedicine'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMedicine'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Medicine'
+          description: ''
+    delete:
+      operationId: pharmacy_medicines_destroy
+      description: |-
+        CareFlow HMS Medicine Catalogue & Inventory.
+        - Admin & Pharmacist: Full catalogue and inventory management.
+        - Doctor & Staff & Patient: Read-only catalogue access.
+        - Strictly prevents negative stock at the database level.
+      summary: Remove medicine record (Admin or Pharmacist)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this medicine.
+        required: true
+      tags:
+      - pharmacy
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/pharmacy/prescriptions/:
+    get:
+      operationId: pharmacy_prescriptions_list
+      description: |-
+        CareFlow HMS Prescriptions.
+        - Doctor: Prescribes medications for patients with prescription items.
+        - Admin: CANNOT perform doctor-only treatment activities (cannot prescribe).
+        - Pharmacist: View prescriptions to dispense medications.
+        - Patient: View their own prescriptions only. Cannot alter prescriptions.
+      summary: List prescriptions
+      parameters:
+      - in: query
+        name: doctor
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: patient
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - CANCELLED
+          - DISPENSED
+          - PARTIALLY_DISPENSED
+          - PENDING
+        description: |-
+          * `PENDING` - Pending Dispensation
+          * `PARTIALLY_DISPENSED` - Partially Dispensed
+          * `DISPENSED` - Fully Dispensed
+          * `CANCELLED` - Cancelled
+      tags:
+      - pharmacy
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPrescriptionList'
+          description: ''
+    post:
+      operationId: pharmacy_prescriptions_create
+      description: |-
+        CareFlow HMS Prescriptions.
+        - Doctor: Prescribes medications for patients with prescription items.
+        - Admin: CANNOT perform doctor-only treatment activities (cannot prescribe).
+        - Pharmacist: View prescriptions to dispense medications.
+        - Patient: View their own prescriptions only. Cannot alter prescriptions.
+      summary: Create prescription (Doctor only)
+      tags:
+      - pharmacy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Prescription'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Prescription'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Prescription'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prescription'
+          description: ''
+  /api/pharmacy/prescriptions/{id}/:
+    get:
+      operationId: pharmacy_prescriptions_retrieve
+      description: |-
+        CareFlow HMS Prescriptions.
+        - Doctor: Prescribes medications for patients with prescription items.
+        - Admin: CANNOT perform doctor-only treatment activities (cannot prescribe).
+        - Pharmacist: View prescriptions to dispense medications.
+        - Patient: View their own prescriptions only. Cannot alter prescriptions.
+      summary: Retrieve prescription details
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this prescription.
+        required: true
+      tags:
+      - pharmacy
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prescription'
+          description: ''
+    put:
+      operationId: pharmacy_prescriptions_update
+      description: |-
+        CareFlow HMS Prescriptions.
+        - Doctor: Prescribes medications for patients with prescription items.
+        - Admin: CANNOT perform doctor-only treatment activities (cannot prescribe).
+        - Pharmacist: View prescriptions to dispense medications.
+        - Patient: View their own prescriptions only. Cannot alter prescriptions.
+      summary: Update prescription (Doctor only)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this prescription.
+        required: true
+      tags:
+      - pharmacy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Prescription'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Prescription'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Prescription'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prescription'
+          description: ''
+    patch:
+      operationId: pharmacy_prescriptions_partial_update
+      description: |-
+        CareFlow HMS Prescriptions.
+        - Doctor: Prescribes medications for patients with prescription items.
+        - Admin: CANNOT perform doctor-only treatment activities (cannot prescribe).
+        - Pharmacist: View prescriptions to dispense medications.
+        - Patient: View their own prescriptions only. Cannot alter prescriptions.
+      summary: Partial update prescription
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this prescription.
+        required: true
+      tags:
+      - pharmacy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPrescription'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPrescription'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPrescription'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prescription'
+          description: ''
+    delete:
+      operationId: pharmacy_prescriptions_destroy
+      description: |-
+        CareFlow HMS Prescriptions.
+        - Doctor: Prescribes medications for patients with prescription items.
+        - Admin: CANNOT perform doctor-only treatment activities (cannot prescribe).
+        - Pharmacist: View prescriptions to dispense medications.
+        - Patient: View their own prescriptions only. Cannot alter prescriptions.
+      summary: Cancel prescription (Doctor only)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this prescription.
+        required: true
+      tags:
+      - pharmacy
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/pharmacy/stock-movements/:
+    get:
+      operationId: pharmacy_stock_movements_list
+      description: |-
+        CareFlow HMS Stock Movement Audit Trail.
+        - Pharmacist & Admin: Full access to audit log.
+        - Other roles: No access to inventory ledger.
+      summary: List stock movement history (Pharmacist or Admin)
+      parameters:
+      - in: query
+        name: medicine
+        schema:
+          type: integer
+      - in: query
+        name: movement_type
+        schema:
+          type: string
+          enum:
+          - ADJUSTMENT_IN
+          - ADJUSTMENT_OUT
+          - DISPENSED_OUT
+          - EXPIRED_OUT
+          - PURCHASE_IN
+          - RETURN_IN
+        description: |-
+          * `PURCHASE_IN` - Purchase / Stock Received
+          * `DISPENSED_OUT` - Dispensed to Patient
+          * `ADJUSTMENT_IN` - Adjustment In
+          * `ADJUSTMENT_OUT` - Adjustment Out
+          * `RETURN_IN` - Patient Return
+          * `EXPIRED_OUT` - Expired / Discarded
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - pharmacy
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedStockMovementList'
+          description: ''
+  /api/pharmacy/stock-movements/{id}/:
+    get:
+      operationId: pharmacy_stock_movements_retrieve
+      description: |-
+        CareFlow HMS Stock Movement Audit Trail.
+        - Pharmacist & Admin: Full access to audit log.
+        - Other roles: No access to inventory ledger.
+      summary: Retrieve stock movement record
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this stock movement.
+        required: true
+      tags:
+      - pharmacy
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockMovement'
+          description: ''
+  /api/staff/doctors/:
+    get:
+      operationId: staff_doctors_list
+      description: |-
+        CareFlow HMS Doctor Directory and Management.
+        - Admin & Receptionist: Manage doctor profiles.
+        - Doctor & Staff: Full directory view.
+        - Patient: View active doctors for scheduling consultations. Cannot modify doctors.
+      summary: List doctors
+      parameters:
+      - in: query
+        name: department
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: specialization
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ACTIVE
+          - INACTIVE
+          - ON_LEAVE
+        description: |-
+          * `ACTIVE` - Active
+          * `ON_LEAVE` - On Leave
+          * `INACTIVE` - Inactive
+      tags:
+      - staff
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDoctorList'
+          description: ''
+    post:
+      operationId: staff_doctors_create
+      description: |-
+        CareFlow HMS Doctor Directory and Management.
+        - Admin & Receptionist: Manage doctor profiles.
+        - Doctor & Staff: Full directory view.
+        - Patient: View active doctors for scheduling consultations. Cannot modify doctors.
+      summary: Add new doctor profile (Admin or Receptionist)
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Doctor'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Doctor'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Doctor'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Doctor'
+          description: ''
+  /api/staff/doctors/{id}/:
+    get:
+      operationId: staff_doctors_retrieve
+      description: |-
+        CareFlow HMS Doctor Directory and Management.
+        - Admin & Receptionist: Manage doctor profiles.
+        - Doctor & Staff: Full directory view.
+        - Patient: View active doctors for scheduling consultations. Cannot modify doctors.
+      summary: Retrieve doctor profile
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this doctor.
+        required: true
+      tags:
+      - staff
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Doctor'
+          description: ''
+    put:
+      operationId: staff_doctors_update
+      description: |-
+        CareFlow HMS Doctor Directory and Management.
+        - Admin & Receptionist: Manage doctor profiles.
+        - Doctor & Staff: Full directory view.
+        - Patient: View active doctors for scheduling consultations. Cannot modify doctors.
+      summary: Update doctor profile (Admin or Receptionist)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this doctor.
+        required: true
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Doctor'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Doctor'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Doctor'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Doctor'
+          description: ''
+    patch:
+      operationId: staff_doctors_partial_update
+      description: |-
+        CareFlow HMS Doctor Directory and Management.
+        - Admin & Receptionist: Manage doctor profiles.
+        - Doctor & Staff: Full directory view.
+        - Patient: View active doctors for scheduling consultations. Cannot modify doctors.
+      summary: Partial update doctor profile (Admin or Receptionist)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this doctor.
+        required: true
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDoctor'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDoctor'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDoctor'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Doctor'
+          description: ''
+    delete:
+      operationId: staff_doctors_destroy
+      description: |-
+        CareFlow HMS Doctor Directory and Management.
+        - Admin & Receptionist: Manage doctor profiles.
+        - Doctor & Staff: Full directory view.
+        - Patient: View active doctors for scheduling consultations. Cannot modify doctors.
+      summary: Deactivate doctor profile (Admin only)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this doctor.
+        required: true
+      tags:
+      - staff
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/staff/profiles/:
+    get:
+      operationId: staff_profiles_list
+      description: |-
+        CareFlow HMS Staff Profiles (Receptionist, Lab Staff, Pharmacist).
+        - Enforces: Neither Admin nor Receptionist can create additional Administrator accounts.
+        - Patients cannot view or modify internal staff profiles.
+      summary: List staff profiles
+      parameters:
+      - in: query
+        name: department
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: role
+        schema:
+          type: string
+          enum:
+          - LAB_STAFF
+          - PHARMACIST
+          - RECEPTIONIST
+        description: |-
+          * `RECEPTIONIST` - Receptionist
+          * `LAB_STAFF` - Laboratory Staff
+          * `PHARMACIST` - Pharmacist
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ACTIVE
+          - INACTIVE
+        description: |-
+          * `ACTIVE` - Active
+          * `INACTIVE` - Inactive
+      tags:
+      - staff
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedStaffProfileList'
+          description: ''
+    post:
+      operationId: staff_profiles_create
+      description: |-
+        CareFlow HMS Staff Profiles (Receptionist, Lab Staff, Pharmacist).
+        - Enforces: Neither Admin nor Receptionist can create additional Administrator accounts.
+        - Patients cannot view or modify internal staff profiles.
+      summary: Add staff profile (Admin or Receptionist, non-admin only)
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffProfile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StaffProfile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StaffProfile'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffProfile'
+          description: ''
+  /api/staff/profiles/{id}/:
+    get:
+      operationId: staff_profiles_retrieve
+      description: |-
+        CareFlow HMS Staff Profiles (Receptionist, Lab Staff, Pharmacist).
+        - Enforces: Neither Admin nor Receptionist can create additional Administrator accounts.
+        - Patients cannot view or modify internal staff profiles.
+      summary: Retrieve staff profile
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this staff profile.
+        required: true
+      tags:
+      - staff
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffProfile'
+          description: ''
+    put:
+      operationId: staff_profiles_update
+      description: |-
+        CareFlow HMS Staff Profiles (Receptionist, Lab Staff, Pharmacist).
+        - Enforces: Neither Admin nor Receptionist can create additional Administrator accounts.
+        - Patients cannot view or modify internal staff profiles.
+      summary: Update staff profile (Admin or Receptionist)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this staff profile.
+        required: true
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffProfile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StaffProfile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StaffProfile'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffProfile'
+          description: ''
+    patch:
+      operationId: staff_profiles_partial_update
+      description: |-
+        CareFlow HMS Staff Profiles (Receptionist, Lab Staff, Pharmacist).
+        - Enforces: Neither Admin nor Receptionist can create additional Administrator accounts.
+        - Patients cannot view or modify internal staff profiles.
+      summary: Partial update staff profile
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this staff profile.
+        required: true
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedStaffProfile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedStaffProfile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedStaffProfile'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffProfile'
+          description: ''
+    delete:
+      operationId: staff_profiles_destroy
+      description: |-
+        CareFlow HMS Staff Profiles (Receptionist, Lab Staff, Pharmacist).
+        - Enforces: Neither Admin nor Receptionist can create additional Administrator accounts.
+        - Patients cannot view or modify internal staff profiles.
+      summary: Deactivate staff profile (Admin only)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this staff profile.
+        required: true
+      tags:
+      - staff
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+components:
+  schemas:
+    Appointment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        appointment_id:
+          type: string
+          readOnly: true
+          description: Unique Appointment Identifier (e.g., CF-APT-10001)
+        patient:
+          type: integer
+        patient_name:
+          type: string
+          readOnly: true
+        patient_id_code:
+          type: string
+          readOnly: true
+        doctor:
+          type: integer
+        doctor_name:
+          type: string
+          readOnly: true
+        doctor_department:
+          type: string
+          readOnly: true
+        doctor_specialization:
+          type: string
+          readOnly: true
+        consultation_fee:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        appointment_date:
+          type: string
+          format: date
+        appointment_time:
+          type: string
+          format: time
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AppointmentStatusEnum'
+          default: SCHEDULED
+        is_checked_in:
+          type: boolean
+          description: Designates whether the patient has arrived and checked in at
+            the front desk.
+        check_in_time:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp when the patient was checked in by the receptionist.
+        cancellation_reason:
+          type: string
+          nullable: true
+          description: Reason recorded upon cancellation of the appointment.
+        reason_for_visit:
+          type: string
+          description: Primary complaint or purpose of consultation.
+        authorized_notes:
+          type: string
+          nullable: true
+          description: Clinical consultation notes recorded by authorized medical
+            personnel.
+        created_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - appointment_date
+      - appointment_id
+      - appointment_time
+      - consultation_fee
+      - created_at
+      - created_by
+      - doctor
+      - doctor_department
+      - doctor_name
+      - doctor_specialization
+      - id
+      - patient_id_code
+      - patient_name
+      - reason_for_visit
+      - updated_at
+    AppointmentStatusEnum:
+      enum:
+      - SCHEDULED
+      - CONFIRMED
+      - IN_PROGRESS
+      - COMPLETED
+      - CANCELLED
+      - NO_SHOW
+      type: string
+      description: |-
+        * `SCHEDULED` - Scheduled
+        * `CONFIRMED` - Confirmed
+        * `IN_PROGRESS` - In Progress
+        * `COMPLETED` - Completed
+        * `CANCELLED` - Cancelled
+        * `NO_SHOW` - No Show
+    Bill:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        bill_number:
+          type: string
+          readOnly: true
+          description: Unique Invoice Number (e.g., CF-INV-10001)
+        patient:
+          type: integer
+        patient_name:
+          type: string
+          readOnly: true
+        appointment:
+          type: integer
+          nullable: true
+        total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        discount_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        net_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        paid_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        balance_due:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/BillStatusEnum'
+        due_date:
+          type: string
+          format: date
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BillItem'
+          readOnly: true
+        bill_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BillItemWrite'
+          writeOnly: true
+        payments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Payment'
+          readOnly: true
+        created_by:
+          type: integer
+          readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - balance_due
+      - bill_number
+      - created_at
+      - created_by
+      - created_by_name
+      - id
+      - items
+      - net_amount
+      - paid_amount
+      - patient
+      - patient_name
+      - payments
+      - total_amount
+      - updated_at
+    BillItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        bill:
+          type: integer
+        item_type:
+          $ref: '#/components/schemas/ItemTypeEnum'
+        description:
+          type: string
+          maxLength: 255
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        subtotal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        reference_id:
+          type: string
+          nullable: true
+          description: Related order ID (e.g. Lab Order ID, Prescription Dispense
+            ID)
+          maxLength: 50
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - bill
+      - created_at
+      - description
+      - id
+      - item_type
+      - subtotal
+      - unit_price
+    BillItemWrite:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        item_type:
+          $ref: '#/components/schemas/ItemTypeEnum'
+        description:
+          type: string
+          maxLength: 255
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        subtotal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        reference_id:
+          type: string
+          nullable: true
+          description: Related order ID (e.g. Lab Order ID, Prescription Dispense
+            ID)
+          maxLength: 50
+      required:
+      - description
+      - id
+      - item_type
+      - subtotal
+      - unit_price
+    BillStatusEnum:
+      enum:
+      - UNPAID
+      - PARTIALLY_PAID
+      - PAID
+      - CANCELLED
+      type: string
+      description: |-
+        * `UNPAID` - Unpaid
+        * `PARTIALLY_PAID` - Partially Paid
+        * `PAID` - Fully Paid
+        * `CANCELLED` - Cancelled
+    BlankEnum:
+      enum:
+      - ''
+    BloodGroupEnum:
+      enum:
+      - A+
+      - A-
+      - B+
+      - B-
+      - AB+
+      - AB-
+      - O+
+      - O-
+      type: string
+      description: |-
+        * `A+` - A+
+        * `A-` - A-
+        * `B+` - B+
+        * `B-` - B-
+        * `AB+` - AB+
+        * `AB-` - AB-
+        * `O+` - O+
+        * `O-` - O-
+    CancellationStatusEnum:
+      enum:
+      - NONE
+      - REQUESTED
+      - APPROVED
+      - REJECTED
+      type: string
+      description: |-
+        * `NONE` - None
+        * `REQUESTED` - Cancellation Requested
+        * `APPROVED` - Cancellation Approved
+        * `REJECTED` - Cancellation Rejected
+    CategoryEnum:
+      enum:
+      - HEMATOLOGY
+      - BIOCHEMISTRY
+      - MICROBIOLOGY
+      - PATHOLOGY
+      - RADIOLOGY
+      - IMMUNOLOGY
+      - URINALYSIS
+      - OTHER
+      type: string
+      description: |-
+        * `HEMATOLOGY` - Hematology
+        * `BIOCHEMISTRY` - Biochemistry
+        * `MICROBIOLOGY` - Microbiology
+        * `PATHOLOGY` - Pathology
+        * `RADIOLOGY` - Radiology / Imaging
+        * `IMMUNOLOGY` - Immunology
+        * `URINALYSIS` - Urinalysis
+        * `OTHER` - Other Diagnostic
+    ChangePassword:
+      type: object
+      properties:
+        current_password:
+          type: string
+          writeOnly: true
+        new_password:
+          type: string
+          writeOnly: true
+        confirm_password:
+          type: string
+          writeOnly: true
+      required:
+      - confirm_password
+      - current_password
+      - new_password
+    CustomTestCategoryEnum:
+      enum:
+      - HEMATOLOGY
+      - BIOCHEMISTRY
+      - MICROBIOLOGY
+      - PATHOLOGY
+      - RADIOLOGY
+      - IMMUNOLOGY
+      - URINALYSIS
+      - OTHER
+      type: string
+      description: |-
+        * `HEMATOLOGY` - Hematology
+        * `BIOCHEMISTRY` - Biochemistry
+        * `MICROBIOLOGY` - Microbiology
+        * `PATHOLOGY` - Pathology
+        * `RADIOLOGY` - Radiology / Imaging
+        * `IMMUNOLOGY` - Immunology
+        * `URINALYSIS` - Urinalysis
+        * `OTHER` - Other Diagnostic
+    DispenseItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        dispense:
+          type: integer
+        prescription_item:
+          type: integer
+        medicine:
+          type: integer
+        medicine_name:
+          type: string
+          readOnly: true
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        subtotal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+      required:
+      - dispense
+      - id
+      - medicine
+      - medicine_name
+      - prescription_item
+      - quantity
+      - subtotal
+      - unit_price
+    Doctor:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        doctor_id:
+          type: string
+          readOnly: true
+          description: Unique Doctor Identifier (e.g., CF-DOC-101)
+        user:
+          type: integer
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        first_name:
+          type: string
+          maxLength: 100
+        last_name:
+          type: string
+          maxLength: 100
+        full_name:
+          type: string
+          readOnly: true
+        specialization:
+          type: string
+          maxLength: 100
+        qualification:
+          type: string
+          description: e.g. MBBS, MD (Cardiology)
+          maxLength: 150
+        license_number:
+          type: string
+          maxLength: 50
+        department:
+          type: string
+          maxLength: 100
+        phone_number:
+          type: string
+          maxLength: 25
+        phone:
+          type: string
+          writeOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        consultation_fee:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        available_days:
+          type: string
+          maxLength: 120
+        start_time:
+          type: string
+          format: time
+        end_time:
+          type: string
+          format: time
+        status:
+          $ref: '#/components/schemas/DoctorStatusEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - doctor_id
+      - email
+      - first_name
+      - full_name
+      - id
+      - last_name
+      - license_number
+      - phone_number
+      - qualification
+      - specialization
+      - updated_at
+    DoctorStatusEnum:
+      enum:
+      - ACTIVE
+      - ON_LEAVE
+      - INACTIVE
+      type: string
+      description: |-
+        * `ACTIVE` - Active
+        * `ON_LEAVE` - On Leave
+        * `INACTIVE` - Inactive
+    DosageFormEnum:
+      enum:
+      - TABLET
+      - CAPSULE
+      - SYRUP
+      - INJECTION
+      - OINTMENT
+      - DROPS
+      - INHALER
+      - OTHER
+      type: string
+      description: |-
+        * `TABLET` - Tablet
+        * `CAPSULE` - Capsule
+        * `SYRUP` - Syrup
+        * `INJECTION` - Injection
+        * `OINTMENT` - Ointment
+        * `DROPS` - Drops
+        * `INHALER` - Inhaler
+        * `OTHER` - Other
+    GenderEnum:
+      enum:
+      - MALE
+      - FEMALE
+      - OTHER
+      type: string
+      description: |-
+        * `MALE` - Male
+        * `FEMALE` - Female
+        * `OTHER` - Other
+    HealthCheckResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        service:
+          type: string
+        version:
+          type: string
+        api_documentation:
+          type: string
+      required:
+      - api_documentation
+      - service
+      - status
+      - version
+    ItemTypeEnum:
+      enum:
+      - CONSULTATION
+      - MEDICINE
+      - LAB_TEST
+      - PROCEDURE
+      - OTHER
+      type: string
+      description: |-
+        * `CONSULTATION` - Doctor Consultation Fee
+        * `MEDICINE` - Medicine / Pharmacy Charge
+        * `LAB_TEST` - Laboratory Test Fee
+        * `PROCEDURE` - Clinical Procedure Fee
+        * `OTHER` - Other Hospital Service
+    LabOrder:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        order_id:
+          type: string
+          readOnly: true
+          description: Unique Lab Order Identifier (e.g., CF-LAB-10001)
+        patient:
+          type: integer
+        patient_name:
+          type: string
+          readOnly: true
+        patient_identifier:
+          type: string
+          readOnly: true
+        patient_gender:
+          type: string
+          readOnly: true
+        patient_phone:
+          type: string
+          readOnly: true
+        doctor:
+          type: integer
+          readOnly: true
+        doctor_name:
+          type: string
+          readOnly: true
+        doctor_specialization:
+          type: string
+          readOnly: true
+        appointment:
+          type: integer
+          nullable: true
+        test:
+          type: integer
+        custom_test_name:
+          type: string
+          writeOnly: true
+        custom_test_category:
+          allOf:
+          - $ref: '#/components/schemas/CustomTestCategoryEnum'
+          writeOnly: true
+          default: OTHER
+        test_name:
+          type: string
+          readOnly: true
+        test_code:
+          type: string
+          readOnly: true
+        test_category:
+          type: string
+          readOnly: true
+        test_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        test_unit:
+          type: string
+          readOnly: true
+        test_reference_range:
+          type: string
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/LabOrderStatusEnum'
+        clinical_notes:
+          type: string
+          nullable: true
+          description: Physician reason for ordering diagnostic
+        assigned_staff:
+          type: integer
+          readOnly: true
+          nullable: true
+        assigned_staff_name:
+          type: string
+          readOnly: true
+        result_value:
+          type: string
+          nullable: true
+          description: Quantitative or qualitative result
+          maxLength: 255
+        result_unit:
+          type: string
+          nullable: true
+          description: Result unit of measurement
+          maxLength: 50
+        result_interpretation:
+          type: string
+          nullable: true
+          description: Clinical interpretation of findings
+        result_notes:
+          type: string
+          nullable: true
+          description: Technician remarks and clinical interpretation
+        reference_range_used:
+          type: string
+          nullable: true
+          maxLength: 200
+        report_file:
+          type: string
+          format: uri
+          nullable: true
+        cancellation_requested:
+          type: boolean
+          readOnly: true
+          description: Physician has requested cancellation
+        cancellation_reason:
+          type: string
+          nullable: true
+          description: Physician's reason for cancellation
+        cancellation_requested_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Timestamp of physician cancellation request
+        cancellation_status:
+          readOnly: true
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/CancellationStatusEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        cancellation_remarks:
+          type: string
+          nullable: true
+          description: Laboratory staff processing remarks for cancellation
+        cancellation_processed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        cancelled_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        cancelled_by_name:
+          type: string
+          readOnly: true
+        ordered_at:
+          type: string
+          format: date-time
+          readOnly: true
+        sample_collected_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - assigned_staff
+      - assigned_staff_name
+      - cancellation_processed_at
+      - cancellation_requested
+      - cancellation_requested_at
+      - cancellation_status
+      - cancelled_by
+      - cancelled_by_name
+      - doctor
+      - doctor_name
+      - doctor_specialization
+      - id
+      - order_id
+      - ordered_at
+      - patient
+      - patient_gender
+      - patient_identifier
+      - patient_name
+      - patient_phone
+      - test_category
+      - test_code
+      - test_name
+      - test_price
+      - test_reference_range
+      - test_unit
+      - updated_at
+    LabOrderStatusEnum:
+      enum:
+      - REQUESTED
+      - ACCEPTED
+      - IN_PROGRESS
+      - COMPLETED
+      - CANCELLED
+      - ORDERED
+      - SAMPLE_COLLECTED
+      type: string
+      description: |-
+        * `REQUESTED` - Requested
+        * `ACCEPTED` - Accepted
+        * `IN_PROGRESS` - In Progress
+        * `COMPLETED` - Completed
+        * `CANCELLED` - Cancelled
+        * `ORDERED` - Ordered
+        * `SAMPLE_COLLECTED` - Sample Collected
+    LabTest:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        test_code:
+          type: string
+          readOnly: true
+          description: Standard Laboratory Diagnostic Code (e.g., LAB-CBC)
+        test_name:
+          type: string
+          maxLength: 200
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        description:
+          type: string
+          nullable: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          description: Standard diagnostic test fee
+        reference_range:
+          type: string
+          nullable: true
+          description: Normal clinical reference range (e.g., 13.5 - 17.5 g/dL)
+          maxLength: 200
+        unit:
+          type: string
+          nullable: true
+          description: Measurement unit (e.g., g/dL, mg/dL, mmol/L)
+          maxLength: 50
+        turnaround_time:
+          type: string
+          nullable: true
+          description: e.g. 2 Hours, 24 Hours
+          maxLength: 50
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - price
+      - test_code
+      - test_name
+      - updated_at
+    Medicine:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        medicine_code:
+          type: string
+          readOnly: true
+          description: Unique Medicine / Tablet Code (e.g., MED-1001)
+        name:
+          type: string
+          maxLength: 200
+        generic_name:
+          type: string
+          nullable: true
+          maxLength: 200
+        brand_name:
+          type: string
+          nullable: true
+          maxLength: 200
+        dosage_form:
+          $ref: '#/components/schemas/DosageFormEnum'
+        strength:
+          type: string
+          nullable: true
+          description: e.g. 500mg, 10ml, 250mg/5ml
+          maxLength: 50
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        stock_quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        reorder_level:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          description: Low stock alert threshold
+        is_low_stock:
+          type: boolean
+          readOnly: true
+        manufacturer:
+          type: string
+          nullable: true
+          maxLength: 150
+        batch_number:
+          type: string
+          nullable: true
+          maxLength: 50
+        expiry_date:
+          type: string
+          format: date
+          nullable: true
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - is_low_stock
+      - medicine_code
+      - name
+      - unit_price
+      - updated_at
+    MedicineDispense:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        dispense_id:
+          type: string
+          readOnly: true
+          description: Unique Dispensing Reference (e.g., CF-DSP-10001)
+        prescription:
+          type: integer
+        patient:
+          type: integer
+        dispensed_by:
+          type: integer
+          readOnly: true
+        dispensed_by_name:
+          type: string
+          readOnly: true
+        total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        notes:
+          type: string
+          nullable: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DispenseItem'
+          readOnly: true
+        dispensed_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - dispense_id
+      - dispensed_at
+      - dispensed_by
+      - dispensed_by_name
+      - id
+      - items
+      - patient
+      - prescription
+    MovementTypeEnum:
+      enum:
+      - PURCHASE_IN
+      - DISPENSED_OUT
+      - ADJUSTMENT_IN
+      - ADJUSTMENT_OUT
+      - RETURN_IN
+      - EXPIRED_OUT
+      type: string
+      description: |-
+        * `PURCHASE_IN` - Purchase / Stock Received
+        * `DISPENSED_OUT` - Dispensed to Patient
+        * `ADJUSTMENT_IN` - Adjustment In
+        * `ADJUSTMENT_OUT` - Adjustment Out
+        * `RETURN_IN` - Patient Return
+        * `EXPIRED_OUT` - Expired / Discarded
+    NullEnum:
+      enum:
+      - null
+    PaginatedAppointmentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Appointment'
+    PaginatedBillItemList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BillItem'
+    PaginatedBillList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Bill'
+    PaginatedDoctorList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Doctor'
+    PaginatedLabOrderList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/LabOrder'
+    PaginatedLabTestList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/LabTest'
+    PaginatedMedicineDispenseList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/MedicineDispense'
+    PaginatedMedicineList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Medicine'
+    PaginatedPatientList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Patient'
+    PaginatedPaymentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Payment'
+    PaginatedPrescriptionItemList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrescriptionItem'
+    PaginatedPrescriptionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Prescription'
+    PaginatedStaffProfileList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaffProfile'
+    PaginatedStockMovementList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/StockMovement'
+    PasswordResetConfirm:
+      type: object
+      description: Validates token and updates user password securely.
+      properties:
+        uid:
+          type: string
+        token:
+          type: string
+        new_password:
+          type: string
+          writeOnly: true
+          minLength: 8
+        confirm_password:
+          type: string
+          writeOnly: true
+      required:
+      - confirm_password
+      - new_password
+      - token
+      - uid
+    PasswordResetRequest:
+      type: object
+      description: Validates email/username and generates password reset link sent
+        to email.
+      properties:
+        email:
+          type: string
+          description: Registered email address or username
+      required:
+      - email
+    PatchedAppointment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        appointment_id:
+          type: string
+          readOnly: true
+          description: Unique Appointment Identifier (e.g., CF-APT-10001)
+        patient:
+          type: integer
+        patient_name:
+          type: string
+          readOnly: true
+        patient_id_code:
+          type: string
+          readOnly: true
+        doctor:
+          type: integer
+        doctor_name:
+          type: string
+          readOnly: true
+        doctor_department:
+          type: string
+          readOnly: true
+        doctor_specialization:
+          type: string
+          readOnly: true
+        consultation_fee:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        appointment_date:
+          type: string
+          format: date
+        appointment_time:
+          type: string
+          format: time
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AppointmentStatusEnum'
+          default: SCHEDULED
+        is_checked_in:
+          type: boolean
+          description: Designates whether the patient has arrived and checked in at
+            the front desk.
+        check_in_time:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp when the patient was checked in by the receptionist.
+        cancellation_reason:
+          type: string
+          nullable: true
+          description: Reason recorded upon cancellation of the appointment.
+        reason_for_visit:
+          type: string
+          description: Primary complaint or purpose of consultation.
+        authorized_notes:
+          type: string
+          nullable: true
+          description: Clinical consultation notes recorded by authorized medical
+            personnel.
+        created_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedBill:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        bill_number:
+          type: string
+          readOnly: true
+          description: Unique Invoice Number (e.g., CF-INV-10001)
+        patient:
+          type: integer
+        patient_name:
+          type: string
+          readOnly: true
+        appointment:
+          type: integer
+          nullable: true
+        total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        discount_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        net_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        paid_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        balance_due:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/BillStatusEnum'
+        due_date:
+          type: string
+          format: date
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BillItem'
+          readOnly: true
+        bill_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BillItemWrite'
+          writeOnly: true
+        payments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Payment'
+          readOnly: true
+        created_by:
+          type: integer
+          readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedBillItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        bill:
+          type: integer
+        item_type:
+          $ref: '#/components/schemas/ItemTypeEnum'
+        description:
+          type: string
+          maxLength: 255
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        subtotal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        reference_id:
+          type: string
+          nullable: true
+          description: Related order ID (e.g. Lab Order ID, Prescription Dispense
+            ID)
+          maxLength: 50
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedDoctor:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        doctor_id:
+          type: string
+          readOnly: true
+          description: Unique Doctor Identifier (e.g., CF-DOC-101)
+        user:
+          type: integer
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        first_name:
+          type: string
+          maxLength: 100
+        last_name:
+          type: string
+          maxLength: 100
+        full_name:
+          type: string
+          readOnly: true
+        specialization:
+          type: string
+          maxLength: 100
+        qualification:
+          type: string
+          description: e.g. MBBS, MD (Cardiology)
+          maxLength: 150
+        license_number:
+          type: string
+          maxLength: 50
+        department:
+          type: string
+          maxLength: 100
+        phone_number:
+          type: string
+          maxLength: 25
+        phone:
+          type: string
+          writeOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        consultation_fee:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        available_days:
+          type: string
+          maxLength: 120
+        start_time:
+          type: string
+          format: time
+        end_time:
+          type: string
+          format: time
+        status:
+          $ref: '#/components/schemas/DoctorStatusEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedLabOrder:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        order_id:
+          type: string
+          readOnly: true
+          description: Unique Lab Order Identifier (e.g., CF-LAB-10001)
+        patient:
+          type: integer
+        patient_name:
+          type: string
+          readOnly: true
+        patient_identifier:
+          type: string
+          readOnly: true
+        patient_gender:
+          type: string
+          readOnly: true
+        patient_phone:
+          type: string
+          readOnly: true
+        doctor:
+          type: integer
+          readOnly: true
+        doctor_name:
+          type: string
+          readOnly: true
+        doctor_specialization:
+          type: string
+          readOnly: true
+        appointment:
+          type: integer
+          nullable: true
+        test:
+          type: integer
+        custom_test_name:
+          type: string
+          writeOnly: true
+        custom_test_category:
+          allOf:
+          - $ref: '#/components/schemas/CustomTestCategoryEnum'
+          writeOnly: true
+          default: OTHER
+        test_name:
+          type: string
+          readOnly: true
+        test_code:
+          type: string
+          readOnly: true
+        test_category:
+          type: string
+          readOnly: true
+        test_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        test_unit:
+          type: string
+          readOnly: true
+        test_reference_range:
+          type: string
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/LabOrderStatusEnum'
+        clinical_notes:
+          type: string
+          nullable: true
+          description: Physician reason for ordering diagnostic
+        assigned_staff:
+          type: integer
+          readOnly: true
+          nullable: true
+        assigned_staff_name:
+          type: string
+          readOnly: true
+        result_value:
+          type: string
+          nullable: true
+          description: Quantitative or qualitative result
+          maxLength: 255
+        result_unit:
+          type: string
+          nullable: true
+          description: Result unit of measurement
+          maxLength: 50
+        result_interpretation:
+          type: string
+          nullable: true
+          description: Clinical interpretation of findings
+        result_notes:
+          type: string
+          nullable: true
+          description: Technician remarks and clinical interpretation
+        reference_range_used:
+          type: string
+          nullable: true
+          maxLength: 200
+        report_file:
+          type: string
+          format: uri
+          nullable: true
+        cancellation_requested:
+          type: boolean
+          readOnly: true
+          description: Physician has requested cancellation
+        cancellation_reason:
+          type: string
+          nullable: true
+          description: Physician's reason for cancellation
+        cancellation_requested_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Timestamp of physician cancellation request
+        cancellation_status:
+          readOnly: true
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/CancellationStatusEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        cancellation_remarks:
+          type: string
+          nullable: true
+          description: Laboratory staff processing remarks for cancellation
+        cancellation_processed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        cancelled_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        cancelled_by_name:
+          type: string
+          readOnly: true
+        ordered_at:
+          type: string
+          format: date-time
+          readOnly: true
+        sample_collected_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedLabTest:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        test_code:
+          type: string
+          readOnly: true
+          description: Standard Laboratory Diagnostic Code (e.g., LAB-CBC)
+        test_name:
+          type: string
+          maxLength: 200
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        description:
+          type: string
+          nullable: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          description: Standard diagnostic test fee
+        reference_range:
+          type: string
+          nullable: true
+          description: Normal clinical reference range (e.g., 13.5 - 17.5 g/dL)
+          maxLength: 200
+        unit:
+          type: string
+          nullable: true
+          description: Measurement unit (e.g., g/dL, mg/dL, mmol/L)
+          maxLength: 50
+        turnaround_time:
+          type: string
+          nullable: true
+          description: e.g. 2 Hours, 24 Hours
+          maxLength: 50
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedMedicine:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        medicine_code:
+          type: string
+          readOnly: true
+          description: Unique Medicine / Tablet Code (e.g., MED-1001)
+        name:
+          type: string
+          maxLength: 200
+        generic_name:
+          type: string
+          nullable: true
+          maxLength: 200
+        brand_name:
+          type: string
+          nullable: true
+          maxLength: 200
+        dosage_form:
+          $ref: '#/components/schemas/DosageFormEnum'
+        strength:
+          type: string
+          nullable: true
+          description: e.g. 500mg, 10ml, 250mg/5ml
+          maxLength: 50
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        stock_quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        reorder_level:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          description: Low stock alert threshold
+        is_low_stock:
+          type: boolean
+          readOnly: true
+        manufacturer:
+          type: string
+          nullable: true
+          maxLength: 150
+        batch_number:
+          type: string
+          nullable: true
+          maxLength: 50
+        expiry_date:
+          type: string
+          format: date
+          nullable: true
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedMedicineDispense:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        dispense_id:
+          type: string
+          readOnly: true
+          description: Unique Dispensing Reference (e.g., CF-DSP-10001)
+        prescription:
+          type: integer
+        patient:
+          type: integer
+        dispensed_by:
+          type: integer
+          readOnly: true
+        dispensed_by_name:
+          type: string
+          readOnly: true
+        total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        notes:
+          type: string
+          nullable: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DispenseItem'
+          readOnly: true
+        dispensed_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedPatient:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        patient_id:
+          type: string
+          readOnly: true
+          description: Unique Patient Healthcare Identifier (e.g., CF-P-10001)
+        user:
+          type: integer
+          nullable: true
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        first_name:
+          type: string
+          maxLength: 100
+        last_name:
+          type: string
+          maxLength: 100
+        full_name:
+          type: string
+          readOnly: true
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+        gender:
+          $ref: '#/components/schemas/GenderEnum'
+        blood_group:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/BloodGroupEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        phone_number:
+          type: string
+          maxLength: 25
+        phone:
+          type: string
+          writeOnly: true
+        email:
+          nullable: true
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        address:
+          type: string
+          nullable: true
+        emergency_contact_name:
+          type: string
+          nullable: true
+          maxLength: 150
+        emergency_contact_phone:
+          type: string
+          nullable: true
+          maxLength: 25
+        emergency_contact_relation:
+          type: string
+          nullable: true
+          maxLength: 50
+        medical_history:
+          type: string
+          nullable: true
+          description: Chronic conditions, past surgeries, etc.
+        allergies:
+          type: string
+          nullable: true
+          description: Known drug, food, or environmental allergies.
+        registration_date:
+          type: string
+          format: date
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedPayment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        receipt_number:
+          type: string
+          readOnly: true
+          description: Unique Payment Receipt Number (e.g., CF-RCP-10001)
+        bill:
+          type: integer
+        bill_number:
+          type: string
+          readOnly: true
+        patient_name:
+          type: string
+          readOnly: true
+        patient_id:
+          type: string
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        payment_method:
+          $ref: '#/components/schemas/PaymentMethodEnum'
+        status:
+          $ref: '#/components/schemas/PaymentStatusEnum'
+        transaction_reference:
+          type: string
+          nullable: true
+          description: External gateway transaction ID / UPI Reference / Bank UTR
+          maxLength: 100
+        received_by:
+          type: integer
+          readOnly: true
+        received_by_name:
+          type: string
+          readOnly: true
+        payment_date:
+          type: string
+          format: date-time
+          readOnly: true
+        notes:
+          type: string
+          nullable: true
+        bill_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BillItem'
+          readOnly: true
+    PatchedPrescription:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        prescription_id:
+          type: string
+          readOnly: true
+          description: Unique Prescription Identifier (e.g., CF-RX-10001)
+        patient:
+          type: integer
+        patient_name:
+          type: string
+          readOnly: true
+        doctor:
+          type: integer
+          readOnly: true
+        doctor_name:
+          type: string
+          readOnly: true
+        doctor_specialization:
+          type: string
+          readOnly: true
+        doctor_department:
+          type: string
+          readOnly: true
+        appointment:
+          type: integer
+          nullable: true
+        diagnosis:
+          type: string
+          description: Clinical diagnosis and condition summary.
+        clinical_notes:
+          type: string
+          nullable: true
+          description: Physician instructions for patient care.
+        status:
+          allOf:
+          - $ref: '#/components/schemas/PrescriptionStatusEnum'
+          readOnly: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrescriptionItem'
+          readOnly: true
+        prescription_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrescriptionItemWrite'
+          writeOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedPrescriptionItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        prescription:
+          type: integer
+        medicine:
+          type: integer
+        medicine_name:
+          type: string
+          readOnly: true
+        medicine_dosage_form:
+          type: string
+          readOnly: true
+        medicine_strength:
+          type: string
+          readOnly: true
+        medicine_unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        medicine_stock:
+          type: integer
+          readOnly: true
+        dosage:
+          type: string
+          description: e.g. 1 Tablet, 10ml
+          maxLength: 100
+        frequency:
+          type: string
+          description: e.g. 1-0-1 (Twice daily after food)
+          maxLength: 100
+        duration:
+          type: string
+          description: e.g. 5 Days, 2 Weeks
+          maxLength: 100
+        quantity_prescribed:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: Total units prescribed
+        quantity_dispensed:
+          type: integer
+          readOnly: true
+          description: Units dispensed so far
+        instructions:
+          type: string
+          nullable: true
+          description: Specific usage directions for patient
+        is_dispensed:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedStaffProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        staff_id:
+          type: string
+          readOnly: true
+          description: Unique Staff Identifier (e.g., CF-STF-101)
+        user:
+          type: integer
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        first_name:
+          type: string
+          maxLength: 100
+        last_name:
+          type: string
+          maxLength: 100
+        full_name:
+          type: string
+          readOnly: true
+        role:
+          type: string
+          maxLength: 20
+        department:
+          type: string
+          maxLength: 100
+        qualification:
+          type: string
+          nullable: true
+          maxLength: 150
+        phone_number:
+          type: string
+          maxLength: 25
+        phone:
+          type: string
+          writeOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        status:
+          $ref: '#/components/schemas/StaffProfileStatusEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedUserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+        email:
+          title: Email address
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        role:
+          type: string
+          readOnly: true
+        phone_number:
+          type: string
+        is_email_verified:
+          type: boolean
+          readOnly: true
+        doctor_id:
+          type: string
+          readOnly: true
+        specialization:
+          type: string
+          readOnly: true
+        department:
+          type: string
+          readOnly: true
+        qualification:
+          type: string
+          readOnly: true
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+    Patient:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        patient_id:
+          type: string
+          readOnly: true
+          description: Unique Patient Healthcare Identifier (e.g., CF-P-10001)
+        user:
+          type: integer
+          nullable: true
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        first_name:
+          type: string
+          maxLength: 100
+        last_name:
+          type: string
+          maxLength: 100
+        full_name:
+          type: string
+          readOnly: true
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+        gender:
+          $ref: '#/components/schemas/GenderEnum'
+        blood_group:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/BloodGroupEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        phone_number:
+          type: string
+          maxLength: 25
+        phone:
+          type: string
+          writeOnly: true
+        email:
+          nullable: true
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        address:
+          type: string
+          nullable: true
+        emergency_contact_name:
+          type: string
+          nullable: true
+          maxLength: 150
+        emergency_contact_phone:
+          type: string
+          nullable: true
+          maxLength: 25
+        emergency_contact_relation:
+          type: string
+          nullable: true
+          maxLength: 50
+        medical_history:
+          type: string
+          nullable: true
+          description: Chronic conditions, past surgeries, etc.
+        allergies:
+          type: string
+          nullable: true
+          description: Known drug, food, or environmental allergies.
+        registration_date:
+          type: string
+          format: date
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - first_name
+      - full_name
+      - id
+      - last_name
+      - patient_id
+      - phone_number
+      - updated_at
+    Payment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        receipt_number:
+          type: string
+          readOnly: true
+          description: Unique Payment Receipt Number (e.g., CF-RCP-10001)
+        bill:
+          type: integer
+        bill_number:
+          type: string
+          readOnly: true
+        patient_name:
+          type: string
+          readOnly: true
+        patient_id:
+          type: string
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        payment_method:
+          $ref: '#/components/schemas/PaymentMethodEnum'
+        status:
+          $ref: '#/components/schemas/PaymentStatusEnum'
+        transaction_reference:
+          type: string
+          nullable: true
+          description: External gateway transaction ID / UPI Reference / Bank UTR
+          maxLength: 100
+        received_by:
+          type: integer
+          readOnly: true
+        received_by_name:
+          type: string
+          readOnly: true
+        payment_date:
+          type: string
+          format: date-time
+          readOnly: true
+        notes:
+          type: string
+          nullable: true
+        bill_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BillItem'
+          readOnly: true
+      required:
+      - amount
+      - bill
+      - bill_items
+      - bill_number
+      - id
+      - patient_id
+      - patient_name
+      - payment_date
+      - receipt_number
+      - received_by
+      - received_by_name
+      - total_amount
+    PaymentMethodEnum:
+      enum:
+      - CASH
+      - CARD
+      - UPI
+      - NET_BANKING
+      - INSURANCE
+      type: string
+      description: |-
+        * `CASH` - Cash
+        * `CARD` - Credit / Debit Card
+        * `UPI` - UPI Payment
+        * `NET_BANKING` - Net Banking
+        * `INSURANCE` - Health Insurance
+    PaymentStatusEnum:
+      enum:
+      - SUCCESS
+      - FAILED
+      - REFUNDED
+      type: string
+      description: |-
+        * `SUCCESS` - Success
+        * `FAILED` - Failed
+        * `REFUNDED` - Refunded
+    Prescription:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        prescription_id:
+          type: string
+          readOnly: true
+          description: Unique Prescription Identifier (e.g., CF-RX-10001)
+        patient:
+          type: integer
+        patient_name:
+          type: string
+          readOnly: true
+        doctor:
+          type: integer
+          readOnly: true
+        doctor_name:
+          type: string
+          readOnly: true
+        doctor_specialization:
+          type: string
+          readOnly: true
+        doctor_department:
+          type: string
+          readOnly: true
+        appointment:
+          type: integer
+          nullable: true
+        diagnosis:
+          type: string
+          description: Clinical diagnosis and condition summary.
+        clinical_notes:
+          type: string
+          nullable: true
+          description: Physician instructions for patient care.
+        status:
+          allOf:
+          - $ref: '#/components/schemas/PrescriptionStatusEnum'
+          readOnly: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrescriptionItem'
+          readOnly: true
+        prescription_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrescriptionItemWrite'
+          writeOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - diagnosis
+      - doctor
+      - doctor_department
+      - doctor_name
+      - doctor_specialization
+      - id
+      - items
+      - patient
+      - patient_name
+      - prescription_id
+      - status
+      - updated_at
+    PrescriptionItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        prescription:
+          type: integer
+        medicine:
+          type: integer
+        medicine_name:
+          type: string
+          readOnly: true
+        medicine_dosage_form:
+          type: string
+          readOnly: true
+        medicine_strength:
+          type: string
+          readOnly: true
+        medicine_unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        medicine_stock:
+          type: integer
+          readOnly: true
+        dosage:
+          type: string
+          description: e.g. 1 Tablet, 10ml
+          maxLength: 100
+        frequency:
+          type: string
+          description: e.g. 1-0-1 (Twice daily after food)
+          maxLength: 100
+        duration:
+          type: string
+          description: e.g. 5 Days, 2 Weeks
+          maxLength: 100
+        quantity_prescribed:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: Total units prescribed
+        quantity_dispensed:
+          type: integer
+          readOnly: true
+          description: Units dispensed so far
+        instructions:
+          type: string
+          nullable: true
+          description: Specific usage directions for patient
+        is_dispensed:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - dosage
+      - duration
+      - frequency
+      - id
+      - is_dispensed
+      - medicine
+      - medicine_dosage_form
+      - medicine_name
+      - medicine_stock
+      - medicine_strength
+      - medicine_unit_price
+      - prescription
+      - quantity_dispensed
+      - quantity_prescribed
+    PrescriptionItemWrite:
+      type: object
+      properties:
+        medicine:
+          type: integer
+        dosage:
+          type: string
+          description: e.g. 1 Tablet, 10ml
+          maxLength: 100
+        frequency:
+          type: string
+          description: e.g. 1-0-1 (Twice daily after food)
+          maxLength: 100
+        duration:
+          type: string
+          description: e.g. 5 Days, 2 Weeks
+          maxLength: 100
+        quantity_prescribed:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: Total units prescribed
+        instructions:
+          type: string
+          nullable: true
+          description: Specific usage directions for patient
+      required:
+      - dosage
+      - duration
+      - frequency
+      - medicine
+      - quantity_prescribed
+    PrescriptionStatusEnum:
+      enum:
+      - PENDING
+      - PARTIALLY_DISPENSED
+      - DISPENSED
+      - CANCELLED
+      type: string
+      description: |-
+        * `PENDING` - Pending Dispensation
+        * `PARTIALLY_DISPENSED` - Partially Dispensed
+        * `DISPENSED` - Fully Dispensed
+        * `CANCELLED` - Cancelled
+    Register:
+      type: object
+      properties:
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        username:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+          maxLength: 25
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+        confirm_password:
+          type: string
+          writeOnly: true
+      required:
+      - confirm_password
+      - email
+      - first_name
+      - last_name
+      - password
+    ResendOTP:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        purpose:
+          type: string
+          default: registration
+      required:
+      - email
+    StaffProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        staff_id:
+          type: string
+          readOnly: true
+          description: Unique Staff Identifier (e.g., CF-STF-101)
+        user:
+          type: integer
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        first_name:
+          type: string
+          maxLength: 100
+        last_name:
+          type: string
+          maxLength: 100
+        full_name:
+          type: string
+          readOnly: true
+        role:
+          type: string
+          maxLength: 20
+        department:
+          type: string
+          maxLength: 100
+        qualification:
+          type: string
+          nullable: true
+          maxLength: 150
+        phone_number:
+          type: string
+          maxLength: 25
+        phone:
+          type: string
+          writeOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        status:
+          $ref: '#/components/schemas/StaffProfileStatusEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - department
+      - email
+      - first_name
+      - full_name
+      - id
+      - last_name
+      - phone_number
+      - role
+      - staff_id
+      - updated_at
+    StaffProfileStatusEnum:
+      enum:
+      - ACTIVE
+      - INACTIVE
+      type: string
+      description: |-
+        * `ACTIVE` - Active
+        * `INACTIVE` - Inactive
+    StockMovement:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        movement_id:
+          type: string
+          readOnly: true
+          description: Unique Stock Movement Reference (e.g., STK-10001)
+        medicine:
+          type: integer
+        medicine_name:
+          type: string
+          readOnly: true
+        movement_type:
+          $ref: '#/components/schemas/MovementTypeEnum'
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        previous_stock:
+          type: integer
+          readOnly: true
+        new_stock:
+          type: integer
+          readOnly: true
+        reference_note:
+          type: string
+          nullable: true
+          maxLength: 255
+        performed_by:
+          type: integer
+          readOnly: true
+        performed_by_name:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - medicine
+      - medicine_name
+      - movement_id
+      - movement_type
+      - new_stock
+      - performed_by
+      - performed_by_name
+      - previous_stock
+      - quantity
+    TestEmail:
+      type: object
+      properties:
+        recipient_email:
+          type: string
+          format: email
+      required:
+      - recipient_email
+    TokenObtainPair:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - password
+      - refresh
+      - username
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    TokenVerify:
+      type: object
+      properties:
+        token:
+          type: string
+          writeOnly: true
+      required:
+      - token
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+        email:
+          title: Email address
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        role:
+          type: string
+          readOnly: true
+        phone_number:
+          type: string
+        is_email_verified:
+          type: boolean
+          readOnly: true
+        doctor_id:
+          type: string
+          readOnly: true
+        specialization:
+          type: string
+          readOnly: true
+        department:
+          type: string
+          readOnly: true
+        qualification:
+          type: string
+          readOnly: true
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - date_joined
+      - department
+      - doctor_id
+      - id
+      - is_email_verified
+      - qualification
+      - role
+      - specialization
+      - username
+    VerifyOTP:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        otp_code:
+          type: string
+          maxLength: 6
+          minLength: 6
+        purpose:
+          type: string
+          default: registration
+      required:
+      - email
+      - otp_code
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

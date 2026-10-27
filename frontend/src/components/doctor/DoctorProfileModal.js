@@ -1,0 +1,643 @@
+import React, { useState, useEffect } from 'react';
+import doctorService from '../../services/doctorService';
+import authService from '../../services/authService';
+import ModalPortal from '../common/ModalPortal';
+import {
+  X,
+  User,
+  Mail,
+  Phone,
+  Stethoscope,
+  KeyRound,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Eye,
+  EyeOff,
+  Building,
+  GraduationCap,
+} from 'lucide-react';
+import { toast } from '../../context/ToastContext';
+
+const DoctorProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
+  const [activeTab, setActiveTab] = useState('details'); // 'details' | 'password'
+
+  // Profile state
+  const [profile, setProfile] = useState(null);
+  const [formData, setFormData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+  });
+  const [profileErrors, setProfileErrors] = useState({});
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileSuccessMsg, setProfileSuccessMsg] = useState('');
+
+  // Password state
+  const [passwordData, setPasswordData] = useState({
+    current_password: '',
+    new_password: '',
+    confirm_password: '',
+  });
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordErrors, setPasswordErrors] = useState({});
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordSuccessMsg, setPasswordSuccessMsg] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      loadProfile();
+      setProfileSuccessMsg('');
+      setPasswordSuccessMsg('');
+      setProfileErrors({});
+      setPasswordErrors({});
+      setPasswordData({
+        current_password: '',
+        new_password: '',
+        confirm_password: '',
+      });
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  const loadProfile = async () => {
+    try {
+      const data = await doctorService.getProfile();
+      setProfile(data);
+      setFormData({
+        first_name: data.first_name || '',
+        last_name: data.last_name || '',
+        email: data.email || '',
+        phone: data.phone_number || data.phone || '',
+      });
+    } catch (err) {
+      const cached = authService.getUserProfile();
+      if (cached) {
+        setProfile(cached);
+        setFormData({
+          first_name: cached.first_name || '',
+          last_name: cached.last_name || '',
+          email: cached.email || '',
+          phone: cached.phone_number || cached.phone || '',
+        });
+      }
+    }
+  };
+
+  const handleProfileSubmit = async (e) => {
+    e.preventDefault();
+    setProfileErrors({});
+    setProfileSuccessMsg('');
+
+    const errors = {};
+    if (!formData.first_name.trim()) {
+      errors.first_name = 'First name is required.';
+    }
+    if (!formData.email.trim()) {
+      errors.email = 'Email address is required.';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      errors.email = 'Please enter a valid email address.';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setProfileErrors(errors);
+      return;
+    }
+
+    setIsSavingProfile(true);
+    try {
+      const updated = await doctorService.updateProfile({
+        first_name: formData.first_name.trim(),
+        last_name: formData.last_name.trim(),
+        email: formData.email.trim().toLowerCase(),
+        phone_number: formData.phone.trim(),
+      });
+      setProfile(updated);
+      setProfileSuccessMsg('Doctor profile updated successfully.');
+      toast.success('Doctor profile updated successfully!', 'Profile Updated');
+      if (onProfileUpdated) {
+        onProfileUpdated(updated);
+      }
+    } catch (err) {
+      let msg = 'Failed to update profile. Please try again.';
+      if (err.response && err.response.data) {
+        if (typeof err.response.data === 'string') {
+          msg = err.response.data;
+        } else if (err.response.data.detail) {
+          msg = err.response.data.detail;
+        } else {
+          setProfileErrors(err.response.data);
+          return;
+        }
+      }
+      setProfileErrors({ general: msg });
+      toast.error(msg, 'Update Failed');
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    setPasswordErrors({});
+    setPasswordSuccessMsg('');
+
+    const errors = {};
+    if (!passwordData.current_password) {
+      errors.current_password = 'Current password is required.';
+    }
+    if (!passwordData.new_password) {
+      errors.new_password = 'New password is required.';
+    } else if (passwordData.new_password.length < 8) {
+      errors.new_password = 'Password must be at least 8 characters long.';
+    }
+    if (passwordData.new_password !== passwordData.confirm_password) {
+      errors.confirm_password = 'New passwords do not match.';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setPasswordErrors(errors);
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      await doctorService.changePassword({
+        current_password: passwordData.current_password,
+        new_password: passwordData.new_password,
+        confirm_password: passwordData.confirm_password,
+      });
+      setPasswordSuccessMsg('Password changed successfully.');
+      toast.success('Password changed successfully!', 'Password Changed');
+      setPasswordData({
+        current_password: '',
+        new_password: '',
+        confirm_password: '',
+      });
+    } catch (err) {
+      let msg = 'Failed to update password. Please check your current password.';
+      if (err.response && err.response.data) {
+        if (typeof err.response.data === 'string') {
+          msg = err.response.data;
+        } else if (err.response.data.detail) {
+          msg = err.response.data.detail;
+        } else {
+          setPasswordErrors(err.response.data);
+          return;
+        }
+      }
+      setPasswordErrors({ general: msg });
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <ModalPortal isOpen={true}>
+      <div
+        className="admin-modal-backdrop"
+        onClick={onClose}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="doctor-profile-title"
+      >
+        <div
+          className="admin-modal-card"
+          onClick={(e) => e.stopPropagation()}
+          style={{ maxWidth: '580px' }}
+        >
+          <div className="admin-modal-header">
+            <div className="admin-modal-title-box">
+              <h3 id="doctor-profile-title" className="admin-modal-title">
+                Doctor Profile & Settings
+              </h3>
+              <p className="admin-modal-subtitle">
+                Manage practitioner credentials and portal authentication
+              </p>
+            </div>
+            <button
+              type="button"
+              className="admin-modal-close-btn"
+              onClick={onClose}
+              aria-label="Close profile modal"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          {/* Modal Navigation Tabs */}
+          <div className="admin-modal-tabs">
+            <button
+              type="button"
+              className={`admin-modal-tab ${activeTab === 'details' ? 'active' : ''}`}
+              onClick={() => setActiveTab('details')}
+            >
+              <User size={16} />
+              <span>Personal Details</span>
+            </button>
+            <button
+              type="button"
+              className={`admin-modal-tab ${activeTab === 'password' ? 'active' : ''}`}
+              onClick={() => setActiveTab('password')}
+            >
+              <KeyRound size={16} />
+              <span>Change Password</span>
+            </button>
+          </div>
+
+          <div className="admin-modal-body">
+            {activeTab === 'details' ? (
+              <form onSubmit={handleProfileSubmit} noValidate>
+                {profileSuccessMsg && (
+                  <div className="admin-alert admin-alert-success" role="alert">
+                    <CheckCircle2 size={16} />
+                    <span>{profileSuccessMsg}</span>
+                  </div>
+                )}
+
+                {profileErrors.general && (
+                  <div className="admin-alert admin-alert-danger" role="alert">
+                    <AlertCircle size={16} />
+                    <span>{profileErrors.general}</span>
+                  </div>
+                )}
+
+                {/* Account Role Banner */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0.85rem 1rem',
+                    background: 'var(--admin-surface-secondary)',
+                    borderRadius: 'var(--admin-radius-sm)',
+                    border: '1px solid var(--admin-border)',
+                    marginBottom: '1.25rem',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div
+                      style={{
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '50%',
+                        background: 'rgba(20, 184, 166, 0.15)',
+                        border: '1px solid rgba(20, 184, 166, 0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--primary-teal, #14b8a6)',
+                      }}
+                    >
+                      <Stethoscope size={18} />
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '0.875rem', fontWeight: 600, display: 'block' }}>
+                        {profile?.specialization || 'Clinical Practitioner'}
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)' }}>
+                        Doctor ID: {profile?.doctor_id || 'CF-DOC'} • Username: {profile?.username || '—'}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="admin-badge admin-badge-teal">Licensed Doctor</span>
+                </div>
+
+                {/* Additional Clinical Details Chips */}
+                {(profile?.department || profile?.qualification) && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '0.75rem',
+                      flexWrap: 'wrap',
+                      marginBottom: '1.25rem',
+                    }}
+                  >
+                    {profile?.department && (
+                      <span
+                        className="admin-badge"
+                        style={{
+                          background: 'rgba(56, 189, 248, 0.12)',
+                          color: '#38bdf8',
+                          border: '1px solid rgba(56, 189, 248, 0.25)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          padding: '0.3rem 0.65rem',
+                        }}
+                      >
+                        <Building size={12} />
+                        <span>Dept: {profile.department}</span>
+                      </span>
+                    )}
+                    {profile?.qualification && (
+                      <span
+                        className="admin-badge"
+                        style={{
+                          background: 'rgba(168, 85, 247, 0.12)',
+                          color: '#c084fc',
+                          border: '1px solid rgba(168, 85, 247, 0.25)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          padding: '0.3rem 0.65rem',
+                        }}
+                      >
+                        <GraduationCap size={12} />
+                        <span>{profile.qualification}</span>
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                <div className="admin-form-row">
+                  <div className="admin-form-group">
+                    <label className="admin-form-label" htmlFor="doctor-first-name">
+                      First Name
+                    </label>
+                    <input
+                      id="doctor-first-name"
+                      type="text"
+                      className={`admin-input ${profileErrors.first_name ? 'admin-input-error' : ''}`}
+                      value={formData.first_name}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, first_name: e.target.value }))
+                      }
+                      placeholder="First name"
+                      required
+                    />
+                    {profileErrors.first_name && (
+                      <span className="admin-form-error">{profileErrors.first_name}</span>
+                    )}
+                  </div>
+
+                  <div className="admin-form-group">
+                    <label className="admin-form-label" htmlFor="doctor-last-name">
+                      Last Name
+                    </label>
+                    <input
+                      id="doctor-last-name"
+                      type="text"
+                      className="admin-input"
+                      value={formData.last_name}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, last_name: e.target.value }))
+                      }
+                      placeholder="Last name"
+                    />
+                  </div>
+                </div>
+
+                <div className="admin-form-group">
+                  <label className="admin-form-label" htmlFor="doctor-email">
+                    Email Address
+                  </label>
+                  <div className="admin-input-icon-wrapper">
+                    <Mail size={16} className="admin-input-icon" />
+                    <input
+                      id="doctor-email"
+                      type="email"
+                      className={`admin-input admin-input-with-icon ${
+                        profileErrors.email ? 'admin-input-error' : ''
+                      }`}
+                      value={formData.email}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, email: e.target.value }))
+                      }
+                      placeholder="doctor.email@careflow.com"
+                      required
+                    />
+                  </div>
+                  {profileErrors.email && (
+                    <span className="admin-form-error">{profileErrors.email}</span>
+                  )}
+                </div>
+
+                <div className="admin-form-group">
+                  <label className="admin-form-label" htmlFor="doctor-phone">
+                    Phone Number
+                  </label>
+                  <div className="admin-input-icon-wrapper">
+                    <Phone size={16} className="admin-input-icon" />
+                    <input
+                      id="doctor-phone"
+                      type="tel"
+                      className="admin-input admin-input-with-icon"
+                      value={formData.phone}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, phone: e.target.value }))
+                      }
+                      placeholder="+91 98765 43210"
+                    />
+                  </div>
+                </div>
+
+                <div className="admin-modal-footer" style={{ padding: '1rem 0 0', marginTop: '1rem' }}>
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn-secondary"
+                    onClick={onClose}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="admin-btn admin-btn-primary"
+                    disabled={isSavingProfile}
+                  >
+                    {isSavingProfile ? (
+                      <>
+                        <Loader2 size={16} className="spinner-icon" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <span>Save Changes</span>
+                    )}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handlePasswordSubmit} noValidate>
+                {passwordSuccessMsg && (
+                  <div className="admin-alert admin-alert-success" role="alert">
+                    <CheckCircle2 size={16} />
+                    <span>{passwordSuccessMsg}</span>
+                  </div>
+                )}
+
+                {passwordErrors.general && (
+                  <div className="admin-alert admin-alert-danger" role="alert">
+                    <AlertCircle size={16} />
+                    <span>{passwordErrors.general}</span>
+                  </div>
+                )}
+
+                <div className="admin-form-group">
+                  <label className="admin-form-label" htmlFor="doctor-current-pwd">
+                    Current Password
+                  </label>
+                  <div className="admin-input-icon-wrapper" style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '100%' }}>
+                    <input
+                      id="doctor-current-pwd"
+                      type={showCurrentPassword ? 'text' : 'password'}
+                      className={`admin-input ${
+                        passwordErrors.current_password ? 'admin-input-error' : ''
+                      }`}
+                      style={{ paddingRight: '2.75rem' }}
+                      value={passwordData.current_password}
+                      onChange={(e) =>
+                        setPasswordData((prev) => ({
+                          ...prev,
+                          current_password: e.target.value,
+                        }))
+                      }
+                      placeholder="Enter current password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle-btn"
+                      style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)' }}
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      aria-label={showCurrentPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                  {passwordErrors.current_password && (
+                    <span className="admin-form-error">{passwordErrors.current_password}</span>
+                  )}
+                </div>
+
+                <div className="admin-form-group">
+                  <label className="admin-form-label" htmlFor="doctor-new-pwd">
+                    New Password
+                  </label>
+                  <div className="admin-input-icon-wrapper" style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '100%' }}>
+                    <input
+                      id="doctor-new-pwd"
+                      type={showNewPassword ? 'text' : 'password'}
+                      className={`admin-input ${
+                        passwordErrors.new_password ? 'admin-input-error' : ''
+                      }`}
+                      style={{ paddingRight: '2.75rem' }}
+                      value={passwordData.new_password}
+                      onChange={(e) =>
+                        setPasswordData((prev) => ({
+                          ...prev,
+                          new_password: e.target.value,
+                        }))
+                      }
+                      placeholder="Enter new strong password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle-btn"
+                      style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)' }}
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      aria-label={showNewPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                  {passwordErrors.new_password && (
+                    <span className="admin-form-error">{passwordErrors.new_password}</span>
+                  )}
+                </div>
+
+                <div className="admin-form-group">
+                  <label className="admin-form-label" htmlFor="doctor-confirm-pwd">
+                    Confirm New Password
+                  </label>
+                  <div className="admin-input-icon-wrapper" style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '100%' }}>
+                    <input
+                      id="doctor-confirm-pwd"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      className={`admin-input ${
+                        passwordErrors.confirm_password ? 'admin-input-error' : ''
+                      }`}
+                      style={{ paddingRight: '2.75rem' }}
+                      value={passwordData.confirm_password}
+                      onChange={(e) =>
+                        setPasswordData((prev) => ({
+                          ...prev,
+                          confirm_password: e.target.value,
+                        }))
+                      }
+                      placeholder="Re-enter new password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle-btn"
+                      style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)' }}
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                  {passwordErrors.confirm_password && (
+                    <span className="admin-form-error">{passwordErrors.confirm_password}</span>
+                  )}
+                </div>
+
+                <div className="admin-modal-footer" style={{ padding: '1rem 0 0', marginTop: '1rem' }}>
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn-secondary"
+                    onClick={onClose}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="admin-btn admin-btn-primary"
+                    disabled={isChangingPassword}
+                  >
+                    {isChangingPassword ? (
+                      <>
+                        <Loader2 size={16} className="spinner-icon" />
+                        <span>Updating Password...</span>
+                      </>
+                    ) : (
+                      <span>Update Password</span>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      </div>
+    </ModalPortal>
+  );
+};
+
+export default DoctorProfileModal;

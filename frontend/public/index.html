@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="%PUBLIC_URL%/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0d9488" />
+    <meta
+      name="description"
+      content="CareFlow-HMS — Next-generation Hospital Management System with intelligent clinical workflows, real-time vital tracking, and secure medical records."
+    />
+    <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <title>CareFlow-HMS — Hospital Management System</title>
+    <!-- Instant Global Theme Initialization (prevents flash on reload) -->
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('careflow_landing_theme') || localStorage.getItem('careflow_theme');
+          if (saved === 'white' || saved === 'black') {
+            document.documentElement.setAttribute('data-theme', saved);
+          } else {
+            document.documentElement.setAttribute('data-theme', 'default');
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run CareFlow-HMS.</noscript>
+    <div id="root"></div>
+  </body>
+</html>
