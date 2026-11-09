@@ -1,4 +1,4 @@
-﻿asgiref==3.12.1
+asgiref==3.12.1
 attrs==26.1.0
 Django==6.1.2
 django-cors-headers==4.9.0
@@ -19,3 +19,7 @@ rpds-py==2026.9.1
 sqlparse==0.6.0
 tzdata==2026.5
 uritemplate==4.2.0
+dj-database-url>=2.1.0
+gunicorn>=21.2.0
+whitenoise>=6.6.0
+
