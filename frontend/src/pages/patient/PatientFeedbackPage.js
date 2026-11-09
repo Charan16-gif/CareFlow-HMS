@@ -45,7 +45,7 @@ const PatientFeedbackPage = () => {
 
   // Pagination for history
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(5);
 
   // Review Form Modal State
   const [selectedAppointment, setSelectedAppointment] = useState(null);

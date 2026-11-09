@@ -197,7 +197,7 @@ const PharmacistBuyingPaymentPage = () => {
   }, [medicines, shopSearch, shopDosageFilter]);
 
   const [shopPage, setShopPage] = useState(1);
-  const [shopPageSize, setShopPageSize] = useState(10);
+  const [shopPageSize, setShopPageSize] = useState(5);
 
   useEffect(() => {
     setShopPage(1);
@@ -264,7 +264,7 @@ const PharmacistBuyingPaymentPage = () => {
   }, [prescriptions, medicines, rxSearch]);
 
   const [rxPage, setRxPage] = useState(1);
-  const [rxPageSize, setRxPageSize] = useState(10);
+  const [rxPageSize, setRxPageSize] = useState(5);
 
   useEffect(() => {
     setRxPage(1);
@@ -289,7 +289,7 @@ const PharmacistBuyingPaymentPage = () => {
   }, [payments, historySearch]);
 
   const [historyPage, setHistoryPage] = useState(1);
-  const [historyPageSize, setHistoryPageSize] = useState(10);
+  const [historyPageSize, setHistoryPageSize] = useState(5);
 
   useEffect(() => {
     setHistoryPage(1);
@@ -904,7 +904,6 @@ const PharmacistBuyingPaymentPage = () => {
                 totalPages={Math.ceil(filteredShopMedicines.length / shopPageSize)}
                 totalCount={filteredShopMedicines.length}
                 pageSize={shopPageSize}
-                pageSizeOptions={[10, 25, 50, 100]}
                 onPageChange={(page) => setShopPage(page)}
                 onPageSizeChange={(size) => {
                   setShopPageSize(size);
@@ -1119,7 +1118,6 @@ const PharmacistBuyingPaymentPage = () => {
                 totalPages={Math.ceil(prescribedLines.length / rxPageSize)}
                 totalCount={prescribedLines.length}
                 pageSize={rxPageSize}
-                pageSizeOptions={[10, 25, 50, 100]}
                 onPageChange={(p) => setRxPage(p)}
                 onPageSizeChange={(s) => {
                   setRxPageSize(s);
@@ -1607,7 +1605,6 @@ const PharmacistBuyingPaymentPage = () => {
                 totalPages={Math.ceil(filteredPayments.length / historyPageSize)}
                 totalCount={filteredPayments.length}
                 pageSize={historyPageSize}
-                pageSizeOptions={[10, 25, 50, 100]}
                 onPageChange={(p) => setHistoryPage(p)}
                 onPageSizeChange={(s) => {
                   setHistoryPageSize(s);

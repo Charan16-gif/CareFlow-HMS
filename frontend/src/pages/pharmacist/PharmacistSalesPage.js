@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import pharmacistService from '../../services/pharmacistService';
 import ModalPortal from '../../components/common/ModalPortal';
+import Pagination from '../../components/common/Pagination';
 import {
   Receipt,
   Plus,
@@ -172,6 +173,19 @@ const PharmacistSalesPage = () => {
       return true;
     });
   }, [payments, methodFilter, statusFilter, searchQuery]);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, methodFilter, statusFilter]);
+
+  const paginatedPayments = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredPayments.slice(start, start + pageSize);
+  }, [filteredPayments, currentPage, pageSize]);
 
   const salesStats = useMemo(() => {
     let totalRevenue = 0;
@@ -388,7 +402,7 @@ const PharmacistSalesPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredPayments.map((pay) => (
+                  {paginatedPayments.map((pay) => (
                     <tr key={pay.id}>
                       <td>
                         <strong style={{ fontFamily: 'monospace', color: '#10b981' }}>
@@ -444,6 +458,17 @@ const PharmacistSalesPage = () => {
               </table>
             </div>
           )}
+
+          <Pagination
+            currentPage={currentPage}
+            totalCount={filteredPayments.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(sz) => {
+              setPageSize(sz);
+              setCurrentPage(1);
+            }}
+          />
         </div>
       </section>
 

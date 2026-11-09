@@ -13,6 +13,7 @@ import {
   X,
 } from 'lucide-react';
 import { toast } from '../../context/ToastContext';
+import Pagination from '../../components/common/Pagination';
 
 const PharmacistDispensePage = () => {
   const location = useLocation();
@@ -120,6 +121,19 @@ const PharmacistDispensePage = () => {
       return true;
     });
   }, [prescriptions, statusFilter, searchQuery]);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
+
+  const paginatedPrescriptions = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredPrescriptions.slice(start, start + pageSize);
+  }, [filteredPrescriptions, currentPage, pageSize]);
 
   // Calculate items summary for dispensing
   const itemsSummary = useMemo(() => {
@@ -340,7 +354,7 @@ const PharmacistDispensePage = () => {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {filteredPrescriptions.map((rx) => {
+                {paginatedPrescriptions.map((rx) => {
                   const isSelected = selectedRx?.id === rx.id;
                   const isFullyDispensed = rx.status === 'DISPENSED';
 
@@ -393,6 +407,17 @@ const PharmacistDispensePage = () => {
               </div>
             )}
           </div>
+
+          <Pagination
+            currentPage={currentPage}
+            totalCount={filteredPrescriptions.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(sz) => {
+              setPageSize(sz);
+              setCurrentPage(1);
+            }}
+          />
         </section>
 
         {/* Right Column: Active Dispensing Workspace */}

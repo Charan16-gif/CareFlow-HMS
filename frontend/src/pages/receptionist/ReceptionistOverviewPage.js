@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import receptionistService from '../../services/receptionistService';
 import ModalPortal from '../../components/common/ModalPortal';
+import Pagination from '../../components/common/Pagination';
 import {
   Calendar,
   Clock,
@@ -115,6 +116,19 @@ const ReceptionistOverviewPage = () => {
     }
     return apt.status === statusFilter;
   });
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
+
+  const paginatedAppointments = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredAppointments.slice(start, start + pageSize);
+  }, [filteredAppointments, currentPage, pageSize]);
 
   const getStatusBadge = (status, isCheckedIn) => {
     let badgeClass = 'admin-badge-requested';
@@ -441,7 +455,8 @@ const ReceptionistOverviewPage = () => {
           </button>
         </div>
       ) : (
-        <div className="admin-table-container">
+        <>
+          <div className="admin-table-container">
           <table className="admin-table">
             <thead>
               <tr>
@@ -456,7 +471,7 @@ const ReceptionistOverviewPage = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredAppointments.map((apt) => {
+              {paginatedAppointments.map((apt) => {
                 const canCheckIn =
                   !apt.is_checked_in &&
                   apt.status !== 'CANCELLED' &&
@@ -575,6 +590,19 @@ const ReceptionistOverviewPage = () => {
             </tbody>
           </table>
         </div>
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(filteredAppointments.length / pageSize)}
+            totalCount={filteredAppointments.length}
+            pageSize={pageSize}
+            onPageChange={(page) => setCurrentPage(page)}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setCurrentPage(1);
+            }}
+          />
+        </>
       )}
 
       {/* ─────────────────────────────────────────────────────────────

@@ -20,7 +20,7 @@ const AdminTabletsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusTab, setStatusTab] = useState('active'); // 'active' | 'all' | 'deactivated'
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(5);
 
   // Reset to first page when search or tab changes
   useEffect(() => {
@@ -104,7 +104,7 @@ const AdminTabletsPage = () => {
       </div>
 
       {/* Tabs */}
-      <div className="admin-tabs-row" style={{ marginBottom: '1.25rem' }}>
+      <div className="admin-tabs-row">
         <button
           type="button"
           className={`admin-tab-btn ${statusTab === 'active' ? 'admin-tab-btn-active' : ''}`}
@@ -151,6 +151,20 @@ const AdminTabletsPage = () => {
               if (e.key === 'Enter') fetchMedicines(searchQuery, statusTab);
             }}
           />
+          {searchQuery && (
+            <button
+              type="button"
+              className="admin-search-clear-btn"
+              onClick={() => {
+                setSearchQuery('');
+                fetchMedicines('', statusTab);
+              }}
+              title="Clear search"
+              aria-label="Clear search"
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
         <div className="admin-table-record-count">
           Showing {medicines.length} records

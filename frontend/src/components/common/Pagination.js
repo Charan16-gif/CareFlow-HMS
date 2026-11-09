@@ -10,15 +10,23 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 const Pagination = ({
   currentPage = 1,
   totalCount = 0,
-  pageSize = 10,
+  pageSize = 5,
   onPageChange,
   onPageSizeChange,
-  pageSizeOptions = [10, 25, 50, 100],
+  pageSizeOptions = [5, 10, 25, 50, 100],
   disabled = false,
 }) => {
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
-  if (totalCount === 0) {
+  // Automatically adjust to the last valid page if records deletion leaves the user on an empty page
+  React.useEffect(() => {
+    if (currentPage > totalPages && totalPages >= 1 && onPageChange) {
+      onPageChange(totalPages);
+    }
+  }, [currentPage, totalPages, onPageChange]);
+
+  // If 5 or fewer records in total, completely hide pagination & per-page dropdown
+  if (totalCount <= 5) {
     return null;
   }
 
@@ -78,7 +86,7 @@ const Pagination = ({
           <strong className="careflow-pagination-bold">{totalCount}</strong> records
         </span>
 
-        {onPageSizeChange && (
+        {onPageSizeChange && totalCount > 5 && (
           <div className="careflow-pagination-pagesize">
             <label htmlFor="careflow-page-size-select" className="careflow-pagination-label">
               Per page:
@@ -88,7 +96,11 @@ const Pagination = ({
               className="careflow-page-size-select"
               value={pageSize}
               disabled={disabled}
-              onChange={(e) => onPageSizeChange(Number(e.target.value))}
+              onChange={(e) => {
+                const newSize = Number(e.target.value);
+                if (onPageSizeChange) onPageSizeChange(newSize);
+                if (onPageChange) onPageChange(1);
+              }}
               aria-label="Select number of records per page"
             >
               {pageSizeOptions.map((opt) => (
@@ -101,13 +113,14 @@ const Pagination = ({
         )}
       </div>
 
-      {/* Page Navigation Buttons */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.35rem',
-        }}
+      {/* Page Navigation Buttons - only when totalPages > 1 */}
+      {totalPages > 1 && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+          }}
       >
         {/* Previous Button */}
         <button
@@ -199,6 +212,7 @@ const Pagination = ({
           <ChevronRight size={16} />
         </button>
       </div>
+      )}
     </nav>
   );
 };

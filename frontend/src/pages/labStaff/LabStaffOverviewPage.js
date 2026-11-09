@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import labStaffService from '../../services/labStaffService';
 import ModalPortal from '../../components/common/ModalPortal';
@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { toast } from '../../context/ToastContext';
 import DocumentViewerModal, { downloadReportFile } from '../../components/common/DocumentViewerModal';
+import Pagination from '../../components/common/Pagination';
 
 const LabStaffOverviewPage = () => {
   const navigate = useNavigate();
@@ -174,6 +175,19 @@ const LabStaffOverviewPage = () => {
     }
     return true;
   });
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, searchQuery]);
+
+  const paginatedOrders = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredOrders.slice(start, start + pageSize);
+  }, [filteredOrders, currentPage, pageSize]);
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -465,6 +479,7 @@ const LabStaffOverviewPage = () => {
           </p>
         </div>
       ) : (
+        <>
         <div className="admin-table-container">
           <table className="admin-table">
             <thead>
@@ -480,7 +495,7 @@ const LabStaffOverviewPage = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredOrders.map((order) => {
+              {paginatedOrders.map((order) => {
                 const hasReport = Boolean(order.report_file);
                 const hasPendingCancel = order.cancellation_requested && order.cancellation_status === 'REQUESTED';
 
@@ -662,6 +677,17 @@ const LabStaffOverviewPage = () => {
             </tbody>
           </table>
         </div>
+        <Pagination
+          currentPage={currentPage}
+          totalCount={filteredOrders.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(sz) => {
+            setPageSize(sz);
+            setCurrentPage(1);
+          }}
+        />
+        </>
       )}
 
       {/* ─────────────────────────────────────────────────────────────

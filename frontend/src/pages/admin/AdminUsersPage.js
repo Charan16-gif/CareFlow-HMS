@@ -85,7 +85,11 @@ const AdminUsersPage = () => {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(5);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   const paginatedUsers = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
@@ -860,7 +864,6 @@ const AdminUsersPage = () => {
               setPageSize(sz);
               setCurrentPage(1);
             }}
-            pageSizeOptions={[10, 20, 50]}
           />
         </div>
       )}

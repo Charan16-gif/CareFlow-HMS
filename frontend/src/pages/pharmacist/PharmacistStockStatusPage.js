@@ -18,6 +18,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { toast } from '../../context/ToastContext';
+import Pagination from '../../components/common/Pagination';
 
 const PharmacistStockStatusPage = () => {
   const location = useLocation();
@@ -154,6 +155,19 @@ const PharmacistStockStatusPage = () => {
       return true;
     });
   }, [medicines, activeCategory, searchQuery]);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, activeCategory]);
+
+  const paginatedList = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredList.slice(start, start + pageSize);
+  }, [filteredList, currentPage, pageSize]);
 
   // Handle Restock Submit
   const handleRestockSubmit = async (e) => {
@@ -466,7 +480,7 @@ const PharmacistStockStatusPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredList.map((med) => {
+                  {paginatedList.map((med) => {
                     const qty = parseInt(med.stock_quantity, 10) || 0;
                     const reorder = parseInt(med.reorder_level, 10) || 10;
                     const isOut = qty === 0;
@@ -576,6 +590,17 @@ const PharmacistStockStatusPage = () => {
               </table>
             </div>
           )}
+
+          <Pagination
+            currentPage={currentPage}
+            totalCount={filteredList.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(sz) => {
+              setPageSize(sz);
+              setCurrentPage(1);
+            }}
+          />
         </div>
       </section>
 

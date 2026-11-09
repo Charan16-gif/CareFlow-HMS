@@ -13,6 +13,7 @@ import {
   Filter,
 } from 'lucide-react';
 import { toast } from '../../context/ToastContext';
+import Pagination from '../../components/common/Pagination';
 
 const ReceptionistDoctorSchedulePage = () => {
   const [doctors, setDoctors] = useState([]);
@@ -146,6 +147,19 @@ const ReceptionistDoctorSchedulePage = () => {
       return true;
     });
   }, [doctors, selectedDepartment, searchQuery]);
+
+  // Pagination for doctors list
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedDepartment]);
+
+  const paginatedDoctors = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredDoctors.slice(start, start + pageSize);
+  }, [filteredDoctors, currentPage, pageSize]);
 
   // Filtered patients for dropdown
   const filteredPatients = useMemo(() => {
@@ -288,7 +302,7 @@ const ReceptionistDoctorSchedulePage = () => {
               <p>No doctors match the selected search or department.</p>
             </div>
           ) : (
-            filteredDoctors.map((doc) => {
+            paginatedDoctors.map((doc) => {
               const isSelected = selectedDoctor?.id === doc.id;
               return (
                 <div
@@ -341,6 +355,18 @@ const ReceptionistDoctorSchedulePage = () => {
               );
             })
           )}
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(filteredDoctors.length / pageSize)}
+            totalCount={filteredDoctors.length}
+            pageSize={pageSize}
+            onPageChange={(page) => setCurrentPage(page)}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setCurrentPage(1);
+            }}
+          />
         </div>
 
         {/* Right: Real-time Slot Availability Inspector */}

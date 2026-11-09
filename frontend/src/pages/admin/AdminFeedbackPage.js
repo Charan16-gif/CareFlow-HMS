@@ -25,7 +25,11 @@ const AdminFeedbackPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [ratingFilter, setRatingFilter] = useState('ALL');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(5);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, ratingFilter]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -153,15 +157,8 @@ const AdminFeedbackPage = () => {
           {activeTab === 'analytics' && analytics && (
             <div>
               {/* Stat Metric Cards */}
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
-                  gap: '1.25rem',
-                  marginBottom: '1.5rem',
-                }}
-              >
-                <div className="admin-card" style={{ padding: '1.25rem' }}>
+              <div className="admin-feedback-stats-grid">
+                <div className="admin-card admin-feedback-stat-card" style={{ padding: '1.25rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                     <span style={{ fontSize: '0.82rem', color: 'var(--admin-text-muted)', fontWeight: 600 }}>
                       TOTAL REVIEWS
@@ -178,7 +175,7 @@ const AdminFeedbackPage = () => {
                   </div>
                 </div>
 
-                <div className="admin-card" style={{ padding: '1.25rem' }}>
+                <div className="admin-card admin-feedback-stat-card" style={{ padding: '1.25rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                     <span style={{ fontSize: '0.82rem', color: 'var(--admin-text-muted)', fontWeight: 600 }}>
                       HOSPITAL AVG RATING
@@ -198,12 +195,12 @@ const AdminFeedbackPage = () => {
                   </div>
                 </div>
 
-                <div className="admin-card" style={{ padding: '1.25rem' }}>
+                <div className="admin-card admin-feedback-stat-card" style={{ padding: '1.25rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                     <span style={{ fontSize: '0.82rem', color: 'var(--admin-text-muted)', fontWeight: 600 }}>
                       OVERALL SATISFACTION
                     </span>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(168, 85, 247, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a855f7' }}>
                       <TrendingUp size={16} />
                     </div>
                   </div>
@@ -215,7 +212,7 @@ const AdminFeedbackPage = () => {
                   </div>
                 </div>
 
-                <div className="admin-card" style={{ padding: '1.25rem' }}>
+                <div className="admin-card admin-feedback-stat-card" style={{ padding: '1.25rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                     <span style={{ fontSize: '0.82rem', color: 'var(--admin-text-muted)', fontWeight: 600 }}>
                       REVIEW SENTIMENT
@@ -224,10 +221,10 @@ const AdminFeedbackPage = () => {
                       <ThumbsUp size={16} />
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', marginTop: '0.2rem' }}>
-                    <span className="admin-badge admin-badge-success">{analytics.positive_count} Positive</span>
-                    <span className="admin-badge admin-badge-warning">{analytics.neutral_count} Neutral</span>
-                    <span className="admin-badge admin-badge-danger">{analytics.negative_count} Low</span>
+                  <div style={{ display: 'flex', gap: '0.45rem', alignItems: 'center', flexWrap: 'wrap', marginTop: 'auto' }}>
+                    <span className="admin-badge admin-badge-success" style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>{analytics.positive_count} Positive</span>
+                    <span className="admin-badge admin-badge-warning" style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>{analytics.neutral_count} Neutral</span>
+                    <span className="admin-badge admin-badge-danger" style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>{analytics.negative_count} Low</span>
                   </div>
                 </div>
               </div>

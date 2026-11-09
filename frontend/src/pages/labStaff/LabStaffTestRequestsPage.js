@@ -31,7 +31,7 @@ const LabStaffTestRequestsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('ALL'); // ALL | PENDING_ACTION | IN_PROGRESS | COMPLETED | CANCELLATION_REQUESTS
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(5);
 
   // Reset page when tab or search changes
   useEffect(() => {

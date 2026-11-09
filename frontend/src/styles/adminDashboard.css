@@ -773,6 +773,34 @@
   gap: 1.35rem;
 }
 
+/* Feedback Stats Metric Grid - ensures all blocks are identically sized */
+.admin-feedback-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.admin-feedback-stat-card {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  min-height: 135px;
+  height: 100%;
+}
+
+@media (max-width: 1024px) {
+  .admin-feedback-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 576px) {
+  .admin-feedback-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .admin-summary-card,
 .admin-stat-card {
   background: var(--admin-card-bg);
@@ -1584,15 +1612,33 @@
 /* ==========================================================================
    Modals (Frosted Glass Surfaces & Full-Screen Isolation)
    ========================================================================== */
+html.modal-active-freeze,
 body.modal-active-freeze {
   overflow: hidden !important;
+  overscroll-behavior: none !important;
+  height: 100% !important;
 }
 
+html.modal-active-freeze #root,
 body.modal-active-freeze #root {
+  overflow: hidden !important;
   pointer-events: none !important;
   user-select: none !important;
   filter: blur(1.5px);
   transition: filter 0.2s ease;
+  overscroll-behavior: none !important;
+  touch-action: none !important;
+}
+
+body.modal-active-freeze .admin-app-container,
+body.modal-active-freeze .admin-main-wrapper,
+body.modal-active-freeze .admin-content,
+body.modal-active-freeze .dash-layout,
+body.modal-active-freeze .dash-main-area,
+body.modal-active-freeze .admin-overview-container {
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+  pointer-events: none !important;
 }
 
 .careflow-modal-portal-root {
@@ -1605,6 +1651,22 @@ body.modal-active-freeze #root {
   display: flex;
   align-items: center;
   justify-content: center;
+  overscroll-behavior: contain !important;
+}
+
+.admin-modal-backdrop,
+.dash-modal-overlay {
+  overscroll-behavior: contain !important;
+}
+
+.admin-modal-container,
+.admin-modal-card,
+.dash-modal-content,
+.admin-modal-body,
+.dash-modal-body,
+.receipt-modal-body,
+.doc-viewer-modal-body {
+  overscroll-behavior: contain !important;
 }
 
 .admin-modal-backdrop {
@@ -1832,6 +1894,19 @@ body.modal-active-freeze #root {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
+}
+
+.admin-form-demographics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.admin-form-emergency-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.75rem;
 }
 
 .admin-form-group {
@@ -2541,6 +2616,127 @@ input[type="date"].admin-form-input {
   .admin-stock-summary-grid {
     grid-template-columns: 1fr;
   }
+
+  /* Admin Search Bar & Table Controls - Mobile & Tablet Alignment & Space Removal */
+  .admin-page-container {
+    gap: 0.75rem !important;
+  }
+
+  .admin-tabs-row {
+    margin-top: 0 !important;
+    margin-bottom: 0.4rem !important;
+    padding-bottom: 0.2rem !important;
+    gap: 0.35rem !important;
+  }
+
+  .admin-table-controls {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.4rem !important;
+    margin-top: 0 !important;
+    margin-bottom: 0.4rem !important;
+  }
+
+  .admin-search-box,
+  .admin-search-wrapper {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    flex: 0 0 auto !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    max-height: 42px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-search-input {
+    height: 42px !important;
+    line-height: 42px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 10px !important;
+    font-size: 0.875rem !important;
+    padding: 0 2.25rem 0 2.6rem !important;
+    text-overflow: ellipsis !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  }
+
+  .admin-search-icon {
+    position: absolute !important;
+    left: 0.9rem !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    z-index: 2 !important;
+    pointer-events: none !important;
+  }
+
+  .admin-search-clear,
+  .admin-search-clear-btn {
+    position: absolute !important;
+    right: 0.65rem !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    z-index: 2 !important;
+  }
+
+  .admin-search-toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.45rem !important;
+    padding: 0.65rem 0.85rem !important;
+  }
+
+  .admin-table-record-count {
+    margin-top: 0.1rem !important;
+    margin-bottom: 0 !important;
+    font-size: 0.8rem !important;
+    color: var(--admin-text-muted) !important;
+    font-weight: 500 !important;
+  }
+
+  /* Responsive Demographics & Emergency Grids in Intake Modals */
+  .admin-form-demographics-grid,
+  .admin-form-emergency-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.75rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  .admin-form-demographics-grid > .admin-form-group:first-child,
+  .admin-form-emergency-grid > div:first-child {
+    grid-column: 1 / -1 !important;
+  }
+
+  /* Polish Theme-Specific Search Bar Styling on Mobile & Tablet */
+  [data-theme="white"] .admin-search-input {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+    color: #0f172a !important;
+  }
+
+  [data-theme="white"] .admin-search-input:focus {
+    border-color: #0284c7 !important;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.16) !important;
+    background: #ffffff !important;
+  }
+
+  [data-theme="white"] .admin-search-input::placeholder {
+    color: #94a3b8 !important;
+  }
+
+  [data-theme="white"] .admin-search-icon {
+    color: #64748b !important;
+  }
 }
 
 @media (max-width: 768px) {
@@ -2571,21 +2767,31 @@ input[type="date"].admin-form-input {
   }
 
   .admin-table-controls {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.4rem !important;
+    margin-top: 0 !important;
+    margin-bottom: 0.4rem !important;
   }
 
+  .admin-search-box,
   .admin-search-wrapper {
-    max-width: 100%;
-    width: 100%;
-    min-width: 0;
+    flex: 0 0 auto !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    max-height: 42px !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   .admin-search-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.45rem !important;
+    padding: 0.65rem 0.85rem !important;
   }
 
   .admin-toolbar-filter-group {
@@ -2623,6 +2829,17 @@ input[type="date"].admin-form-input {
   .admin-modal-body,
   .admin-modal-footer {
     padding: 1rem 1rem !important;
+  }
+
+  .admin-form-demographics-grid,
+  .admin-form-emergency-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  .admin-form-demographics-grid > .admin-form-group:first-child,
+  .admin-form-emergency-grid > div:first-child {
+    grid-column: auto !important;
   }
 
   .admin-modal-footer {

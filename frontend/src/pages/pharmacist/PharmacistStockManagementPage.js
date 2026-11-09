@@ -16,6 +16,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { toast } from '../../context/ToastContext';
+import Pagination from '../../components/common/Pagination';
 
 const MOVEMENT_TYPES = [
   { value: 'PURCHASE_IN', label: 'Purchase In (Receive Stock)', icon: ArrowDownRight, color: '#10b981' },
@@ -194,6 +195,19 @@ const PharmacistStockManagementPage = () => {
       return true;
     });
   }, [movements, ledgerTypeFilter, ledgerSearch]);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [ledgerSearch, ledgerTypeFilter]);
+
+  const paginatedMovements = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredMovements.slice(start, start + pageSize);
+  }, [filteredMovements, currentPage, pageSize]);
 
   return (
     <div className="admin-page-container">
@@ -526,7 +540,7 @@ const PharmacistStockManagementPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredMovements.map((mov) => {
+                  {paginatedMovements.map((mov) => {
                     const isPositive = ['PURCHASE_IN', 'ADJUSTMENT_IN', 'RETURN_IN'].includes(
                       mov.movement_type
                     );
@@ -587,6 +601,17 @@ const PharmacistStockManagementPage = () => {
               </table>
             </div>
           )}
+
+          <Pagination
+            currentPage={currentPage}
+            totalCount={filteredMovements.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(sz) => {
+              setPageSize(sz);
+              setCurrentPage(1);
+            }}
+          />
         </div>
       </section>
     </div>

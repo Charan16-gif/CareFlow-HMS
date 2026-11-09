@@ -15,6 +15,7 @@ import {
   Receipt,
 } from 'lucide-react';
 import { toast } from '../../context/ToastContext';
+import Pagination from '../../components/common/Pagination';
 
 const ReceptionistCheckInPage = () => {
   const navigate = useNavigate();
@@ -150,6 +151,19 @@ const ReceptionistCheckInPage = () => {
       return true;
     });
   }, [appointments, activeTab, searchQuery]);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, searchQuery]);
+
+  const paginatedAppointments = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return displayedAppointments.slice(start, start + pageSize);
+  }, [displayedAppointments, currentPage, pageSize]);
 
   // Format elapsed wait time
   const getElapsedWaitTime = (checkInTimeStr) => {
@@ -347,7 +361,8 @@ const ReceptionistCheckInPage = () => {
             </p>
           </div>
         ) : (
-          <div className="dash-table-wrapper" style={{ overflowX: 'auto' }}>
+          <>
+            <div className="dash-table-wrapper" style={{ overflowX: 'auto' }}>
             <table className="dash-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
@@ -361,7 +376,7 @@ const ReceptionistCheckInPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {displayedAppointments.map((app) => {
+                {paginatedAppointments.map((app) => {
                   const patName =
                     app.patient_name ||
                     (app.patient_details
@@ -490,6 +505,19 @@ const ReceptionistCheckInPage = () => {
               </tbody>
             </table>
           </div>
+
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(displayedAppointments.length / pageSize)}
+              totalCount={displayedAppointments.length}
+              pageSize={pageSize}
+              onPageChange={(page) => setCurrentPage(page)}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setCurrentPage(1);
+              }}
+            />
+          </>
         )}
       </div>
     </div>

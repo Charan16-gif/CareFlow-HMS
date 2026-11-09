@@ -42,7 +42,11 @@ const DoctorMedicalQueriesPage = () => {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(5);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter]);
 
   // Response Modal State
   const [activeQuery, setActiveQuery] = useState(null);

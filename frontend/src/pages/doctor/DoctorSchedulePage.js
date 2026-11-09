@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import doctorService from '../../services/doctorService';
+import Pagination from '../../components/common/Pagination';
 import {
   Clock,
   Calendar,
@@ -60,6 +61,19 @@ const DoctorSchedulePage = () => {
       return true;
     });
   }, [schedule, filterType, searchQuery]);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterType, searchQuery]);
+
+  const paginatedSchedule = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredSchedule.slice(start, start + pageSize);
+  }, [filteredSchedule, currentPage, pageSize]);
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -273,6 +287,7 @@ const DoctorSchedulePage = () => {
 
       {/* Data Table */}
       {!loading && !error && filteredSchedule.length > 0 && (
+        <>
         <div className="admin-table-container">
           <table className="admin-table" aria-label="Doctor schedule timetable">
             <thead>
@@ -286,7 +301,7 @@ const DoctorSchedulePage = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredSchedule.map((apt) => (
+              {paginatedSchedule.map((apt) => (
                 <tr
                   key={apt.id}
                   style={{
@@ -343,6 +358,17 @@ const DoctorSchedulePage = () => {
             </tbody>
           </table>
         </div>
+        <Pagination
+          currentPage={currentPage}
+          totalCount={filteredSchedule.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(sz) => {
+            setPageSize(sz);
+            setCurrentPage(1);
+          }}
+        />
+        </>
       )}
     </div>
   );

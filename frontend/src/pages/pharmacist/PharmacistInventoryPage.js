@@ -52,7 +52,7 @@ const PharmacistInventoryPage = () => {
   const [stockFilter, setStockFilter] = useState('ALL'); // ALL | HIGH | NORMAL | LOW | OUT | NEAR_EXPIRY | EXPIRED
   const [dosageFilter, setDosageFilter] = useState('ALL');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(5);
 
   // Reset page when filter or search changes
   useEffect(() => {
@@ -735,7 +735,6 @@ const PharmacistInventoryPage = () => {
               totalPages={Math.ceil(filteredMedicines.length / pageSize)}
               totalCount={filteredMedicines.length}
               pageSize={pageSize}
-              pageSizeOptions={[10, 25, 50, 100]}
               onPageChange={(page) => setCurrentPage(page)}
               onPageSizeChange={(size) => {
                 setPageSize(size);

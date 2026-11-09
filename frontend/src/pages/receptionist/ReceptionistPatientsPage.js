@@ -26,7 +26,7 @@ const ReceptionistPatientsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [genderFilter, setGenderFilter] = useState('ALL');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(5);
 
   // Reset page when filter or search changes
   useEffect(() => {
@@ -333,8 +333,8 @@ const ReceptionistPatientsPage = () => {
       )}
 
       {/* Search & Gender Filter Controls */}
-      <div className="admin-table-controls" style={{ marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-        <div className="admin-search-wrapper" style={{ flex: '1 1 320px' }}>
+      <div className="admin-table-controls">
+        <div className="admin-search-wrapper">
           <Search size={16} className="admin-search-icon" />
           <input
             type="text"
@@ -421,8 +421,8 @@ const ReceptionistPatientsPage = () => {
                     p.age !== undefined && p.age !== null
                       ? p.age
                       : p.date_of_birth
-                      ? Math.floor((new Date() - new Date(p.date_of_birth)) / (365.25 * 24 * 60 * 60 * 1000))
-                      : null;
+                        ? Math.floor((new Date() - new Date(p.date_of_birth)) / (365.25 * 24 * 60 * 60 * 1000))
+                        : null;
 
                   return (
                     <tr key={p.id}>
@@ -525,8 +525,8 @@ const ReceptionistPatientsPage = () => {
                 p.age !== undefined && p.age !== null
                   ? p.age
                   : p.date_of_birth
-                  ? Math.floor((new Date() - new Date(p.date_of_birth)) / (365.25 * 24 * 60 * 60 * 1000))
-                  : null;
+                    ? Math.floor((new Date() - new Date(p.date_of_birth)) / (365.25 * 24 * 60 * 60 * 1000))
+                    : null;
 
               return (
                 <div key={`mob-${p.id}`} className="receptionist-patient-card">
@@ -737,7 +737,7 @@ const ReceptionistPatientsPage = () => {
                 </div>
 
                 {/* Demographics Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div className="admin-form-demographics-grid">
                   <div className="admin-form-group">
                     <label className="admin-form-label">Date of Birth *</label>
                     <input
@@ -812,7 +812,7 @@ const ReceptionistPatientsPage = () => {
                   <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--admin-heading-color)', display: 'block', marginBottom: '0.75rem' }}>
                     Emergency Contact Details (Optional)
                   </span>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+                  <div className="admin-form-emergency-grid">
                     <div>
                       <label className="admin-form-label" style={{ fontSize: '0.78rem' }}>Contact Person</label>
                       <input
@@ -997,7 +997,7 @@ const ReceptionistPatientsPage = () => {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div className="admin-form-demographics-grid">
                   <div className="admin-form-group">
                     <label className="admin-form-label">Date of Birth</label>
                     <input
@@ -1058,7 +1058,7 @@ const ReceptionistPatientsPage = () => {
                   <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--admin-heading-color)', display: 'block', marginBottom: '0.75rem' }}>
                     Emergency Contact Details
                   </span>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+                  <div className="admin-form-emergency-grid">
                     <div>
                       <label className="admin-form-label" style={{ fontSize: '0.78rem' }}>Name</label>
                       <input
