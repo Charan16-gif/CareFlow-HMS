@@ -4,15 +4,317 @@ info:
   version: 1.0.0
   description: CareFlow Hospital Management System REST API documentation
 paths:
+  /api/admin/backups/:
+    get:
+      operationId: admin_backups_list
+      description: 'Admin only: View historical PostgreSQL backups'
+      summary: List database backups
+      parameters:
+      - in: query
+        name: is_automated
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - FAILED
+          - RESTORED
+          - SUCCESS
+        description: |-
+          * `SUCCESS` - Success
+          * `FAILED` - Failed
+          * `RESTORED` - Restored
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDatabaseBackupRecordList'
+          description: ''
+    post:
+      operationId: admin_backups_create
+      description: |-
+        CareFlow HMS Database Backup & Disaster Recovery Management.
+        Restricted strictly to the single Hospital Administrator.
+        Provides verified manual backup triggering, integrity audits,
+        secure file downloads, and safeguarded database restoration.
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatabaseBackupRecord'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DatabaseBackupRecord'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DatabaseBackupRecord'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseBackupRecord'
+          description: ''
+  /api/admin/backups/{id}/:
+    get:
+      operationId: admin_backups_retrieve
+      description: Admin only
+      summary: Retrieve database backup details
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Database Backup Record.
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseBackupRecord'
+          description: ''
+    put:
+      operationId: admin_backups_update
+      description: |-
+        CareFlow HMS Database Backup & Disaster Recovery Management.
+        Restricted strictly to the single Hospital Administrator.
+        Provides verified manual backup triggering, integrity audits,
+        secure file downloads, and safeguarded database restoration.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Database Backup Record.
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatabaseBackupRecord'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DatabaseBackupRecord'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DatabaseBackupRecord'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseBackupRecord'
+          description: ''
+    patch:
+      operationId: admin_backups_partial_update
+      description: |-
+        CareFlow HMS Database Backup & Disaster Recovery Management.
+        Restricted strictly to the single Hospital Administrator.
+        Provides verified manual backup triggering, integrity audits,
+        secure file downloads, and safeguarded database restoration.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Database Backup Record.
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDatabaseBackupRecord'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDatabaseBackupRecord'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDatabaseBackupRecord'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseBackupRecord'
+          description: ''
+    delete:
+      operationId: admin_backups_destroy
+      description: |-
+        CareFlow HMS Database Backup & Disaster Recovery Management.
+        Restricted strictly to the single Hospital Administrator.
+        Provides verified manual backup triggering, integrity audits,
+        secure file downloads, and safeguarded database restoration.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Database Backup Record.
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/admin/backups/{id}/download/:
+    get:
+      operationId: admin_backups_download_retrieve
+      description: 'Admin only: Stream the raw .dump backup archive securely.'
+      summary: Download database backup file
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Database Backup Record.
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: ''
+  /api/admin/backups/{id}/restore/:
+    post:
+      operationId: admin_backups_restore_create
+      description: 'Admin only: Restores database from a verified backup with mandatory
+        confirmation phrase.'
+      summary: Restore database backup
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Database Backup Record.
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatabaseRestoreRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DatabaseRestoreRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DatabaseRestoreRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+          description: ''
+  /api/admin/backups/create-backup/:
+    post:
+      operationId: admin_backups_create_backup_create
+      description: 'Admin only: Triggers an immediate full PostgreSQL database backup
+        with TOC integrity check.'
+      summary: Create database backup now
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notes:
+                  type: string
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseBackupRecord'
+          description: ''
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+          description: ''
   /api/appointments/:
     get:
       operationId: appointments_list
       description: |-
         CareFlow HMS Appointment Lifecycle.
         Enforces role-based permissions:
-        - Receptionist: Full appointment scheduling and management.
+        - Receptionist: Full appointment scheduling, reassignment (specialization-validated), and check-in.
         - Doctor: View their appointments; record clinical notes; mark completed.
-        - Patient: View their appointments; book appointments; cancel scheduled slots. Cannot modify notes or status.
+        - Patient: View their appointments; book appointments (with centralized automatic doctor assignment); cancel scheduled slots.
         - Admin: Oversight and administrative auditing.
       summary: List appointments
       parameters:
@@ -25,6 +327,10 @@ paths:
         name: doctor
         schema:
           type: integer
+      - in: query
+        name: health_problem
+        schema:
+          type: string
       - in: query
         name: is_checked_in
         schema:
@@ -57,6 +363,7 @@ paths:
           type: string
           enum:
           - CANCELLED
+          - CHECKED_OUT
           - COMPLETED
           - CONFIRMED
           - IN_PROGRESS
@@ -69,6 +376,7 @@ paths:
           * `COMPLETED` - Completed
           * `CANCELLED` - Cancelled
           * `NO_SHOW` - No Show
+          * `CHECKED_OUT` - Checked Out
       tags:
       - appointments
       security:
@@ -86,11 +394,11 @@ paths:
       description: |-
         CareFlow HMS Appointment Lifecycle.
         Enforces role-based permissions:
-        - Receptionist: Full appointment scheduling and management.
+        - Receptionist: Full appointment scheduling, reassignment (specialization-validated), and check-in.
         - Doctor: View their appointments; record clinical notes; mark completed.
-        - Patient: View their appointments; book appointments; cancel scheduled slots. Cannot modify notes or status.
+        - Patient: View their appointments; book appointments (with centralized automatic doctor assignment); cancel scheduled slots.
         - Admin: Oversight and administrative auditing.
-      summary: Schedule appointment (Receptionist or Patient)
+      summary: Schedule appointment (Receptionist or Patient with Auto-Assignment)
       tags:
       - appointments
       requestBody:
@@ -121,9 +429,9 @@ paths:
       description: |-
         CareFlow HMS Appointment Lifecycle.
         Enforces role-based permissions:
-        - Receptionist: Full appointment scheduling and management.
+        - Receptionist: Full appointment scheduling, reassignment (specialization-validated), and check-in.
         - Doctor: View their appointments; record clinical notes; mark completed.
-        - Patient: View their appointments; book appointments; cancel scheduled slots. Cannot modify notes or status.
+        - Patient: View their appointments; book appointments (with centralized automatic doctor assignment); cancel scheduled slots.
         - Admin: Oversight and administrative auditing.
       summary: Retrieve specific appointment
       parameters:
@@ -150,9 +458,9 @@ paths:
       description: |-
         CareFlow HMS Appointment Lifecycle.
         Enforces role-based permissions:
-        - Receptionist: Full appointment scheduling and management.
+        - Receptionist: Full appointment scheduling, reassignment (specialization-validated), and check-in.
         - Doctor: View their appointments; record clinical notes; mark completed.
-        - Patient: View their appointments; book appointments; cancel scheduled slots. Cannot modify notes or status.
+        - Patient: View their appointments; book appointments (with centralized automatic doctor assignment); cancel scheduled slots.
         - Admin: Oversight and administrative auditing.
       summary: Update appointment details or status
       parameters:
@@ -191,9 +499,9 @@ paths:
       description: |-
         CareFlow HMS Appointment Lifecycle.
         Enforces role-based permissions:
-        - Receptionist: Full appointment scheduling and management.
+        - Receptionist: Full appointment scheduling, reassignment (specialization-validated), and check-in.
         - Doctor: View their appointments; record clinical notes; mark completed.
-        - Patient: View their appointments; book appointments; cancel scheduled slots. Cannot modify notes or status.
+        - Patient: View their appointments; book appointments (with centralized automatic doctor assignment); cancel scheduled slots.
         - Admin: Oversight and administrative auditing.
       summary: Partial update appointment
       parameters:
@@ -231,9 +539,9 @@ paths:
       description: |-
         CareFlow HMS Appointment Lifecycle.
         Enforces role-based permissions:
-        - Receptionist: Full appointment scheduling and management.
+        - Receptionist: Full appointment scheduling, reassignment (specialization-validated), and check-in.
         - Doctor: View their appointments; record clinical notes; mark completed.
-        - Patient: View their appointments; book appointments; cancel scheduled slots. Cannot modify notes or status.
+        - Patient: View their appointments; book appointments (with centralized automatic doctor assignment); cancel scheduled slots.
         - Admin: Oversight and administrative auditing.
       summary: Cancel appointment
       parameters:
@@ -255,8 +563,12 @@ paths:
     post:
       operationId: appointments_cancel_appointment_create
       description: |-
-        Cancels appointment with confirmation and records cancellation reason.
-        Preserves appointment record instead of permanently deleting.
+        CareFlow HMS Appointment Lifecycle.
+        Enforces role-based permissions:
+        - Receptionist: Full appointment scheduling, reassignment (specialization-validated), and check-in.
+        - Doctor: View their appointments; record clinical notes; mark completed.
+        - Patient: View their appointments; book appointments (with centralized automatic doctor assignment); cancel scheduled slots.
+        - Admin: Oversight and administrative auditing.
       parameters:
       - in: path
         name: id
@@ -292,12 +604,94 @@ paths:
     post:
       operationId: appointments_check_in_create
       description: |-
-        Check in patient upon arrival at the hospital front desk.
-        Enforces:
-        - Only Receptionist or Admin can check in patients.
-        - Appointment must not be cancelled, completed, or no-show.
-        - Prevents duplicate check-in.
-        - Records exact check_in_time and transitions SCHEDULED to CONFIRMED.
+        CareFlow HMS Appointment Lifecycle.
+        Enforces role-based permissions:
+        - Receptionist: Full appointment scheduling, reassignment (specialization-validated), and check-in.
+        - Doctor: View their appointments; record clinical notes; mark completed.
+        - Patient: View their appointments; book appointments (with centralized automatic doctor assignment); cancel scheduled slots.
+        - Admin: Oversight and administrative auditing.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this appointment.
+        required: true
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+          description: ''
+  /api/appointments/{id}/check-out/:
+    post:
+      operationId: appointments_check_out_create
+      description: |-
+        CareFlow HMS Appointment Lifecycle.
+        Enforces role-based permissions:
+        - Receptionist: Full appointment scheduling, reassignment (specialization-validated), and check-in.
+        - Doctor: View their appointments; record clinical notes; mark completed.
+        - Patient: View their appointments; book appointments (with centralized automatic doctor assignment); cancel scheduled slots.
+        - Admin: Oversight and administrative auditing.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this appointment.
+        required: true
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Appointment'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+          description: ''
+  /api/appointments/{id}/complete-consultation/:
+    post:
+      operationId: appointments_complete_consultation_create
+      description: |-
+        CareFlow HMS Appointment Lifecycle.
+        Enforces role-based permissions:
+        - Receptionist: Full appointment scheduling, reassignment (specialization-validated), and check-in.
+        - Doctor: View their appointments; record clinical notes; mark completed.
+        - Patient: View their appointments; book appointments (with centralized automatic doctor assignment); cancel scheduled slots.
+        - Admin: Oversight and administrative auditing.
       parameters:
       - in: path
         name: id
@@ -332,7 +726,13 @@ paths:
   /api/appointments/{id}/undo-check-in/:
     post:
       operationId: appointments_undo_check_in_create
-      description: Reverts an accidental check-in.
+      description: |-
+        CareFlow HMS Appointment Lifecycle.
+        Enforces role-based permissions:
+        - Receptionist: Full appointment scheduling, reassignment (specialization-validated), and check-in.
+        - Doctor: View their appointments; record clinical notes; mark completed.
+        - Patient: View their appointments; book appointments (with centralized automatic doctor assignment); cancel scheduled slots.
+        - Admin: Oversight and administrative auditing.
       parameters:
       - in: path
         name: id
@@ -368,12 +768,10 @@ paths:
     get:
       operationId: appointments_available_slots_retrieve
       description: |-
-        CareFlow HMS Appointment Lifecycle.
-        Enforces role-based permissions:
-        - Receptionist: Full appointment scheduling and management.
-        - Doctor: View their appointments; record clinical notes; mark completed.
-        - Patient: View their appointments; book appointments; cancel scheduled slots. Cannot modify notes or status.
-        - Admin: Oversight and administrative auditing.
+        Calculates available 30-minute appointment slots on a given date.
+        Supports:
+        1. Automatic routing by 'health_problem' (Patient flow).
+        2. Specific doctor scheduling by 'doctor' ID (Receptionist flow).
       tags:
       - appointments
       security:
@@ -386,18 +784,629 @@ paths:
               schema:
                 $ref: '#/components/schemas/Appointment'
           description: ''
+  /api/appointments/feedback/:
+    get:
+      operationId: appointments_feedback_list
+      description: |-
+        CareFlow HMS Patient Feedback API.
+        - Patients: Submit ratings and experience feedback for eligible completed consultations; view their own feedback history.
+        - Doctors: View patient feedback strictly for their own consultations; read-only (cannot edit or delete).
+        - Admins: View feedback and access real database feedback analytics.
+      summary: List patient feedback
+      parameters:
+      - in: query
+        name: appointment
+        schema:
+          type: integer
+      - in: query
+        name: doctor
+        schema:
+          type: integer
+      - in: query
+        name: doctor_rating
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: overall_satisfaction
+        schema:
+          type: string
+          enum:
+          - NEUTRAL
+          - SATISFIED
+          - UNSATISFIED
+        description: |-
+          Overall hospital consultation satisfaction.
+
+          * `SATISFIED` - Satisfied
+          * `NEUTRAL` - Neutral
+          * `UNSATISFIED` - Unsatisfied
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - appointments
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPatientFeedbackList'
+          description: ''
+    post:
+      operationId: appointments_feedback_create
+      description: |-
+        CareFlow HMS Patient Feedback API.
+        - Patients: Submit ratings and experience feedback for eligible completed consultations; view their own feedback history.
+        - Doctors: View patient feedback strictly for their own consultations; read-only (cannot edit or delete).
+        - Admins: View feedback and access real database feedback analytics.
+      summary: Submit consultation feedback (Patient only)
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientFeedback'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatientFeedback'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatientFeedback'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientFeedback'
+          description: ''
+  /api/appointments/feedback/{id}/:
+    get:
+      operationId: appointments_feedback_retrieve
+      description: |-
+        CareFlow HMS Patient Feedback API.
+        - Patients: Submit ratings and experience feedback for eligible completed consultations; view their own feedback history.
+        - Doctors: View patient feedback strictly for their own consultations; read-only (cannot edit or delete).
+        - Admins: View feedback and access real database feedback analytics.
+      summary: Retrieve specific consultation feedback
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this patient feedback.
+        required: true
+      tags:
+      - appointments
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientFeedback'
+          description: ''
+    put:
+      operationId: appointments_feedback_update
+      description: |-
+        CareFlow HMS Patient Feedback API.
+        - Patients: Submit ratings and experience feedback for eligible completed consultations; view their own feedback history.
+        - Doctors: View patient feedback strictly for their own consultations; read-only (cannot edit or delete).
+        - Admins: View feedback and access real database feedback analytics.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this patient feedback.
+        required: true
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientFeedback'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatientFeedback'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatientFeedback'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientFeedback'
+          description: ''
+    patch:
+      operationId: appointments_feedback_partial_update
+      description: |-
+        CareFlow HMS Patient Feedback API.
+        - Patients: Submit ratings and experience feedback for eligible completed consultations; view their own feedback history.
+        - Doctors: View patient feedback strictly for their own consultations; read-only (cannot edit or delete).
+        - Admins: View feedback and access real database feedback analytics.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this patient feedback.
+        required: true
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPatientFeedback'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPatientFeedback'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPatientFeedback'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientFeedback'
+          description: ''
+    delete:
+      operationId: appointments_feedback_destroy
+      description: |-
+        CareFlow HMS Patient Feedback API.
+        - Patients: Submit ratings and experience feedback for eligible completed consultations; view their own feedback history.
+        - Doctors: View patient feedback strictly for their own consultations; read-only (cannot edit or delete).
+        - Admins: View feedback and access real database feedback analytics.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this patient feedback.
+        required: true
+      tags:
+      - appointments
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/appointments/feedback/analytics/:
+    get:
+      operationId: appointments_feedback_analytics_retrieve
+      description: |-
+        Aggregated feedback analytics derived from real PostgreSQL database records.
+        Restricted to Administrators only.
+      tags:
+      - appointments
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientFeedback'
+          description: ''
+  /api/appointments/feedback/eligible-appointments/:
+    get:
+      operationId: appointments_feedback_eligible_appointments_retrieve
+      description: Returns completed appointments for the authenticated patient that
+        do not have feedback yet.
+      tags:
+      - appointments
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientFeedback'
+          description: ''
+  /api/appointments/health-problems/:
+    get:
+      operationId: appointments_health_problems_retrieve
+      description: |-
+        Returns the curated list of 12 health complaint categories with explanations
+        and their target clinical specializations for patient appointment booking.
+      tags:
+      - appointments
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+          description: ''
+  /api/appointments/medical-queries/:
+    get:
+      operationId: appointments_medical_queries_list
+      description: |-
+        CareFlow HMS Contact Doctor API.
+        Facilitates structured patient follow-up inquiries regarding symptoms, prescription side-effects,
+        or medication queries directly with their verified consulting physician.
+      summary: List medical queries
+      parameters:
+      - in: query
+        name: appointment
+        schema:
+          type: integer
+      - in: query
+        name: category
+        schema:
+          type: string
+          enum:
+          - MEDICINE_SIDE_EFFECTS
+          - OTHER_MEDICAL_CONCERN
+          - QUESTION_ABOUT_PRESCRIBED_MEDICINE
+          - TREATMENT_CLARIFICATION
+          - TREATMENT_NOT_IMPROVING
+        description: |-
+          Clinical category of medical query.
+
+          * `TREATMENT_NOT_IMPROVING` - Treatment Not Improving
+          * `MEDICINE_SIDE_EFFECTS` - Medicine Side Effects
+          * `QUESTION_ABOUT_PRESCRIBED_MEDICINE` - Question About Prescribed Medicine
+          * `TREATMENT_CLARIFICATION` - Treatment Clarification
+          * `OTHER_MEDICAL_CONCERN` - Other Medical Concern
+      - in: query
+        name: doctor
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: severity
+        schema:
+          type: string
+          enum:
+          - MILD
+          - MODERATE
+          - SEVERE
+        description: |-
+          Patient-reported symptom severity (Mild / Moderate / Severe).
+
+          * `MILD` - Mild
+          * `MODERATE` - Moderate
+          * `SEVERE` - Severe
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - FOLLOW_UP_REQUIRED
+          - PENDING_REVIEW
+          - RESOLVED
+          - RESPONSE_SENT
+          - UNDER_REVIEW
+        description: |-
+          * `PENDING_REVIEW` - Pending Review
+          * `UNDER_REVIEW` - Under Review
+          * `RESPONSE_SENT` - Response Sent
+          * `FOLLOW_UP_REQUIRED` - Follow-up Required
+          * `RESOLVED` - Resolved
+      tags:
+      - appointments
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMedicalQueryList'
+          description: ''
+    post:
+      operationId: appointments_medical_queries_create
+      description: |-
+        CareFlow HMS Contact Doctor API.
+        Facilitates structured patient follow-up inquiries regarding symptoms, prescription side-effects,
+        or medication queries directly with their verified consulting physician.
+      summary: Submit a medical query to treating physician (Patient only)
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MedicalQuery'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MedicalQuery'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MedicalQuery'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalQuery'
+          description: ''
+  /api/appointments/medical-queries/{id}/:
+    get:
+      operationId: appointments_medical_queries_retrieve
+      description: |-
+        CareFlow HMS Contact Doctor API.
+        Facilitates structured patient follow-up inquiries regarding symptoms, prescription side-effects,
+        or medication queries directly with their verified consulting physician.
+      summary: Retrieve specific medical query
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this medical query.
+        required: true
+      tags:
+      - appointments
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalQuery'
+          description: ''
+    put:
+      operationId: appointments_medical_queries_update
+      description: |-
+        CareFlow HMS Contact Doctor API.
+        Facilitates structured patient follow-up inquiries regarding symptoms, prescription side-effects,
+        or medication queries directly with their verified consulting physician.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this medical query.
+        required: true
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MedicalQuery'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MedicalQuery'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MedicalQuery'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalQuery'
+          description: ''
+    patch:
+      operationId: appointments_medical_queries_partial_update
+      description: |-
+        CareFlow HMS Contact Doctor API.
+        Facilitates structured patient follow-up inquiries regarding symptoms, prescription side-effects,
+        or medication queries directly with their verified consulting physician.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this medical query.
+        required: true
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMedicalQuery'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMedicalQuery'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMedicalQuery'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalQuery'
+          description: ''
+    delete:
+      operationId: appointments_medical_queries_destroy
+      description: |-
+        CareFlow HMS Contact Doctor API.
+        Facilitates structured patient follow-up inquiries regarding symptoms, prescription side-effects,
+        or medication queries directly with their verified consulting physician.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this medical query.
+        required: true
+      tags:
+      - appointments
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/appointments/medical-queries/{id}/respond/:
+    post:
+      operationId: appointments_medical_queries_respond_create
+      description: |-
+        Enables the consulting doctor to review the query and submit an authoritative clinical reply.
+        Can optionally advise laboratory tests or in-person follow-up consultations.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this medical query.
+        required: true
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MedicalQuery'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MedicalQuery'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MedicalQuery'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalQuery'
+          description: ''
+  /api/appointments/medical-queries/{id}/status/:
+    patch:
+      operationId: appointments_medical_queries_status_partial_update
+      description: Allows doctor or admin to transition query status (e.g. Under Review,
+        Resolved).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this medical query.
+        required: true
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMedicalQuery'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMedicalQuery'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMedicalQuery'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalQuery'
+          description: ''
+  /api/appointments/medical-queries/eligible-records/:
+    get:
+      operationId: appointments_medical_queries_eligible_records_retrieve
+      description: |-
+        Returns the authenticated patient's consultations and associated prescriptions
+        to populate the selection options in the Contact Doctor form.
+      tags:
+      - appointments
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalQuery'
+          description: ''
   /api/appointments/receptionist-stats/:
     get:
       operationId: appointments_receptionist_stats_retrieve
       description: |-
-        Real-time backend statistics for the Receptionist Overview dashboard:
-        - Today's Appointments
-        - Upcoming Appointments
-        - Registered Patients
-        - Checked-in Patients Today
-        - Patients Waiting Today
-        - Completed Today
-        - Cancelled Today
+        CareFlow HMS Appointment Lifecycle.
+        Enforces role-based permissions:
+        - Receptionist: Full appointment scheduling, reassignment (specialization-validated), and check-in.
+        - Doctor: View their appointments; record clinical notes; mark completed.
+        - Patient: View their appointments; book appointments (with centralized automatic doctor assignment); cancel scheduled slots.
+        - Admin: Oversight and administrative auditing.
       tags:
       - appointments
       security:
@@ -704,29 +1713,74 @@ paths:
   /api/auth/token/:
     post:
       operationId: auth_token_create
-      description: |-
-        Takes a set of user credentials and returns an access and refresh JSON web
-        token pair to prove the authentication of those credentials.
+      description: Authenticates patient, doctor, receptionist, lab staff, pharmacist,
+        or admin with authoritative role verification.
+      summary: CareFlow Authenticate & Obtain JWT Token Pair
       tags:
       - auth
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TokenObtainPair'
+              $ref: '#/components/schemas/CareFlowTokenObtainPair'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/TokenObtainPair'
+              $ref: '#/components/schemas/CareFlowTokenObtainPair'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/TokenObtainPair'
+              $ref: '#/components/schemas/CareFlowTokenObtainPair'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/auth/token/blacklist/:
+    post:
+      operationId: auth_token_blacklist_create
+      description: |-
+        Takes a token and blacklists it. Must be used with the
+        `rest_framework_simplejwt.token_blacklist` app installed.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenBlacklist'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenBlacklist'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenBlacklist'
         required: true
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TokenObtainPair'
+                $ref: '#/components/schemas/TokenBlacklist'
           description: ''
   /api/auth/token/refresh/:
     post:
@@ -811,6 +1865,272 @@ paths:
           description: OTP verified successfully, JWT tokens issued
         '400':
           description: Invalid or expired OTP
+  /api/billing/bills/:
+    get:
+      operationId: billing_bills_list
+      description: |-
+        CareFlow HMS Billing & Financial Invoices.
+        - Receptionist & Pharmacist: Create and manage outpatient invoices.
+        - Patient: View only their own bills and balances.
+        - Doctor: View bills associated with their consultations.
+        - Admin: Oversight and administrative auditing.
+        - Completely excludes bed/ward/inpatient charges.
+      summary: List patient bills and invoices
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: patient
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - CANCELLED
+          - PAID
+          - PARTIALLY_PAID
+          - UNPAID
+        description: |-
+          * `UNPAID` - Unpaid
+          * `PARTIALLY_PAID` - Partially Paid
+          * `PAID` - Fully Paid
+          * `CANCELLED` - Cancelled
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBillList'
+          description: ''
+    post:
+      operationId: billing_bills_create
+      description: |-
+        CareFlow HMS Billing & Financial Invoices.
+        - Receptionist & Pharmacist: Create and manage outpatient invoices.
+        - Patient: View only their own bills and balances.
+        - Doctor: View bills associated with their consultations.
+        - Admin: Oversight and administrative auditing.
+        - Completely excludes bed/ward/inpatient charges.
+      summary: Create patient bill (Receptionist, Pharmacist, Admin)
+      tags:
+      - billing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Bill'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Bill'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Bill'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bill'
+          description: ''
+  /api/billing/bills/{id}/:
+    get:
+      operationId: billing_bills_retrieve
+      description: |-
+        CareFlow HMS Billing & Financial Invoices.
+        - Receptionist & Pharmacist: Create and manage outpatient invoices.
+        - Patient: View only their own bills and balances.
+        - Doctor: View bills associated with their consultations.
+        - Admin: Oversight and administrative auditing.
+        - Completely excludes bed/ward/inpatient charges.
+      summary: Retrieve invoice details
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this bill.
+        required: true
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bill'
+          description: ''
+    put:
+      operationId: billing_bills_update
+      description: |-
+        CareFlow HMS Billing & Financial Invoices.
+        - Receptionist & Pharmacist: Create and manage outpatient invoices.
+        - Patient: View only their own bills and balances.
+        - Doctor: View bills associated with their consultations.
+        - Admin: Oversight and administrative auditing.
+        - Completely excludes bed/ward/inpatient charges.
+      summary: Update invoice
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this bill.
+        required: true
+      tags:
+      - billing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Bill'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Bill'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Bill'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bill'
+          description: ''
+    patch:
+      operationId: billing_bills_partial_update
+      description: |-
+        CareFlow HMS Billing & Financial Invoices.
+        - Receptionist & Pharmacist: Create and manage outpatient invoices.
+        - Patient: View only their own bills and balances.
+        - Doctor: View bills associated with their consultations.
+        - Admin: Oversight and administrative auditing.
+        - Completely excludes bed/ward/inpatient charges.
+      summary: Partial update invoice
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this bill.
+        required: true
+      tags:
+      - billing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBill'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBill'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBill'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bill'
+          description: ''
+    delete:
+      operationId: billing_bills_destroy
+      description: |-
+        CareFlow HMS Billing & Financial Invoices.
+        - Receptionist & Pharmacist: Create and manage outpatient invoices.
+        - Patient: View only their own bills and balances.
+        - Doctor: View bills associated with their consultations.
+        - Admin: Oversight and administrative auditing.
+        - Completely excludes bed/ward/inpatient charges.
+      summary: Cancel or remove invoice
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this bill.
+        required: true
+      tags:
+      - billing
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/billing/bills/checkout/:
+    post:
+      operationId: billing_bills_checkout_create
+      description: |-
+        Secure Pharmacy Purchase & Instant Receipt Generation (Patient & Pharmacist).
+        - Supports multi-item cart purchases (items=[...]) as well as single-item purchases.
+        - Recalculates all pricing authoritatively on backend with trusted Medicine unit prices.
+        - Concurrency-safe atomic stock deduction with select_for_update().
+        - Validates prescription association and remaining prescribed quantities if prescribed.
+        - Atomically creates Bill, BillItems, and successful Payment transaction.
+        - Generates immutable StockMovement audit records.
+        - Returns official verified payment receipt.
+      tags:
+      - billing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Bill'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Bill'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Bill'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bill'
+          description: ''
   /api/billing/invoices/:
     get:
       operationId: billing_invoices_list
@@ -1045,12 +2365,13 @@ paths:
     post:
       operationId: billing_invoices_checkout_create
       description: |-
-        Secure Patient Pharmacy Purchase & Instant Receipt Generation.
-        - Recalculates all pricing on backend with trusted Medicine unit price.
-        - Validates stock and prevents negative inventory.
-        - Validates prescription association and remaining prescribed quantities.
-        - Atomically creates Bill, BillItem, and successful Payment transaction.
-        - Generates immutable StockMovement audit record.
+        Secure Pharmacy Purchase & Instant Receipt Generation (Patient & Pharmacist).
+        - Supports multi-item cart purchases (items=[...]) as well as single-item purchases.
+        - Recalculates all pricing authoritatively on backend with trusted Medicine unit prices.
+        - Concurrency-safe atomic stock deduction with select_for_update().
+        - Validates prescription association and remaining prescribed quantities if prescribed.
+        - Atomically creates Bill, BillItems, and successful Payment transaction.
+        - Generates immutable StockMovement audit records.
         - Returns official verified payment receipt.
       tags:
       - billing
@@ -1498,10 +2819,264 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/feedback/:
+    get:
+      operationId: feedback_list
+      description: |-
+        CareFlow HMS Patient Feedback API.
+        - Patients: Submit ratings and experience feedback for eligible completed consultations; view their own feedback history.
+        - Doctors: View patient feedback strictly for their own consultations; read-only (cannot edit or delete).
+        - Admins: View feedback and access real database feedback analytics.
+      summary: List patient feedback
+      parameters:
+      - in: query
+        name: appointment
+        schema:
+          type: integer
+      - in: query
+        name: doctor
+        schema:
+          type: integer
+      - in: query
+        name: doctor_rating
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: overall_satisfaction
+        schema:
+          type: string
+          enum:
+          - NEUTRAL
+          - SATISFIED
+          - UNSATISFIED
+        description: |-
+          Overall hospital consultation satisfaction.
+
+          * `SATISFIED` - Satisfied
+          * `NEUTRAL` - Neutral
+          * `UNSATISFIED` - Unsatisfied
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - feedback
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPatientFeedbackList'
+          description: ''
+    post:
+      operationId: feedback_create
+      description: |-
+        CareFlow HMS Patient Feedback API.
+        - Patients: Submit ratings and experience feedback for eligible completed consultations; view their own feedback history.
+        - Doctors: View patient feedback strictly for their own consultations; read-only (cannot edit or delete).
+        - Admins: View feedback and access real database feedback analytics.
+      summary: Submit consultation feedback (Patient only)
+      tags:
+      - feedback
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientFeedback'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatientFeedback'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatientFeedback'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientFeedback'
+          description: ''
+  /api/feedback/{id}/:
+    get:
+      operationId: feedback_retrieve
+      description: |-
+        CareFlow HMS Patient Feedback API.
+        - Patients: Submit ratings and experience feedback for eligible completed consultations; view their own feedback history.
+        - Doctors: View patient feedback strictly for their own consultations; read-only (cannot edit or delete).
+        - Admins: View feedback and access real database feedback analytics.
+      summary: Retrieve specific consultation feedback
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - feedback
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientFeedback'
+          description: ''
+    put:
+      operationId: feedback_update
+      description: |-
+        CareFlow HMS Patient Feedback API.
+        - Patients: Submit ratings and experience feedback for eligible completed consultations; view their own feedback history.
+        - Doctors: View patient feedback strictly for their own consultations; read-only (cannot edit or delete).
+        - Admins: View feedback and access real database feedback analytics.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - feedback
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientFeedback'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatientFeedback'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatientFeedback'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientFeedback'
+          description: ''
+    patch:
+      operationId: feedback_partial_update
+      description: |-
+        CareFlow HMS Patient Feedback API.
+        - Patients: Submit ratings and experience feedback for eligible completed consultations; view their own feedback history.
+        - Doctors: View patient feedback strictly for their own consultations; read-only (cannot edit or delete).
+        - Admins: View feedback and access real database feedback analytics.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - feedback
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPatientFeedback'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPatientFeedback'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPatientFeedback'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientFeedback'
+          description: ''
+    delete:
+      operationId: feedback_destroy
+      description: |-
+        CareFlow HMS Patient Feedback API.
+        - Patients: Submit ratings and experience feedback for eligible completed consultations; view their own feedback history.
+        - Doctors: View patient feedback strictly for their own consultations; read-only (cannot edit or delete).
+        - Admins: View feedback and access real database feedback analytics.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - feedback
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/feedback/analytics/:
+    get:
+      operationId: feedback_analytics_retrieve
+      description: |-
+        Aggregated feedback analytics derived from real PostgreSQL database records.
+        Restricted to Administrators only.
+      tags:
+      - feedback
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientFeedback'
+          description: ''
+  /api/feedback/eligible-appointments/:
+    get:
+      operationId: feedback_eligible_appointments_retrieve
+      description: Returns completed appointments for the authenticated patient that
+        do not have feedback yet.
+      tags:
+      - feedback
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientFeedback'
+          description: ''
   /api/health/:
     get:
       operationId: health_retrieve
-      description: Returns backend health and service status
+      description: Returns backend health and database dependency status
       summary: Health check
       tags:
       - health
@@ -1856,6 +3431,43 @@ paths:
               schema:
                 $ref: '#/components/schemas/LabOrder'
           description: ''
+  /api/laboratory/orders/{id}/send-email/:
+    post:
+      operationId: laboratory_orders_send_email_create
+      description: |-
+        Sends the diagnostic test report directly to the patient's email address.
+        Accessible by Patient (own report), Doctor, Lab Staff, or Admin.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lab order.
+        required: true
+      tags:
+      - laboratory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LabOrder'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabOrder'
+          description: ''
   /api/laboratory/orders/{id}/upload-report/:
     post:
       operationId: laboratory_orders_upload_report_create
@@ -2131,6 +3743,361 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/logs/frontend/:
+    post:
+      operationId: logs_frontend_create
+      description: Receives client-side React errors and uncaught exceptions for centralized
+        logging.
+      summary: Log frontend client error
+      tags:
+      - logs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+          description: ''
+  /api/medical-queries/:
+    get:
+      operationId: medical_queries_list
+      description: |-
+        CareFlow HMS Contact Doctor API.
+        Facilitates structured patient follow-up inquiries regarding symptoms, prescription side-effects,
+        or medication queries directly with their verified consulting physician.
+      summary: List medical queries
+      parameters:
+      - in: query
+        name: appointment
+        schema:
+          type: integer
+      - in: query
+        name: category
+        schema:
+          type: string
+          enum:
+          - MEDICINE_SIDE_EFFECTS
+          - OTHER_MEDICAL_CONCERN
+          - QUESTION_ABOUT_PRESCRIBED_MEDICINE
+          - TREATMENT_CLARIFICATION
+          - TREATMENT_NOT_IMPROVING
+        description: |-
+          Clinical category of medical query.
+
+          * `TREATMENT_NOT_IMPROVING` - Treatment Not Improving
+          * `MEDICINE_SIDE_EFFECTS` - Medicine Side Effects
+          * `QUESTION_ABOUT_PRESCRIBED_MEDICINE` - Question About Prescribed Medicine
+          * `TREATMENT_CLARIFICATION` - Treatment Clarification
+          * `OTHER_MEDICAL_CONCERN` - Other Medical Concern
+      - in: query
+        name: doctor
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: severity
+        schema:
+          type: string
+          enum:
+          - MILD
+          - MODERATE
+          - SEVERE
+        description: |-
+          Patient-reported symptom severity (Mild / Moderate / Severe).
+
+          * `MILD` - Mild
+          * `MODERATE` - Moderate
+          * `SEVERE` - Severe
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - FOLLOW_UP_REQUIRED
+          - PENDING_REVIEW
+          - RESOLVED
+          - RESPONSE_SENT
+          - UNDER_REVIEW
+        description: |-
+          * `PENDING_REVIEW` - Pending Review
+          * `UNDER_REVIEW` - Under Review
+          * `RESPONSE_SENT` - Response Sent
+          * `FOLLOW_UP_REQUIRED` - Follow-up Required
+          * `RESOLVED` - Resolved
+      tags:
+      - medical-queries
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMedicalQueryList'
+          description: ''
+    post:
+      operationId: medical_queries_create
+      description: |-
+        CareFlow HMS Contact Doctor API.
+        Facilitates structured patient follow-up inquiries regarding symptoms, prescription side-effects,
+        or medication queries directly with their verified consulting physician.
+      summary: Submit a medical query to treating physician (Patient only)
+      tags:
+      - medical-queries
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MedicalQuery'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MedicalQuery'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MedicalQuery'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalQuery'
+          description: ''
+  /api/medical-queries/{id}/:
+    get:
+      operationId: medical_queries_retrieve
+      description: |-
+        CareFlow HMS Contact Doctor API.
+        Facilitates structured patient follow-up inquiries regarding symptoms, prescription side-effects,
+        or medication queries directly with their verified consulting physician.
+      summary: Retrieve specific medical query
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - medical-queries
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalQuery'
+          description: ''
+    put:
+      operationId: medical_queries_update
+      description: |-
+        CareFlow HMS Contact Doctor API.
+        Facilitates structured patient follow-up inquiries regarding symptoms, prescription side-effects,
+        or medication queries directly with their verified consulting physician.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - medical-queries
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MedicalQuery'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MedicalQuery'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MedicalQuery'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalQuery'
+          description: ''
+    patch:
+      operationId: medical_queries_partial_update
+      description: |-
+        CareFlow HMS Contact Doctor API.
+        Facilitates structured patient follow-up inquiries regarding symptoms, prescription side-effects,
+        or medication queries directly with their verified consulting physician.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - medical-queries
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMedicalQuery'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMedicalQuery'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMedicalQuery'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalQuery'
+          description: ''
+    delete:
+      operationId: medical_queries_destroy
+      description: |-
+        CareFlow HMS Contact Doctor API.
+        Facilitates structured patient follow-up inquiries regarding symptoms, prescription side-effects,
+        or medication queries directly with their verified consulting physician.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - medical-queries
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/medical-queries/{id}/respond/:
+    post:
+      operationId: medical_queries_respond_create
+      description: |-
+        Enables the consulting doctor to review the query and submit an authoritative clinical reply.
+        Can optionally advise laboratory tests or in-person follow-up consultations.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - medical-queries
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MedicalQuery'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MedicalQuery'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MedicalQuery'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalQuery'
+          description: ''
+  /api/medical-queries/{id}/status/:
+    patch:
+      operationId: medical_queries_status_partial_update
+      description: Allows doctor or admin to transition query status (e.g. Under Review,
+        Resolved).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - medical-queries
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMedicalQuery'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMedicalQuery'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMedicalQuery'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalQuery'
+          description: ''
+  /api/medical-queries/eligible-records/:
+    get:
+      operationId: medical_queries_eligible_records_retrieve
+      description: |-
+        Returns the authenticated patient's consultations and associated prescriptions
+        to populate the selection options in the Contact Doctor form.
+      tags:
+      - medical-queries
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalQuery'
+          description: ''
   /api/patients/:
     get:
       operationId: patients_list
@@ -2387,6 +4354,23 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/patients/checked-in/:
+    get:
+      operationId: patients_checked_in_retrieve
+      description: List patients assigned to the authenticated doctor who are currently
+        checked in and not checked out.
+      tags:
+      - patients
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+          description: ''
   /api/pharmacy/dispensations/:
     get:
       operationId: pharmacy_dispensations_list
@@ -2979,6 +4963,67 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/pharmacy/medicines/{id}/adjust-stock/:
+    post:
+      operationId: pharmacy_medicines_adjust_stock_create
+      description: |-
+        CareFlow HMS Medicine Catalogue & Inventory.
+        - Admin & Pharmacist: Full catalogue and inventory management.
+        - Doctor & Staff & Patient: Read-only catalogue access.
+        - Strictly prevents negative stock at the database level.
+      summary: Adjust or receive stock for a medicine (Pharmacist or Admin)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this medicine.
+        required: true
+      tags:
+      - pharmacy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Medicine'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Medicine'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Medicine'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Medicine'
+          description: ''
+  /api/pharmacy/medicines/stats/:
+    get:
+      operationId: pharmacy_medicines_stats_retrieve
+      description: |-
+        CareFlow HMS Medicine Catalogue & Inventory.
+        - Admin & Pharmacist: Full catalogue and inventory management.
+        - Doctor & Staff & Patient: Read-only catalogue access.
+        - Strictly prevents negative stock at the database level.
+      summary: Retrieve real-time pharmacy overview statistics (Pharmacist or Admin)
+      tags:
+      - pharmacy
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Medicine'
+          description: ''
   /api/pharmacy/prescriptions/:
     get:
       operationId: pharmacy_prescriptions_list
@@ -2986,7 +5031,7 @@ paths:
         CareFlow HMS Prescriptions.
         - Doctor: Prescribes medications for patients with prescription items.
         - Admin: CANNOT perform doctor-only treatment activities (cannot prescribe).
-        - Pharmacist: View prescriptions to dispense medications.
+        - Pharmacist: View prescriptions to dispense medications and generate bills for completed prescriptions.
         - Patient: View their own prescriptions only. Cannot alter prescriptions.
       summary: List prescriptions
       parameters:
@@ -3022,11 +5067,13 @@ paths:
           type: string
           enum:
           - CANCELLED
+          - COMPLETED
           - DISPENSED
           - PARTIALLY_DISPENSED
           - PENDING
         description: |-
           * `PENDING` - Pending Dispensation
+          * `COMPLETED` - Completed
           * `PARTIALLY_DISPENSED` - Partially Dispensed
           * `DISPENSED` - Fully Dispensed
           * `CANCELLED` - Cancelled
@@ -3048,7 +5095,7 @@ paths:
         CareFlow HMS Prescriptions.
         - Doctor: Prescribes medications for patients with prescription items.
         - Admin: CANNOT perform doctor-only treatment activities (cannot prescribe).
-        - Pharmacist: View prescriptions to dispense medications.
+        - Pharmacist: View prescriptions to dispense medications and generate bills for completed prescriptions.
         - Patient: View their own prescriptions only. Cannot alter prescriptions.
       summary: Create prescription (Doctor only)
       tags:
@@ -3082,7 +5129,7 @@ paths:
         CareFlow HMS Prescriptions.
         - Doctor: Prescribes medications for patients with prescription items.
         - Admin: CANNOT perform doctor-only treatment activities (cannot prescribe).
-        - Pharmacist: View prescriptions to dispense medications.
+        - Pharmacist: View prescriptions to dispense medications and generate bills for completed prescriptions.
         - Patient: View their own prescriptions only. Cannot alter prescriptions.
       summary: Retrieve prescription details
       parameters:
@@ -3110,7 +5157,7 @@ paths:
         CareFlow HMS Prescriptions.
         - Doctor: Prescribes medications for patients with prescription items.
         - Admin: CANNOT perform doctor-only treatment activities (cannot prescribe).
-        - Pharmacist: View prescriptions to dispense medications.
+        - Pharmacist: View prescriptions to dispense medications and generate bills for completed prescriptions.
         - Patient: View their own prescriptions only. Cannot alter prescriptions.
       summary: Update prescription (Doctor only)
       parameters:
@@ -3150,7 +5197,7 @@ paths:
         CareFlow HMS Prescriptions.
         - Doctor: Prescribes medications for patients with prescription items.
         - Admin: CANNOT perform doctor-only treatment activities (cannot prescribe).
-        - Pharmacist: View prescriptions to dispense medications.
+        - Pharmacist: View prescriptions to dispense medications and generate bills for completed prescriptions.
         - Patient: View their own prescriptions only. Cannot alter prescriptions.
       summary: Partial update prescription
       parameters:
@@ -3189,7 +5236,7 @@ paths:
         CareFlow HMS Prescriptions.
         - Doctor: Prescribes medications for patients with prescription items.
         - Admin: CANNOT perform doctor-only treatment activities (cannot prescribe).
-        - Pharmacist: View prescriptions to dispense medications.
+        - Pharmacist: View prescriptions to dispense medications and generate bills for completed prescriptions.
         - Patient: View their own prescriptions only. Cannot alter prescriptions.
       summary: Cancel prescription (Doctor only)
       parameters:
@@ -3207,6 +5254,86 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/pharmacy/prescriptions/{id}/complete/:
+    post:
+      operationId: pharmacy_prescriptions_complete_create
+      description: |-
+        CareFlow HMS Prescriptions.
+        - Doctor: Prescribes medications for patients with prescription items.
+        - Admin: CANNOT perform doctor-only treatment activities (cannot prescribe).
+        - Pharmacist: View prescriptions to dispense medications and generate bills for completed prescriptions.
+        - Patient: View their own prescriptions only. Cannot alter prescriptions.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this prescription.
+        required: true
+      tags:
+      - pharmacy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Prescription'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Prescription'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Prescription'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prescription'
+          description: ''
+  /api/pharmacy/prescriptions/{id}/generate-bill/:
+    post:
+      operationId: pharmacy_prescriptions_generate_bill_create
+      description: |-
+        CareFlow HMS Prescriptions.
+        - Doctor: Prescribes medications for patients with prescription items.
+        - Admin: CANNOT perform doctor-only treatment activities (cannot prescribe).
+        - Pharmacist: View prescriptions to dispense medications and generate bills for completed prescriptions.
+        - Patient: View their own prescriptions only. Cannot alter prescriptions.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this prescription.
+        required: true
+      tags:
+      - pharmacy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Prescription'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Prescription'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Prescription'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Prescription'
+          description: ''
   /api/pharmacy/stock-movements/:
     get:
       operationId: pharmacy_stock_movements_list
@@ -3755,8 +5882,12 @@ components:
         patient_id_code:
           type: string
           readOnly: true
+        patient_details:
+          type: string
+          readOnly: true
         doctor:
           type: integer
+          nullable: true
         doctor_name:
           type: string
           readOnly: true
@@ -3764,6 +5895,9 @@ components:
           type: string
           readOnly: true
         doctor_specialization:
+          type: string
+          readOnly: true
+        doctor_details:
           type: string
           readOnly: true
         consultation_fee:
@@ -3778,9 +5912,33 @@ components:
           type: string
           format: time
         status:
-          allOf:
-          - $ref: '#/components/schemas/AppointmentStatusEnum'
-          default: SCHEDULED
+          $ref: '#/components/schemas/AppointmentStatusEnum'
+        visit_status:
+          type: string
+          readOnly: true
+        health_problem:
+          type: string
+          default: General Health Checkup
+        problem_description:
+          type: string
+          default: ''
+        reason_for_visit:
+          type: string
+          default: General Consultation
+        authorized_notes:
+          type: string
+          nullable: true
+          description: Clinical consultation notes recorded by authorized medical
+            personnel.
+        has_prescription:
+          type: string
+          readOnly: true
+        has_lab_test:
+          type: string
+          readOnly: true
+        feedback:
+          type: string
+          readOnly: true
         is_checked_in:
           type: boolean
           description: Designates whether the patient has arrived and checked in at
@@ -3790,18 +5948,17 @@ components:
           format: date-time
           nullable: true
           description: Timestamp when the patient was checked in by the receptionist.
+        check_out_time:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Timestamp when the patient was checked out following consultation
+            completion.
         cancellation_reason:
           type: string
           nullable: true
           description: Reason recorded upon cancellation of the appointment.
-        reason_for_visit:
-          type: string
-          description: Primary complaint or purpose of consultation.
-        authorized_notes:
-          type: string
-          nullable: true
-          description: Clinical consultation notes recorded by authorized medical
-            personnel.
         created_by:
           type: integer
           readOnly: true
@@ -3818,18 +5975,23 @@ components:
       - appointment_date
       - appointment_id
       - appointment_time
+      - check_out_time
       - consultation_fee
       - created_at
       - created_by
-      - doctor
       - doctor_department
+      - doctor_details
       - doctor_name
       - doctor_specialization
+      - feedback
+      - has_lab_test
+      - has_prescription
       - id
+      - patient_details
       - patient_id_code
       - patient_name
-      - reason_for_visit
       - updated_at
+      - visit_status
     AppointmentStatusEnum:
       enum:
       - SCHEDULED
@@ -3838,6 +6000,7 @@ components:
       - COMPLETED
       - CANCELLED
       - NO_SHOW
+      - CHECKED_OUT
       type: string
       description: |-
         * `SCHEDULED` - Scheduled
@@ -3846,6 +6009,7 @@ components:
         * `COMPLETED` - Completed
         * `CANCELLED` - Cancelled
         * `NO_SHOW` - No Show
+        * `CHECKED_OUT` - Checked Out
     Bill:
       type: object
       properties:
@@ -3861,9 +6025,18 @@ components:
         patient_name:
           type: string
           readOnly: true
+        patient_id_code:
+          type: string
+          readOnly: true
+        doctor_name:
+          type: string
+          readOnly: true
         appointment:
           type: integer
           nullable: true
+        appointment_code:
+          type: string
+          readOnly: true
         total_amount:
           type: string
           format: decimal
@@ -3927,16 +6100,19 @@ components:
           format: date-time
           readOnly: true
       required:
+      - appointment_code
       - balance_due
       - bill_number
       - created_at
       - created_by
       - created_by_name
+      - doctor_name
       - id
       - items
       - net_amount
       - paid_amount
       - patient
+      - patient_id_code
       - patient_name
       - payments
       - total_amount
@@ -4068,7 +6244,21 @@ components:
         * `REQUESTED` - Cancellation Requested
         * `APPROVED` - Cancellation Approved
         * `REJECTED` - Cancellation Rejected
-    CategoryEnum:
+    CareFlowTokenObtainPair:
+      type: object
+      description: |-
+        CareFlow HMS Authoritative Authentication Serializer.
+        Validates user credentials, distinguishes specific authentication error categories,
+        authoritatively verifies the requested role, and issues JWT tokens.
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          writeOnly: true
+        role:
+          type: string
+    Category829Enum:
       enum:
       - HEMATOLOGY
       - BIOCHEMISTRY
@@ -4104,6 +6294,18 @@ components:
       - confirm_password
       - current_password
       - new_password
+    ConsultationExperienceEnum:
+      enum:
+      - EXCELLENT
+      - GOOD
+      - AVERAGE
+      - POOR
+      type: string
+      description: |-
+        * `EXCELLENT` - Excellent
+        * `GOOD` - Good
+        * `AVERAGE` - Average
+        * `POOR` - Poor
     CustomTestCategoryEnum:
       enum:
       - HEMATOLOGY
@@ -4124,6 +6326,97 @@ components:
         * `IMMUNOLOGY` - Immunology
         * `URINALYSIS` - Urinalysis
         * `OTHER` - Other Diagnostic
+    DatabaseBackupRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        filename:
+          type: string
+          readOnly: true
+        file_size_bytes:
+          type: integer
+          readOnly: true
+        file_size_display:
+          type: string
+          readOnly: true
+        sha256_checksum:
+          type: string
+          readOnly: true
+          nullable: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/DatabaseBackupRecordStatusEnum'
+          readOnly: true
+        is_automated:
+          type: boolean
+          readOnly: true
+        notes:
+          type: string
+          readOnly: true
+          nullable: true
+        error_message:
+          type: string
+          readOnly: true
+          nullable: true
+        created_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        created_by_name:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        restored_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        restored_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        restored_by_name:
+          type: string
+          readOnly: true
+      required:
+      - created_at
+      - created_by
+      - created_by_name
+      - error_message
+      - file_size_bytes
+      - file_size_display
+      - filename
+      - id
+      - is_automated
+      - notes
+      - restored_at
+      - restored_by
+      - restored_by_name
+      - sha256_checksum
+      - status
+    DatabaseBackupRecordStatusEnum:
+      enum:
+      - SUCCESS
+      - FAILED
+      - RESTORED
+      type: string
+      description: |-
+        * `SUCCESS` - Success
+        * `FAILED` - Failed
+        * `RESTORED` - Restored
+    DatabaseRestoreRequest:
+      type: object
+      properties:
+        confirmation_phrase:
+          type: string
+          description: 'Must match exact pattern: RESTORE-CONFIRM-<filename>'
+      required:
+      - confirmation_phrase
     DispenseItem:
       type: object
       properties:
@@ -4137,6 +6430,15 @@ components:
         medicine:
           type: integer
         medicine_name:
+          type: string
+          readOnly: true
+        medicine_code:
+          type: string
+          readOnly: true
+        dosage_form:
+          type: string
+          readOnly: true
+        strength:
           type: string
           readOnly: true
         quantity:
@@ -4154,11 +6456,14 @@ components:
           readOnly: true
       required:
       - dispense
+      - dosage_form
       - id
       - medicine
+      - medicine_code
       - medicine_name
       - prescription_item
       - quantity
+      - strength
       - subtotal
       - unit_price
     Doctor:
@@ -4226,6 +6531,12 @@ components:
           format: time
         status:
           $ref: '#/components/schemas/DoctorStatusEnum'
+        is_available:
+          type: string
+          readOnly: true
+        is_active:
+          type: string
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -4241,12 +6552,24 @@ components:
       - first_name
       - full_name
       - id
+      - is_active
+      - is_available
       - last_name
       - license_number
       - phone_number
       - qualification
       - specialization
       - updated_at
+    DoctorCommunicationEnum:
+      enum:
+      - EXCELLENT
+      - GOOD
+      - POOR
+      type: string
+      description: |-
+        * `EXCELLENT` - Excellent
+        * `GOOD` - Good
+        * `POOR` - Poor
     DoctorStatusEnum:
       enum:
       - ACTIVE
@@ -4296,10 +6619,13 @@ components:
           type: string
         version:
           type: string
+        database:
+          type: string
         api_documentation:
           type: string
       required:
       - api_documentation
+      - database
       - service
       - status
       - version
@@ -4533,7 +6859,7 @@ components:
           type: string
           maxLength: 200
         category:
-          $ref: '#/components/schemas/CategoryEnum'
+          $ref: '#/components/schemas/Category829Enum'
         description:
           type: string
           nullable: true
@@ -4574,6 +6900,200 @@ components:
       - test_code
       - test_name
       - updated_at
+    MedicalQuery:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        query_id:
+          type: string
+          readOnly: true
+          description: Unique Query Code (e.g. CF-MQ-10001)
+        appointment:
+          type: integer
+        appointment_id:
+          type: string
+          readOnly: true
+        appointment_date:
+          type: string
+          format: date
+          readOnly: true
+        patient:
+          type: integer
+          readOnly: true
+        patient_name:
+          type: string
+          readOnly: true
+        doctor:
+          type: integer
+          readOnly: true
+        doctor_name:
+          type: string
+          readOnly: true
+        doctor_specialization:
+          type: string
+          readOnly: true
+        prescription:
+          type: integer
+          nullable: true
+        prescription_code:
+          type: string
+          readOnly: true
+          default: ''
+        medicine:
+          type: integer
+          nullable: true
+        medicine_name:
+          type: string
+          description: Medicine name or label identified by patient.
+          maxLength: 200
+        category:
+          allOf:
+          - $ref: '#/components/schemas/MedicalQueryCategoryEnum'
+          description: |-
+            Clinical category of medical query.
+
+            * `TREATMENT_NOT_IMPROVING` - Treatment Not Improving
+            * `MEDICINE_SIDE_EFFECTS` - Medicine Side Effects
+            * `QUESTION_ABOUT_PRESCRIBED_MEDICINE` - Question About Prescribed Medicine
+            * `TREATMENT_CLARIFICATION` - Treatment Clarification
+            * `OTHER_MEDICAL_CONCERN` - Other Medical Concern
+        category_display:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          description: Patient's detailed narrative describing symptoms, concerns,
+            or side-effects.
+        started_at:
+          type: string
+          description: Onset timeline (e.g. 'Since yesterday', '2 days ago', or specific
+            date).
+          maxLength: 150
+        severity:
+          allOf:
+          - $ref: '#/components/schemas/SeverityEnum'
+          description: |-
+            Patient-reported symptom severity (Mild / Moderate / Severe).
+
+            * `MILD` - Mild
+            * `MODERATE` - Moderate
+            * `SEVERE` - Severe
+        status:
+          allOf:
+          - $ref: '#/components/schemas/MedicalQueryStatusEnum'
+          readOnly: true
+        status_display:
+          type: string
+          readOnly: true
+        doctor_response:
+          type: string
+          readOnly: true
+          description: Doctor's authoritative written clinical response.
+        responded_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        recommend_follow_up:
+          type: boolean
+          readOnly: true
+          description: Flag indicating doctor advises scheduling a physical follow-up
+            appointment.
+        recommend_lab_tests:
+          type: boolean
+          readOnly: true
+          description: Flag indicating doctor advises diagnostic laboratory investigations.
+        lab_test_recommendations:
+          type: string
+          readOnly: true
+          description: Specific diagnostic lab tests recommended by doctor.
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        resolved_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        follow_up_appointment:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: Linked follow-up appointment booked subsequently.
+        follow_up_appointment_id:
+          type: string
+          readOnly: true
+          default: ''
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - appointment
+      - appointment_date
+      - appointment_id
+      - category
+      - category_display
+      - created_at
+      - description
+      - doctor
+      - doctor_name
+      - doctor_response
+      - doctor_specialization
+      - follow_up_appointment
+      - follow_up_appointment_id
+      - id
+      - lab_test_recommendations
+      - patient
+      - patient_name
+      - prescription_code
+      - query_id
+      - recommend_follow_up
+      - recommend_lab_tests
+      - resolved_at
+      - responded_at
+      - reviewed_at
+      - severity
+      - started_at
+      - status
+      - status_display
+      - updated_at
+    MedicalQueryCategoryEnum:
+      enum:
+      - TREATMENT_NOT_IMPROVING
+      - MEDICINE_SIDE_EFFECTS
+      - QUESTION_ABOUT_PRESCRIBED_MEDICINE
+      - TREATMENT_CLARIFICATION
+      - OTHER_MEDICAL_CONCERN
+      type: string
+      description: |-
+        * `TREATMENT_NOT_IMPROVING` - Treatment Not Improving
+        * `MEDICINE_SIDE_EFFECTS` - Medicine Side Effects
+        * `QUESTION_ABOUT_PRESCRIBED_MEDICINE` - Question About Prescribed Medicine
+        * `TREATMENT_CLARIFICATION` - Treatment Clarification
+        * `OTHER_MEDICAL_CONCERN` - Other Medical Concern
+    MedicalQueryStatusEnum:
+      enum:
+      - PENDING_REVIEW
+      - UNDER_REVIEW
+      - RESPONSE_SENT
+      - FOLLOW_UP_REQUIRED
+      - RESOLVED
+      type: string
+      description: |-
+        * `PENDING_REVIEW` - Pending Review
+        * `UNDER_REVIEW` - Under Review
+        * `RESPONSE_SENT` - Response Sent
+        * `FOLLOW_UP_REQUIRED` - Follow-up Required
+        * `RESOLVED` - Resolved
     Medicine:
       type: object
       properties:
@@ -4660,8 +7180,20 @@ components:
           description: Unique Dispensing Reference (e.g., CF-DSP-10001)
         prescription:
           type: integer
+        prescription_code:
+          type: string
+          readOnly: true
         patient:
           type: integer
+        patient_name:
+          type: string
+          readOnly: true
+        patient_id_code:
+          type: string
+          readOnly: true
+        doctor_name:
+          type: string
+          readOnly: true
         dispensed_by:
           type: integer
           readOnly: true
@@ -4689,10 +7221,14 @@ components:
       - dispensed_at
       - dispensed_by
       - dispensed_by_name
+      - doctor_name
       - id
       - items
       - patient
+      - patient_id_code
+      - patient_name
       - prescription
+      - prescription_code
     MovementTypeEnum:
       enum:
       - PURCHASE_IN
@@ -4712,6 +7248,16 @@ components:
     NullEnum:
       enum:
       - null
+    OverallSatisfactionEnum:
+      enum:
+      - SATISFIED
+      - NEUTRAL
+      - UNSATISFIED
+      type: string
+      description: |-
+        * `SATISFIED` - Satisfied
+        * `NEUTRAL` - Neutral
+        * `UNSATISFIED` - Unsatisfied
     PaginatedAppointmentList:
       type: object
       required:
@@ -4781,6 +7327,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Bill'
+    PaginatedDatabaseBackupRecordList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DatabaseBackupRecord'
     PaginatedDoctorList:
       type: object
       required:
@@ -4850,6 +7419,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LabTest'
+    PaginatedMedicalQueryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/MedicalQuery'
     PaginatedMedicineDispenseList:
       type: object
       required:
@@ -4896,6 +7488,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Medicine'
+    PaginatedPatientFeedbackList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PatientFeedback'
     PaginatedPatientList:
       type: object
       required:
@@ -5082,8 +7697,12 @@ components:
         patient_id_code:
           type: string
           readOnly: true
+        patient_details:
+          type: string
+          readOnly: true
         doctor:
           type: integer
+          nullable: true
         doctor_name:
           type: string
           readOnly: true
@@ -5091,6 +7710,9 @@ components:
           type: string
           readOnly: true
         doctor_specialization:
+          type: string
+          readOnly: true
+        doctor_details:
           type: string
           readOnly: true
         consultation_fee:
@@ -5105,9 +7727,33 @@ components:
           type: string
           format: time
         status:
-          allOf:
-          - $ref: '#/components/schemas/AppointmentStatusEnum'
-          default: SCHEDULED
+          $ref: '#/components/schemas/AppointmentStatusEnum'
+        visit_status:
+          type: string
+          readOnly: true
+        health_problem:
+          type: string
+          default: General Health Checkup
+        problem_description:
+          type: string
+          default: ''
+        reason_for_visit:
+          type: string
+          default: General Consultation
+        authorized_notes:
+          type: string
+          nullable: true
+          description: Clinical consultation notes recorded by authorized medical
+            personnel.
+        has_prescription:
+          type: string
+          readOnly: true
+        has_lab_test:
+          type: string
+          readOnly: true
+        feedback:
+          type: string
+          readOnly: true
         is_checked_in:
           type: boolean
           description: Designates whether the patient has arrived and checked in at
@@ -5117,18 +7763,17 @@ components:
           format: date-time
           nullable: true
           description: Timestamp when the patient was checked in by the receptionist.
+        check_out_time:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Timestamp when the patient was checked out following consultation
+            completion.
         cancellation_reason:
           type: string
           nullable: true
           description: Reason recorded upon cancellation of the appointment.
-        reason_for_visit:
-          type: string
-          description: Primary complaint or purpose of consultation.
-        authorized_notes:
-          type: string
-          nullable: true
-          description: Clinical consultation notes recorded by authorized medical
-            personnel.
         created_by:
           type: integer
           readOnly: true
@@ -5156,9 +7801,18 @@ components:
         patient_name:
           type: string
           readOnly: true
+        patient_id_code:
+          type: string
+          readOnly: true
+        doctor_name:
+          type: string
+          readOnly: true
         appointment:
           type: integer
           nullable: true
+        appointment_code:
+          type: string
+          readOnly: true
         total_amount:
           type: string
           format: decimal
@@ -5257,6 +7911,63 @@ components:
           type: string
           format: date-time
           readOnly: true
+    PatchedDatabaseBackupRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        filename:
+          type: string
+          readOnly: true
+        file_size_bytes:
+          type: integer
+          readOnly: true
+        file_size_display:
+          type: string
+          readOnly: true
+        sha256_checksum:
+          type: string
+          readOnly: true
+          nullable: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/DatabaseBackupRecordStatusEnum'
+          readOnly: true
+        is_automated:
+          type: boolean
+          readOnly: true
+        notes:
+          type: string
+          readOnly: true
+          nullable: true
+        error_message:
+          type: string
+          readOnly: true
+          nullable: true
+        created_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        created_by_name:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        restored_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        restored_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        restored_by_name:
+          type: string
+          readOnly: true
     PatchedDoctor:
       type: object
       properties:
@@ -5322,6 +8033,12 @@ components:
           format: time
         status:
           $ref: '#/components/schemas/DoctorStatusEnum'
+        is_available:
+          type: string
+          readOnly: true
+        is_active:
+          type: string
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -5501,7 +8218,7 @@ components:
           type: string
           maxLength: 200
         category:
-          $ref: '#/components/schemas/CategoryEnum'
+          $ref: '#/components/schemas/Category829Enum'
         description:
           type: string
           nullable: true
@@ -5527,6 +8244,142 @@ components:
           maxLength: 50
         is_active:
           type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedMedicalQuery:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        query_id:
+          type: string
+          readOnly: true
+          description: Unique Query Code (e.g. CF-MQ-10001)
+        appointment:
+          type: integer
+        appointment_id:
+          type: string
+          readOnly: true
+        appointment_date:
+          type: string
+          format: date
+          readOnly: true
+        patient:
+          type: integer
+          readOnly: true
+        patient_name:
+          type: string
+          readOnly: true
+        doctor:
+          type: integer
+          readOnly: true
+        doctor_name:
+          type: string
+          readOnly: true
+        doctor_specialization:
+          type: string
+          readOnly: true
+        prescription:
+          type: integer
+          nullable: true
+        prescription_code:
+          type: string
+          readOnly: true
+          default: ''
+        medicine:
+          type: integer
+          nullable: true
+        medicine_name:
+          type: string
+          description: Medicine name or label identified by patient.
+          maxLength: 200
+        category:
+          allOf:
+          - $ref: '#/components/schemas/MedicalQueryCategoryEnum'
+          description: |-
+            Clinical category of medical query.
+
+            * `TREATMENT_NOT_IMPROVING` - Treatment Not Improving
+            * `MEDICINE_SIDE_EFFECTS` - Medicine Side Effects
+            * `QUESTION_ABOUT_PRESCRIBED_MEDICINE` - Question About Prescribed Medicine
+            * `TREATMENT_CLARIFICATION` - Treatment Clarification
+            * `OTHER_MEDICAL_CONCERN` - Other Medical Concern
+        category_display:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          description: Patient's detailed narrative describing symptoms, concerns,
+            or side-effects.
+        started_at:
+          type: string
+          description: Onset timeline (e.g. 'Since yesterday', '2 days ago', or specific
+            date).
+          maxLength: 150
+        severity:
+          allOf:
+          - $ref: '#/components/schemas/SeverityEnum'
+          description: |-
+            Patient-reported symptom severity (Mild / Moderate / Severe).
+
+            * `MILD` - Mild
+            * `MODERATE` - Moderate
+            * `SEVERE` - Severe
+        status:
+          allOf:
+          - $ref: '#/components/schemas/MedicalQueryStatusEnum'
+          readOnly: true
+        status_display:
+          type: string
+          readOnly: true
+        doctor_response:
+          type: string
+          readOnly: true
+          description: Doctor's authoritative written clinical response.
+        responded_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        recommend_follow_up:
+          type: boolean
+          readOnly: true
+          description: Flag indicating doctor advises scheduling a physical follow-up
+            appointment.
+        recommend_lab_tests:
+          type: boolean
+          readOnly: true
+          description: Flag indicating doctor advises diagnostic laboratory investigations.
+        lab_test_recommendations:
+          type: string
+          readOnly: true
+          description: Specific diagnostic lab tests recommended by doctor.
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        resolved_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        follow_up_appointment:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: Linked follow-up appointment booked subsequently.
+        follow_up_appointment_id:
+          type: string
+          readOnly: true
+          default: ''
         created_at:
           type: string
           format: date-time
@@ -5613,8 +8466,20 @@ components:
           description: Unique Dispensing Reference (e.g., CF-DSP-10001)
         prescription:
           type: integer
+        prescription_code:
+          type: string
+          readOnly: true
         patient:
           type: integer
+        patient_name:
+          type: string
+          readOnly: true
+        patient_id_code:
+          type: string
+          readOnly: true
+        doctor_name:
+          type: string
+          readOnly: true
         dispensed_by:
           type: integer
           readOnly: true
@@ -5717,8 +8582,95 @@ components:
         registration_date:
           type: string
           format: date
+        has_booked_appointment:
+          type: string
+          readOnly: true
+        has_prescription:
+          type: string
+          readOnly: true
+        has_unbilled_prescription:
+          type: string
+          readOnly: true
+        can_generate_bill:
+          type: string
+          readOnly: true
         is_active:
           type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedPatientFeedback:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        appointment:
+          type: integer
+        appointment_id:
+          type: string
+          readOnly: true
+        appointment_date:
+          type: string
+          format: date
+          readOnly: true
+        patient:
+          type: integer
+          readOnly: true
+        patient_name:
+          type: string
+          readOnly: true
+        doctor:
+          type: integer
+          readOnly: true
+        doctor_name:
+          type: string
+          readOnly: true
+        doctor_specialization:
+          type: string
+          readOnly: true
+        doctor_rating:
+          type: integer
+          maximum: 5
+          minimum: 1
+          description: Doctor consultation rating from 1 to 5 stars.
+        consultation_experience:
+          allOf:
+          - $ref: '#/components/schemas/ConsultationExperienceEnum'
+          description: |-
+            Patient's experience rating for the clinical session.
+
+            * `EXCELLENT` - Excellent
+            * `GOOD` - Good
+            * `AVERAGE` - Average
+            * `POOR` - Poor
+        doctor_communication:
+          allOf:
+          - $ref: '#/components/schemas/DoctorCommunicationEnum'
+          description: |-
+            Assessment of doctor's clarity and listening skills.
+
+            * `EXCELLENT` - Excellent
+            * `GOOD` - Good
+            * `POOR` - Poor
+        overall_satisfaction:
+          allOf:
+          - $ref: '#/components/schemas/OverallSatisfactionEnum'
+          description: |-
+            Overall hospital consultation satisfaction.
+
+            * `SATISFIED` - Satisfied
+            * `NEUTRAL` - Neutral
+            * `UNSATISFIED` - Unsatisfied
+        comments:
+          type: string
+          description: Optional written remarks and constructive feedback from the
+            patient.
         created_at:
           type: string
           format: date-time
@@ -5799,6 +8751,9 @@ components:
         patient_name:
           type: string
           readOnly: true
+        patient_id_code:
+          type: string
+          readOnly: true
         doctor:
           type: integer
           readOnly: true
@@ -5814,6 +8769,9 @@ components:
         appointment:
           type: integer
           nullable: true
+        appointment_code:
+          type: string
+          readOnly: true
         diagnosis:
           type: string
           description: Clinical diagnosis and condition summary.
@@ -5951,6 +8909,9 @@ components:
           maxLength: 254
         status:
           $ref: '#/components/schemas/StaffProfileStatusEnum'
+        is_active:
+          type: string
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -6088,6 +9049,18 @@ components:
         registration_date:
           type: string
           format: date
+        has_booked_appointment:
+          type: string
+          readOnly: true
+        has_prescription:
+          type: string
+          readOnly: true
+        has_unbilled_prescription:
+          type: string
+          readOnly: true
+        can_generate_bill:
+          type: string
+          readOnly: true
         is_active:
           type: boolean
         created_at:
@@ -6099,13 +9072,108 @@ components:
           format: date-time
           readOnly: true
       required:
+      - can_generate_bill
       - created_at
       - first_name
       - full_name
+      - has_booked_appointment
+      - has_prescription
+      - has_unbilled_prescription
       - id
       - last_name
       - patient_id
       - phone_number
+      - updated_at
+    PatientFeedback:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        appointment:
+          type: integer
+        appointment_id:
+          type: string
+          readOnly: true
+        appointment_date:
+          type: string
+          format: date
+          readOnly: true
+        patient:
+          type: integer
+          readOnly: true
+        patient_name:
+          type: string
+          readOnly: true
+        doctor:
+          type: integer
+          readOnly: true
+        doctor_name:
+          type: string
+          readOnly: true
+        doctor_specialization:
+          type: string
+          readOnly: true
+        doctor_rating:
+          type: integer
+          maximum: 5
+          minimum: 1
+          description: Doctor consultation rating from 1 to 5 stars.
+        consultation_experience:
+          allOf:
+          - $ref: '#/components/schemas/ConsultationExperienceEnum'
+          description: |-
+            Patient's experience rating for the clinical session.
+
+            * `EXCELLENT` - Excellent
+            * `GOOD` - Good
+            * `AVERAGE` - Average
+            * `POOR` - Poor
+        doctor_communication:
+          allOf:
+          - $ref: '#/components/schemas/DoctorCommunicationEnum'
+          description: |-
+            Assessment of doctor's clarity and listening skills.
+
+            * `EXCELLENT` - Excellent
+            * `GOOD` - Good
+            * `POOR` - Poor
+        overall_satisfaction:
+          allOf:
+          - $ref: '#/components/schemas/OverallSatisfactionEnum'
+          description: |-
+            Overall hospital consultation satisfaction.
+
+            * `SATISFIED` - Satisfied
+            * `NEUTRAL` - Neutral
+            * `UNSATISFIED` - Unsatisfied
+        comments:
+          type: string
+          description: Optional written remarks and constructive feedback from the
+            patient.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - appointment
+      - appointment_date
+      - appointment_id
+      - consultation_experience
+      - created_at
+      - doctor
+      - doctor_communication
+      - doctor_name
+      - doctor_rating
+      - doctor_specialization
+      - id
+      - overall_satisfaction
+      - patient
+      - patient_name
       - updated_at
     Payment:
       type: object
@@ -6216,6 +9284,9 @@ components:
         patient_name:
           type: string
           readOnly: true
+        patient_id_code:
+          type: string
+          readOnly: true
         doctor:
           type: integer
           readOnly: true
@@ -6231,6 +9302,9 @@ components:
         appointment:
           type: integer
           nullable: true
+        appointment_code:
+          type: string
+          readOnly: true
         diagnosis:
           type: string
           description: Clinical diagnosis and condition summary.
@@ -6261,6 +9335,7 @@ components:
           format: date-time
           readOnly: true
       required:
+      - appointment_code
       - created_at
       - diagnosis
       - doctor
@@ -6270,6 +9345,7 @@ components:
       - id
       - items
       - patient
+      - patient_id_code
       - patient_name
       - prescription_id
       - status
@@ -6384,12 +9460,14 @@ components:
     PrescriptionStatusEnum:
       enum:
       - PENDING
+      - COMPLETED
       - PARTIALLY_DISPENSED
       - DISPENSED
       - CANCELLED
       type: string
       description: |-
         * `PENDING` - Pending Dispensation
+        * `COMPLETED` - Completed
         * `PARTIALLY_DISPENSED` - Partially Dispensed
         * `DISPENSED` - Fully Dispensed
         * `CANCELLED` - Cancelled
@@ -6435,6 +9513,16 @@ components:
           default: registration
       required:
       - email
+    SeverityEnum:
+      enum:
+      - MILD
+      - MODERATE
+      - SEVERE
+      type: string
+      description: |-
+        * `MILD` - Mild
+        * `MODERATE` - Moderate
+        * `SEVERE` - Severe
     StaffProfile:
       type: object
       properties:
@@ -6484,6 +9572,9 @@ components:
           maxLength: 254
         status:
           $ref: '#/components/schemas/StaffProfileStatusEnum'
+        is_active:
+          type: string
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -6499,6 +9590,7 @@ components:
       - first_name
       - full_name
       - id
+      - is_active
       - last_name
       - phone_number
       - role
@@ -6527,8 +9619,17 @@ components:
         medicine_name:
           type: string
           readOnly: true
+        medicine_code:
+          type: string
+          readOnly: true
+        dosage_form:
+          type: string
+          readOnly: true
         movement_type:
           $ref: '#/components/schemas/MovementTypeEnum'
+        movement_type_display:
+          type: string
+          readOnly: true
         quantity:
           type: integer
           maximum: 2147483647
@@ -6555,11 +9656,14 @@ components:
           readOnly: true
       required:
       - created_at
+      - dosage_form
       - id
       - medicine
+      - medicine_code
       - medicine_name
       - movement_id
       - movement_type
+      - movement_type_display
       - new_stock
       - performed_by
       - performed_by_name
@@ -6573,26 +9677,14 @@ components:
           format: email
       required:
       - recipient_email
-    TokenObtainPair:
+    TokenBlacklist:
       type: object
       properties:
-        username:
-          type: string
-          writeOnly: true
-        password:
-          type: string
-          writeOnly: true
-        access:
-          type: string
-          readOnly: true
         refresh:
           type: string
-          readOnly: true
+          writeOnly: true
       required:
-      - access
-      - password
       - refresh
-      - username
     TokenRefresh:
       type: object
       properties:

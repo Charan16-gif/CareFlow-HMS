@@ -1,6 +1,9 @@
+import logging
 from decimal import Decimal
 from datetime import timedelta
 import secrets
+
+logger = logging.getLogger(__name__)
 from django.db import transaction, models
 from django.utils import timezone
 from rest_framework import viewsets, permissions, status
@@ -323,8 +326,6 @@ def complete_prescription_and_checkout(prescription, user=None):
     """
     with transaction.atomic():
         prescription = Prescription.objects.select_for_update().get(id=prescription.id)
-        if prescription.status == PrescriptionStatus.COMPLETED:
-            return prescription, prescription.appointment
 
         from appointments.models import Appointment, AppointmentStatus
         appointment = prescription.appointment
@@ -341,15 +342,17 @@ def complete_prescription_and_checkout(prescription, user=None):
                 ]
             ).order_by("-appointment_date", "-appointment_time").first()
 
-        prescription.status = PrescriptionStatus.COMPLETED
-        prescription.save(update_fields=["status", "updated_at"])
+        if prescription.status != PrescriptionStatus.COMPLETED:
+            prescription.status = PrescriptionStatus.COMPLETED
+            prescription.save(update_fields=["status", "updated_at"])
 
         if appointment:
             appointment = Appointment.objects.select_for_update().get(id=appointment.id)
             if appointment.status != AppointmentStatus.CANCELLED:
                 appointment.status = AppointmentStatus.COMPLETED
                 appointment.is_checked_in = False
-                appointment.check_out_time = timezone.now()
+                if not appointment.check_out_time:
+                    appointment.check_out_time = timezone.now()
                 appointment.save(update_fields=["status", "is_checked_in", "check_out_time", "updated_at"])
 
         return prescription, appointment
@@ -381,12 +384,13 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
         user = self.request.user
         role = get_user_role(user)
 
+        base_qs = Prescription.objects.select_related("patient", "doctor", "appointment").prefetch_related("items", "items__medicine")
         if role in (UserRole.ADMIN, UserRole.PHARMACIST, UserRole.RECEPTIONIST) or user.is_superuser:
-            return Prescription.objects.all()
+            return base_qs.all()
         elif role == UserRole.DOCTOR:
-            return Prescription.objects.filter(doctor__user=user)
+            return base_qs.filter(doctor__user=user)
         elif role == UserRole.PATIENT:
-            return Prescription.objects.filter(patient__user=user)
+            return base_qs.filter(patient__user=user)
         return Prescription.objects.none()
 
     def perform_create(self, serializer):
@@ -460,12 +464,38 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
             })
 
         prescription = serializer.save(doctor=doctor, appointment=target_appointment)
-        if prescription.status == PrescriptionStatus.COMPLETED:
-            complete_prescription_and_checkout(prescription, user)
+        # Automatically mark patient visit as checked out and complete prescription after prescription is written
+        complete_prescription_and_checkout(prescription, user)
         try:
             send_prescription_notification_email_async(prescription=prescription)
         except Exception:
             pass
+
+        try:
+            from notifications.services import create_notification, notify_role
+            from notifications.models import NotificationType
+            # Notify Patient
+            if prescription.patient and prescription.patient.user:
+                doc_name = f"Dr. {doctor.first_name} {doctor.last_name}".strip()
+                create_notification(
+                    recipient=prescription.patient.user,
+                    title="New Prescription Issued",
+                    message=f"{doc_name} has issued a new prescription ({prescription.prescription_id}).",
+                    notification_type=NotificationType.PRESCRIPTION,
+                    action_url="/patient/prescriptions",
+                    reference_id=prescription.prescription_id,
+                )
+            # Notify Pharmacists
+            notify_role(
+                role=UserRole.PHARMACIST,
+                title="New Prescription Issued",
+                message=f"Prescription {prescription.prescription_id} issued for patient {prescription.patient.full_name}, awaiting dispensation.",
+                notification_type=NotificationType.PRESCRIPTION,
+                action_url="/pharmacist/buying-payment",
+                reference_id=prescription.prescription_id,
+            )
+        except Exception as notif_err:
+            logger.error("Failed to notify patient/pharmacist of prescription: %s", notif_err)
 
     def perform_update(self, serializer):
         user = self.request.user
@@ -868,6 +898,7 @@ class MedicineDispenseViewSet(viewsets.ModelViewSet):
         # Optionally generate bill & payment if requested
         bill_data = None
         receipt_data = None
+        payment = None
         if create_bill and total_dispense_amount > 0:
             record_payment = request.data.get("record_payment", True)
             bill = Bill.objects.create(
@@ -924,6 +955,52 @@ class MedicineDispenseViewSet(viewsets.ModelViewSet):
                 send_payment_receipt_email_async(payment=payment)
         except Exception:
             pass
+
+        try:
+            from notifications.services import create_notification, notify_role
+            from notifications.models import NotificationType
+            # Notify Patient of dispensed medicines
+            if prescription.patient and prescription.patient.user:
+                create_notification(
+                    recipient=prescription.patient.user,
+                    title="Prescription Dispensed",
+                    message=f"Your prescribed medications ({prescription.prescription_id}) have been dispensed.",
+                    notification_type=NotificationType.PRESCRIPTION,
+                    action_url="/patient/prescriptions",
+                    reference_id=prescription.prescription_id,
+                )
+                if payment:
+                    create_notification(
+                        recipient=prescription.patient.user,
+                        title="Payment Receipt Available",
+                        message=f"Payment receipt of ${payment.amount} is available for your pharmacy purchase.",
+                        notification_type=NotificationType.PAYMENT,
+                        action_url="/patient/overview",
+                        reference_id=str(payment.id),
+                    )
+            # Check for low medicine stock on all dispensed items
+            for med, qty, _ in dispensed_line_items:
+                med.refresh_from_db(fields=["stock_quantity"])
+                reorder = getattr(med, "reorder_level", 20) or 20
+                if med.stock_quantity <= reorder:
+                    notify_role(
+                        role=UserRole.PHARMACIST,
+                        title="Low Medicine Stock Alert",
+                        message=f"Medicine {med.name} is running low ({med.stock_quantity} remaining, reorder level {reorder}).",
+                        notification_type=NotificationType.MEDICINE_STOCK,
+                        action_url="/pharmacist/stock",
+                        reference_id=f"MED-{med.id}",
+                    )
+                    notify_role(
+                        role=UserRole.ADMIN,
+                        title="Low Medicine Stock Alert",
+                        message=f"Medicine {med.name} is running low ({med.stock_quantity} remaining).",
+                        notification_type=NotificationType.MEDICINE_STOCK,
+                        action_url="/admin/tablets",
+                        reference_id=f"MED-{med.id}",
+                    )
+        except Exception as notif_err:
+            logger.error("Failed to process pharmacy dispense notifications: %s", notif_err)
 
         return Response(resp_data, status=status.HTTP_201_CREATED)
 

@@ -8,6 +8,7 @@ from accounts.models import UserRole
 from accounts.permissions import get_user_role, IsSelfPatientOrStaff
 from .models import Patient
 from .serializers import PatientSerializer
+from .services import sync_verified_registered_patients
 
 
 @extend_schema_view(
@@ -38,16 +39,21 @@ class PatientViewSet(viewsets.ModelViewSet):
         user = self.request.user
         role = get_user_role(user)
 
+        walkin_q = (
+            models.Q(patient_id="CF-WALKIN")
+            | models.Q(patient_id__startswith="CF-WALKIN")
+            | models.Q(first_name__icontains="Walk-in")
+            | models.Q(last_name__icontains="Walk-in")
+            | models.Q(first_name__icontains="Walkin")
+            | models.Q(last_name__icontains="Walkin")
+            | models.Q(last_name__iexact="Customer")
+        )
+
         if role in (UserRole.ADMIN, UserRole.RECEPTIONIST, UserRole.PHARMACIST) or user.is_superuser:
-            qs = Patient.objects.all()
-            if role == UserRole.ADMIN:
-                qs = qs.exclude(
-                    models.Q(patient_id="CF-WALKIN") |
-                    models.Q(first_name__icontains="Walk-in") |
-                    models.Q(last_name__icontains="Walk-in") |
-                    models.Q(first_name__icontains="Walkin") |
-                    models.Q(last_name__icontains="Walkin")
-                )
+            # Safely backfill any verified patient users missing a Patient record
+            sync_verified_registered_patients()
+
+            qs = Patient.objects.all().exclude(walkin_q)
             eligible_param = self.request.query_params.get("eligible_for_billing")
             if eligible_param in ("true", "1", "True"):
                 qs = qs.filter(
@@ -61,14 +67,14 @@ class PatientViewSet(viewsets.ModelViewSet):
                 return Patient.objects.filter(
                     appointments__doctor__user=user,
                     appointments__is_checked_in=True
-                ).exclude(appointments__status__in=["CANCELLED", "COMPLETED", "CHECKED_OUT", "NO_SHOW"]).distinct()
+                ).exclude(appointments__status__in=["CANCELLED", "COMPLETED", "CHECKED_OUT", "NO_SHOW"]).exclude(walkin_q).distinct()
 
             return Patient.objects.filter(
                 models.Q(appointments__doctor__user=user) |
                 models.Q(prescriptions__doctor__user=user)
-            ).distinct()
+            ).exclude(walkin_q).distinct()
         elif role == UserRole.PATIENT:
-            return Patient.objects.filter(user=user)
+            return Patient.objects.filter(user=user).exclude(walkin_q)
         return Patient.objects.none()
 
     @action(detail=False, methods=["get"], url_path="checked-in")
@@ -141,6 +147,34 @@ class PatientViewSet(viewsets.ModelViewSet):
                 })
 
         return Response(results)
+
+    @action(detail=False, methods=["get", "patch", "put"], url_path="me")
+    def me(self, request):
+        """
+        Allows the authenticated PATIENT to view and update their personal demographic profile.
+        """
+        user = request.user
+        role = get_user_role(user)
+        if role != UserRole.PATIENT:
+            raise PermissionDenied("Only patients can access their patient profile.")
+
+        patient = Patient.objects.filter(user=user).first()
+        if not patient:
+            return Response({"detail": "Patient profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if request.method == "GET":
+            serializer = self.get_serializer(patient)
+            return Response(serializer.data)
+
+        # Disallow patients from tampering with clinical records, patient ID, or active status
+        data = request.data.copy() if hasattr(request.data, "copy") else dict(request.data)
+        for field in ["patient_id", "medical_history", "allergies", "is_active", "registration_date"]:
+            data.pop(field, None)
+
+        serializer = self.get_serializer(patient, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
     def perform_create(self, serializer):
         user = self.request.user

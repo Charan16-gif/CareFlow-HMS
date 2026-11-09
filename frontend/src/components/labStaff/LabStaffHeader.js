@@ -1,5 +1,6 @@
 import React from 'react';
 import ThemeSwitcher from '../common/ThemeSwitcher';
+import NotificationCenter from '../common/NotificationCenter';
 import { Menu, X, User, FlaskConical } from 'lucide-react';
 
 const LabStaffHeader = ({
@@ -35,6 +36,9 @@ const LabStaffHeader = ({
       <div className="admin-header-right">
         {/* Theme Switcher */}
         <ThemeSwitcher currentTheme={currentTheme} onThemeChange={onThemeChange} />
+
+        {/* Centralized Role-Based Notification Bell */}
+        <NotificationCenter />
 
         <button
           type="button"

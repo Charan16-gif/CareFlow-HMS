@@ -10,6 +10,7 @@ import {
   User,
   Shield,
   FlaskConical,
+  Star,
 } from 'lucide-react';
 
 const navItems = [
@@ -41,6 +42,12 @@ const navItems = [
     path: '/admin/lab-reports',
     label: 'Lab Reports',
     icon: FlaskConical,
+    end: false,
+  },
+  {
+    path: '/admin/feedback',
+    label: 'Feedback Analytics',
+    icon: Star,
     end: false,
   },
 ];

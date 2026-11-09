@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import pharmacistService from '../../services/pharmacistService';
 import ModalPortal from '../../components/common/ModalPortal';
+import Pagination from '../../components/common/Pagination';
 import {
   History,
   ClipboardCheck,
@@ -19,6 +20,13 @@ const PharmacistHistoryPage = () => {
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Reset page when tab or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, searchQuery]);
 
   // Selected Item Modal
   const [selectedDispense, setSelectedDispense] = useState(null);
@@ -85,6 +93,16 @@ const PharmacistHistoryPage = () => {
         s.payment_method?.toLowerCase().includes(q)
     );
   }, [sales, searchQuery]);
+
+  const currentList = useMemo(() => {
+    if (activeTab === 'dispensations') return filteredDispensations;
+    if (activeTab === 'stock') return filteredStock;
+    return filteredSales;
+  }, [activeTab, filteredDispensations, filteredStock, filteredSales]);
+
+  const paginatedItems = useMemo(() => {
+    return currentList.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  }, [currentList, currentPage, pageSize]);
 
   return (
     <div className="admin-page-container pharmacist-page">
@@ -264,7 +282,7 @@ const PharmacistHistoryPage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredDispensations.map((d) => (
+                    {paginatedItems.map((d) => (
                       <tr key={d.id}>
                         <td>
                           <strong style={{ fontFamily: 'monospace', color: '#0ea5e9' }}>
@@ -329,7 +347,7 @@ const PharmacistHistoryPage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredStock.map((mov) => {
+                    {paginatedItems.map((mov) => {
                       const isPositive = ['PURCHASE_IN', 'ADJUSTMENT_IN', 'RETURN_IN'].includes(
                         mov.movement_type
                       );
@@ -401,7 +419,7 @@ const PharmacistHistoryPage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredSales.map((s) => (
+                    {paginatedItems.map((s) => (
                       <tr key={s.id}>
                         <td>
                           <strong style={{ fontFamily: 'monospace', color: '#10b981' }}>
@@ -433,6 +451,20 @@ const PharmacistHistoryPage = () => {
                 </table>
               </div>
             )
+          )}
+
+          {!loading && currentList.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(currentList.length / pageSize)}
+              totalCount={currentList.length}
+              pageSize={pageSize}
+              onPageChange={(page) => setCurrentPage(page)}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setCurrentPage(1);
+              }}
+            />
           )}
         </div>
       </section>

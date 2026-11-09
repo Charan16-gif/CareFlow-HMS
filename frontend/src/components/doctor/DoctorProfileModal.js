@@ -30,6 +30,12 @@ const DoctorProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
     email: '',
     phone: '',
   });
+  const [initialFormData, setInitialFormData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+  });
   const [profileErrors, setProfileErrors] = useState({});
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileSuccessMsg, setProfileSuccessMsg] = useState('');
@@ -83,32 +89,51 @@ const DoctorProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  const isProfileDirty = Boolean(
+    (formData.first_name || '').trim() !== (initialFormData.first_name || '').trim() ||
+    (formData.last_name || '').trim() !== (initialFormData.last_name || '').trim() ||
+    (formData.email || '').trim().toLowerCase() !== (initialFormData.email || '').trim().toLowerCase() ||
+    (formData.phone || '').trim() !== (initialFormData.phone || '').trim()
+  );
+
+  const handleCancel = () => {
+    setFormData(initialFormData);
+    setProfileErrors({});
+    setProfileSuccessMsg('');
+    onClose();
+  };
+
   const loadProfile = async () => {
     try {
       const data = await doctorService.getProfile();
       setProfile(data);
-      setFormData({
+      const init = {
         first_name: data.first_name || '',
         last_name: data.last_name || '',
         email: data.email || '',
         phone: data.phone_number || data.phone || '',
-      });
+      };
+      setFormData(init);
+      setInitialFormData(init);
     } catch (err) {
       const cached = authService.getUserProfile();
       if (cached) {
         setProfile(cached);
-        setFormData({
+        const init = {
           first_name: cached.first_name || '',
           last_name: cached.last_name || '',
           email: cached.email || '',
           phone: cached.phone_number || cached.phone || '',
-        });
+        };
+        setFormData(init);
+        setInitialFormData(init);
       }
     }
   };
 
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
+    if (!isProfileDirty || isSavingProfile) return;
     setProfileErrors({});
     setProfileSuccessMsg('');
 
@@ -135,7 +160,15 @@ const DoctorProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
         email: formData.email.trim().toLowerCase(),
         phone_number: formData.phone.trim(),
       });
+      const newInit = {
+        first_name: updated.first_name || formData.first_name.trim(),
+        last_name: updated.last_name || formData.last_name.trim(),
+        email: updated.email || formData.email.trim().toLowerCase(),
+        phone: updated.phone_number || updated.phone || formData.phone.trim(),
+      };
       setProfile(updated);
+      setFormData(newInit);
+      setInitialFormData(newInit);
       setProfileSuccessMsg('Doctor profile updated successfully.');
       toast.success('Doctor profile updated successfully!', 'Profile Updated');
       if (onProfileUpdated) {
@@ -461,14 +494,18 @@ const DoctorProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
                   <button
                     type="button"
                     className="admin-btn admin-btn-secondary"
-                    onClick={onClose}
+                    onClick={handleCancel}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     className="admin-btn admin-btn-primary"
-                    disabled={isSavingProfile}
+                    disabled={!isProfileDirty || isSavingProfile}
+                    style={{
+                      opacity: !isProfileDirty && !isSavingProfile ? 0.55 : 1,
+                      cursor: !isProfileDirty && !isSavingProfile ? 'not-allowed' : 'pointer',
+                    }}
                   >
                     {isSavingProfile ? (
                       <>

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import labStaffService from '../../services/labStaffService';
 import ModalPortal from '../../components/common/ModalPortal';
+import Pagination from '../../components/common/Pagination';
 import {
   ClipboardList,
   Search,
@@ -29,6 +30,13 @@ const LabStaffTestRequestsPage = () => {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('ALL'); // ALL | PENDING_ACTION | IN_PROGRESS | COMPLETED | CANCELLATION_REQUESTS
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Reset page when tab or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, searchQuery]);
 
   // Selected Order for Details Modal
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -366,22 +374,25 @@ const LabStaffTestRequestsPage = () => {
           </p>
         </div>
       ) : (
-        <div className="admin-table-container">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Request ID</th>
-                <th>Patient Details</th>
-                <th>Diagnostic Test</th>
-                <th>Ordering Doctor</th>
-                <th>Clinical Indication</th>
-                <th>Ordered Date</th>
-                <th>Status</th>
-                <th style={{ textAlign: 'right' }}>Workflow Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredOrders.map((order) => {
+        <>
+          <div className="admin-table-container">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Request ID</th>
+                  <th>Patient Details</th>
+                  <th>Diagnostic Test</th>
+                  <th>Ordering Doctor</th>
+                  <th>Clinical Indication</th>
+                  <th>Ordered Date</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: 'right' }}>Workflow Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredOrders
+                  .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+                  .map((order) => {
                 const isRequested = order.status === 'REQUESTED' || order.status === 'ORDERED';
                 const isAccepted = order.status === 'ACCEPTED' || order.status === 'SAMPLE_COLLECTED';
                 const isInProgress = order.status === 'IN_PROGRESS';
@@ -464,8 +475,8 @@ const LabStaffTestRequestsPage = () => {
                         )}
                       </div>
                     </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', gap: '0.35rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'inline-flex', gap: '0.35rem', justifyContent: 'flex-end', flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
                         {/* Details Modal */}
                         <button
                           type="button"
@@ -600,7 +611,20 @@ const LabStaffTestRequestsPage = () => {
             </tbody>
           </table>
         </div>
-      )}
+
+        <Pagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(filteredOrders.length / pageSize)}
+          totalCount={filteredOrders.length}
+          pageSize={pageSize}
+          onPageChange={(page) => setCurrentPage(page)}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setCurrentPage(1);
+          }}
+        />
+      </>
+    )}
 
       {/* ─────────────────────────────────────────────────────────────
           MODAL: TEST REQUEST DETAILS

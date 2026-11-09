@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import doctorService from '../../services/doctorService';
 import ModalPortal from '../../components/common/ModalPortal';
+import Pagination from '../../components/common/Pagination';
 import {
   Calendar,
   Clock,
@@ -34,6 +35,13 @@ const DoctorAppointmentsPage = () => {
   const [activeTab, setActiveTab] = useState('upcoming');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Reset page when filter or tab changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, statusFilter, searchQuery]);
 
   // Details Modal
   const [selectedAppointment, setSelectedAppointment] = useState(null);
@@ -44,7 +52,6 @@ const DoctorAppointmentsPage = () => {
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState('');
-  const [completing, setCompleting] = useState(false);
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -123,6 +130,10 @@ const DoctorAppointmentsPage = () => {
       return true;
     });
   }, [appointmentsData, activeTab, statusFilter, searchQuery]);
+
+  const paginatedAppointments = useMemo(() => {
+    return currentList.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  }, [currentList, currentPage, pageSize]);
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -213,37 +224,6 @@ const DoctorAppointmentsPage = () => {
       setCancelError(msg);
     } finally {
       setCancelling(false);
-    }
-  };
-
-  const handleCompleteConsultation = async (apt) => {
-    if (!apt) return;
-    setCompleting(true);
-    try {
-      await doctorService.completeConsultation(apt.id);
-      toast.success(
-        `Consultation completed for ${apt.patient_name || 'patient'}. Patient has been checked out successfully.`,
-        'Consultation Completed'
-      );
-      if (selectedAppointment && selectedAppointment.id === apt.id) {
-        setSelectedAppointment((prev) => ({
-          ...prev,
-          status: 'COMPLETED',
-          is_checked_in: false,
-          check_out_time: new Date().toISOString(),
-        }));
-      }
-      fetchAppointments();
-    } catch (err) {
-      let msg = 'Failed to complete consultation. Please try again.';
-      if (err.response?.data?.detail) {
-        msg = err.response.data.detail;
-      } else if (err.response?.data?.error) {
-        msg = err.response.data.error;
-      }
-      toast.error(msg, 'Error');
-    } finally {
-      setCompleting(false);
     }
   };
 
@@ -389,7 +369,8 @@ const DoctorAppointmentsPage = () => {
 
       {/* Appointments Table */}
       {!loading && !error && currentList.length > 0 && (
-        <div className="admin-table-container">
+        <>
+          <div className="admin-table-container">
           <table className="admin-table" aria-label="Doctor patient appointments">
             <thead>
               <tr>
@@ -402,7 +383,7 @@ const DoctorAppointmentsPage = () => {
               </tr>
             </thead>
             <tbody>
-              {currentList.map((apt) => (
+              {paginatedAppointments.map((apt) => (
                 <tr key={apt.id}>
                   {/* Appointment ID */}
                   <td className="admin-font-mono admin-font-semibold">
@@ -439,11 +420,27 @@ const DoctorAppointmentsPage = () => {
                     </div>
                   </td>
 
-                  {/* Reason for Visit */}
+                  {/* Reason for Visit / Health Problem */}
                   <td>
-                    <span style={{ fontSize: '0.875rem' }}>
-                      {apt.reason_for_visit || 'General Consultation'}
-                    </span>
+                    <div>
+                      {apt.health_problem && (
+                        <span
+                          className="admin-badge"
+                          style={{
+                            background: 'rgba(6, 182, 212, 0.12)',
+                            color: 'var(--primary-cyan, #06b6d4)',
+                            fontWeight: 600,
+                            marginBottom: '4px',
+                            display: 'inline-block',
+                          }}
+                        >
+                          {apt.health_problem}
+                        </span>
+                      )}
+                      <span style={{ fontSize: '0.85rem', display: 'block' }}>
+                        {apt.problem_description || apt.reason_for_visit || 'General Consultation'}
+                      </span>
+                    </div>
                   </td>
 
                   {/* Status Badge */}
@@ -479,7 +476,20 @@ const DoctorAppointmentsPage = () => {
             </tbody>
           </table>
         </div>
-      )}
+
+        <Pagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(currentList.length / pageSize)}
+          totalCount={currentList.length}
+          pageSize={pageSize}
+          onPageChange={(page) => setCurrentPage(page)}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setCurrentPage(1);
+          }}
+        />
+      </>
+    )}
 
       {/* Appointment Details Modal */}
       {isDetailsModalOpen && selectedAppointment && (
@@ -614,7 +624,7 @@ const DoctorAppointmentsPage = () => {
 
                 {/* Primary Complaint / Reason for visit */}
                 <div className="admin-form-group" style={{ marginBottom: '1.25rem' }}>
-                  <span className="admin-form-label" style={{ marginBottom: '0.3rem' }}>Primary Complaint / Reason</span>
+                  <span className="admin-form-label" style={{ marginBottom: '0.3rem' }}>Clinical Complaint & Reason for Visit</span>
                   <div
                     style={{
                       padding: '0.75rem 1rem',
@@ -625,7 +635,16 @@ const DoctorAppointmentsPage = () => {
                       lineHeight: 1.5,
                     }}
                   >
-                    {selectedAppointment.reason_for_visit || 'No reason specified'}
+                    {selectedAppointment.health_problem && (
+                      <div style={{ marginBottom: '0.45rem' }}>
+                        <span className="admin-badge admin-badge-teal" style={{ fontSize: '0.8rem' }}>
+                          Complaint: {selectedAppointment.health_problem}
+                        </span>
+                      </div>
+                    )}
+                    <div>
+                      {selectedAppointment.problem_description || selectedAppointment.reason_for_visit || 'No reason specified'}
+                    </div>
                   </div>
                 </div>
 
@@ -754,17 +773,6 @@ const DoctorAppointmentsPage = () => {
                           <span>Write Prescription</span>
                         </button>
                       )}
-
-                      <button
-                        type="button"
-                        className="admin-btn admin-btn-success"
-                        disabled={completing}
-                        style={{ background: '#10b981', color: '#ffffff', borderColor: '#10b981', display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}
-                        onClick={() => handleCompleteConsultation(selectedAppointment)}
-                      >
-                        {completing ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-                        <span>{completing ? 'Completing...' : 'Complete & Check Out'}</span>
-                      </button>
                     </>
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)', padding: '0.45rem 0.85rem', borderRadius: 'var(--admin-radius-sm)', border: '1px solid rgba(245, 158, 11, 0.25)' }}>

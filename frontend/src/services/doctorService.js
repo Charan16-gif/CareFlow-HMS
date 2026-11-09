@@ -305,6 +305,28 @@ export const doctorService = {
     return res.data;
   },
 
+  // ─── PATIENT FEEDBACK (DOCTOR CONSULTATIONS) ───────────────────
+  getDoctorFeedback: async (params = {}) => {
+    const res = await apiClient.get('/feedback/', { params });
+    return res.data.results || res.data || [];
+  },
+
+  // ─── MEDICAL QUERIES / CONTACT DOCTOR INQUIRIES ───────────────
+  getDoctorMedicalQueries: async (params = {}) => {
+    const res = await apiClient.get('/medical-queries/', { params });
+    return res.data.results || res.data || [];
+  },
+
+  respondToMedicalQuery: async (id, payload) => {
+    const res = await apiClient.post(`/medical-queries/${id}/respond/`, payload);
+    return res.data;
+  },
+
+  updateMedicalQueryStatus: async (id, status) => {
+    const res = await apiClient.patch(`/medical-queries/${id}/status/`, { status });
+    return res.data;
+  },
+
   // ─── PROFILE & PASSWORD ────────────────────────────────────────
   getProfile: async () => {
     const res = await apiClient.get('/auth/profile/');

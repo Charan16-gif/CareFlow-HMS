@@ -1,5 +1,6 @@
 import React from 'react';
 import ThemeSwitcher from '../common/ThemeSwitcher';
+import NotificationCenter from '../common/NotificationCenter';
 import { Menu, X, User, Shield } from 'lucide-react';
 
 const AdminHeader = ({
@@ -35,6 +36,9 @@ const AdminHeader = ({
       <div className="admin-header-right">
         {/* Theme Switcher for Admin Dashboard */}
         <ThemeSwitcher currentTheme={currentTheme} onThemeChange={onThemeChange} />
+
+        {/* Centralized Role-Based Notification Bell */}
+        <NotificationCenter />
 
         <button
           type="button"

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import adminService from '../../services/adminService';
 import ModalPortal from '../../components/common/ModalPortal';
+import Pagination from '../../components/common/Pagination';
 import {
   FileSpreadsheet,
   Search,
@@ -28,6 +29,13 @@ const AdminLabReportsPage = () => {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Reset to first page on search or filter change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
 
   // Details Modal
   const [selectedReport, setSelectedReport] = useState(null);
@@ -387,7 +395,8 @@ const AdminLabReportsPage = () => {
           </p>
         </div>
       ) : (
-        <div className="admin-table-container">
+        <>
+          <div className="admin-table-container">
           <table className="admin-table">
               <thead>
                 <tr>
@@ -402,7 +411,9 @@ const AdminLabReportsPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredReports.map((report) => {
+                {filteredReports
+                  .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+                  .map((report) => {
                   const hasReport = Boolean(report.report_file);
 
                   return (
@@ -503,7 +514,20 @@ const AdminLabReportsPage = () => {
               </tbody>
             </table>
           </div>
-        )}
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(filteredReports.length / pageSize)}
+            totalCount={filteredReports.length}
+            pageSize={pageSize}
+            onPageChange={(page) => setCurrentPage(page)}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setCurrentPage(1);
+            }}
+          />
+        </>
+      )}
 
       {/* ─────────────────────────────────────────────────────────────
           MODAL: VIEW REPORT METADATA & FINDINGS (ADMIN READ-ONLY)

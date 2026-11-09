@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import adminService from '../../services/adminService';
 import ModalPortal from '../../components/common/ModalPortal';
+import Pagination from '../../components/common/Pagination';
 import {
   FileText,
   Search,
@@ -22,6 +23,13 @@ const AdminPrescriptionsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   // View Details Modal
   const [selectedPrescription, setSelectedPrescription] = useState(null);
@@ -205,98 +213,114 @@ const AdminPrescriptionsPage = () => {
 
       {/* Data Table */}
       {!loading && !error && prescriptions.length > 0 && (
-        <div className="admin-table-container">
-          <table className="admin-table" aria-label="Prescription records">
-            <thead>
-              <tr>
-                <th scope="col">Prescription ID</th>
-                <th scope="col">Patient</th>
-                <th scope="col">Prescribing Doctor</th>
-                <th scope="col">Date Issued</th>
-                <th scope="col">Medicines Prescribed</th>
-                <th scope="col">Status</th>
-                <th scope="col" className="text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {prescriptions.map((rx) => {
-                const itemCount = rx.items ? rx.items.length : 0;
-                return (
-                  <tr key={rx.id}>
-                    <td className="admin-font-mono admin-font-semibold">
-                      {rx.prescription_number || `#${rx.id}`}
-                    </td>
-                    <td>
-                      <div className="admin-user-cell" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', whiteSpace: 'nowrap' }}>
-                        <Users size={14} className="admin-text-teal" style={{ flexShrink: 0 }} />
-                        <span className="admin-user-name">
-                          {rx.patient_name || (typeof rx.patient === 'object' ? `${rx.patient.first_name} ${rx.patient.last_name}` : 'Patient')}
+        <>
+          <div className="admin-table-container">
+            <table className="admin-table" aria-label="Prescription records">
+              <thead>
+                <tr>
+                  <th scope="col">Prescription ID</th>
+                  <th scope="col">Patient</th>
+                  <th scope="col">Prescribing Doctor</th>
+                  <th scope="col">Date Issued</th>
+                  <th scope="col">Medicines Prescribed</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" className="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {prescriptions
+                  .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+                  .map((rx) => {
+                  const itemCount = rx.items ? rx.items.length : 0;
+                  return (
+                    <tr key={rx.id}>
+                      <td className="admin-font-mono admin-font-semibold">
+                        {rx.prescription_number || `#${rx.id}`}
+                      </td>
+                      <td>
+                        <div className="admin-user-cell" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', whiteSpace: 'nowrap' }}>
+                          <Users size={14} className="admin-text-teal" style={{ flexShrink: 0 }} />
+                          <span className="admin-user-name">
+                            {rx.patient_name || (typeof rx.patient === 'object' ? `${rx.patient.first_name} ${rx.patient.last_name}` : 'Patient')}
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="admin-user-cell" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', whiteSpace: 'nowrap' }}>
+                          <UserCheck size={14} className="admin-text-navy" style={{ flexShrink: 0 }} />
+                          <span className="admin-user-name">
+                            {rx.doctor_name ? (rx.doctor_name.replace(/^(Dr\.?\s*)+/i, 'Dr. ')) : (typeof rx.doctor === 'object' ? `Dr. ${rx.doctor.first_name} ${rx.doctor.last_name}` : 'Doctor')}
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="admin-user-cell" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', whiteSpace: 'nowrap' }}>
+                          <Calendar size={13} className="admin-text-dim" style={{ flexShrink: 0 }} />
+                          <span>{rx.created_at ? new Date(rx.created_at).toLocaleDateString() : 'N/A'}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="admin-badge admin-badge-teal" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap' }}>
+                          <Pill size={11} style={{ flexShrink: 0 }} />
+                          <span>{itemCount} {itemCount === 1 ? 'medicine' : 'medicines'}</span>
                         </span>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="admin-user-cell" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', whiteSpace: 'nowrap' }}>
-                        <UserCheck size={14} className="admin-text-navy" style={{ flexShrink: 0 }} />
-                        <span className="admin-user-name">
-                          {rx.doctor_name ? (rx.doctor_name.replace(/^(Dr\.?\s*)+/i, 'Dr. ')) : (typeof rx.doctor === 'object' ? `Dr. ${rx.doctor.first_name} ${rx.doctor.last_name}` : 'Doctor')}
+                      </td>
+                      <td>
+                        <span className={`admin-badge ${
+                          rx.status === 'DISPENSED'
+                            ? 'admin-badge-green'
+                            : rx.status === 'CANCELLED'
+                            ? 'admin-badge-red'
+                            : 'admin-badge-teal'
+                        }`}>
+                          {rx.status || 'PENDING'}
                         </span>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="admin-user-cell" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', whiteSpace: 'nowrap' }}>
-                        <Calendar size={13} className="admin-text-dim" style={{ flexShrink: 0 }} />
-                        <span>{rx.created_at ? new Date(rx.created_at).toLocaleDateString() : 'N/A'}</span>
-                      </div>
-                    </td>
-                    <td>
-                      <span className="admin-badge admin-badge-teal" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap' }}>
-                        <Pill size={11} style={{ flexShrink: 0 }} />
-                        <span>{itemCount} {itemCount === 1 ? 'medicine' : 'medicines'}</span>
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`admin-badge ${
-                        rx.status === 'DISPENSED'
-                          ? 'admin-badge-green'
-                          : rx.status === 'CANCELLED'
-                          ? 'admin-badge-red'
-                          : 'admin-badge-teal'
-                      }`}>
-                        {rx.status || 'PENDING'}
-                      </span>
-                    </td>
-                    <td className="text-right">
-                      <div className="admin-action-btn-group">
-                        <button
-                          type="button"
-                          className="admin-icon-btn admin-icon-btn-view"
-                          onClick={() => handleOpenDetails(rx)}
-                          aria-label="View prescription details"
-                          title="View Details"
-                        >
-                          <Eye size={15} />
-                        </button>
-                        <button
-                          type="button"
-                          className="admin-icon-btn admin-icon-btn-delete"
-                          onClick={() => {
-                            setToDelete(rx);
-                            setDeleteError('');
-                            setIsDeleteModalOpen(true);
-                          }}
-                          aria-label="Delete or cancel prescription"
-                          title="Delete Prescription"
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                      </td>
+                      <td className="text-right">
+                        <div className="admin-action-btn-group">
+                          <button
+                            type="button"
+                            className="admin-icon-btn admin-icon-btn-view"
+                            onClick={() => handleOpenDetails(rx)}
+                            aria-label="View prescription details"
+                            title="View Details"
+                          >
+                            <Eye size={15} />
+                          </button>
+                          <button
+                            type="button"
+                            className="admin-icon-btn admin-icon-btn-delete"
+                            onClick={() => {
+                              setToDelete(rx);
+                              setDeleteError('');
+                              setIsDeleteModalOpen(true);
+                            }}
+                            aria-label="Delete or cancel prescription"
+                            title="Delete Prescription"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(prescriptions.length / pageSize)}
+            totalCount={prescriptions.length}
+            pageSize={pageSize}
+            onPageChange={(page) => setCurrentPage(page)}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setCurrentPage(1);
+            }}
+          />
+        </>
       )}
 
       {/* ─────────────────────────────────────────────────────────────

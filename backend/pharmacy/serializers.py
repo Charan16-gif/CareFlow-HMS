@@ -123,6 +123,10 @@ class PrescriptionSerializer(serializers.ModelSerializer):
     doctor_specialization = serializers.CharField(source="doctor.specialization", read_only=True)
     doctor_department = serializers.CharField(source="doctor.department", read_only=True)
     appointment_code = serializers.CharField(source="appointment.appointment_id", read_only=True, default=None)
+    max_duration_days = serializers.SerializerMethodField()
+    valid_until = serializers.SerializerMethodField()
+    is_active_course = serializers.SerializerMethodField()
+    days_remaining = serializers.SerializerMethodField()
 
     class Meta:
         model = Prescription
@@ -143,10 +147,81 @@ class PrescriptionSerializer(serializers.ModelSerializer):
             "status",
             "items",
             "prescription_items",
+            "max_duration_days",
+            "valid_until",
+            "is_active_course",
+            "days_remaining",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "prescription_id", "doctor", "status", "created_at", "updated_at"]
+        read_only_fields = [
+            "id",
+            "prescription_id",
+            "doctor",
+            "status",
+            "max_duration_days",
+            "valid_until",
+            "is_active_course",
+            "days_remaining",
+            "created_at",
+            "updated_at",
+        ]
+
+    def _parse_item_duration(self, duration_str):
+        if not duration_str:
+            return 5
+        import re
+        match = re.search(r"(\d+)\s*(day|week|month|year)?", str(duration_str).lower())
+        if not match:
+            return 5
+        num = int(match.group(1))
+        unit = match.group(2) or "day"
+        if unit.startswith("w"):
+            return num * 7
+        elif unit.startswith("m"):
+            return num * 30
+        elif unit.startswith("y"):
+            return num * 365
+        return num
+
+    def get_max_duration_days(self, obj):
+        items = obj.items.all() if hasattr(obj, "items") else []
+        durations = [self._parse_item_duration(item.duration) for item in items]
+        return max(durations) if durations else 5
+
+    def get_valid_until(self, obj):
+        from datetime import timedelta
+        from django.utils import timezone
+        duration_days = self.get_max_duration_days(obj)
+        created_date = obj.created_at.date() if obj.created_at else timezone.now().date()
+        valid_until_date = created_date + timedelta(days=duration_days)
+        return str(valid_until_date)
+
+    def get_days_remaining(self, obj):
+        from datetime import timedelta
+        from django.utils import timezone
+        today = timezone.localdate() if hasattr(timezone, "localdate") else timezone.now().date()
+        duration_days = self.get_max_duration_days(obj)
+        created_date = obj.created_at.date() if obj.created_at else today
+        end_date = created_date + timedelta(days=duration_days)
+        remaining = (end_date - today).days
+        return max(0, remaining)
+
+    def get_is_active_course(self, obj):
+        from pharmacy.models import PrescriptionStatus
+        if obj.status == PrescriptionStatus.CANCELLED:
+            return False
+        # If pending or partially dispensed, always considered active until fulfilled
+        if obj.status in (PrescriptionStatus.PENDING, PrescriptionStatus.PARTIALLY_DISPENSED):
+            return True
+        # If completed or dispensed, it remains active throughout the duration of the prescription
+        from django.utils import timezone
+        from datetime import timedelta
+        today = timezone.localdate() if hasattr(timezone, "localdate") else timezone.now().date()
+        duration_days = self.get_max_duration_days(obj)
+        created_date = obj.created_at.date() if obj.created_at else today
+        end_date = created_date + timedelta(days=duration_days)
+        return today <= end_date
 
     def to_internal_value(self, data):
         data = data.copy() if hasattr(data, "copy") else dict(data)

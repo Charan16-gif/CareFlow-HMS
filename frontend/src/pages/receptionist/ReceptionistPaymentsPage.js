@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import receptionistService from '../../services/receptionistService';
 import ModalPortal from '../../components/common/ModalPortal';
+import Pagination from '../../components/common/Pagination';
 import {
   CreditCard,
   Search,
@@ -31,6 +32,13 @@ const ReceptionistPaymentsPage = () => {
   // Filtering
   const [activeTab, setActiveTab] = useState('ALL'); // 'ALL' | 'UNPAID' | 'PARTIALLY_PAID' | 'PAID'
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Reset page when filter or tab changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, searchQuery]);
 
   // Modals state
   const [selectedBill, setSelectedBill] = useState(null);
@@ -142,6 +150,10 @@ const ReceptionistPaymentsPage = () => {
       return true;
     });
   }, [bills, activeTab, searchQuery]);
+
+  const paginatedBills = useMemo(() => {
+    return filteredBills.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  }, [filteredBills, currentPage, pageSize]);
 
   // Filter eligible patients who have BOTH booked an appointment AND have a prescription created,
   // AND have not already had a bill created for all their prescriptions (bill can only be generated once).
@@ -559,22 +571,23 @@ const ReceptionistPaymentsPage = () => {
             </p>
           </div>
         ) : (
-          <div className="dash-table-wrapper" style={{ overflowX: 'auto' }}>
-            <table className="dash-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  <th style={{ padding: '0.85rem 1rem', textAlign: 'left' }}>Invoice #</th>
-                  <th style={{ padding: '0.85rem 1rem', textAlign: 'left' }}>Patient Name</th>
-                  <th style={{ padding: '0.85rem 1rem', textAlign: 'left' }}>Appt Ref</th>
-                  <th style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>Total (₹)</th>
-                  <th style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>Paid (₹)</th>
-                  <th style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>Balance Due (₹)</th>
-                  <th style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>Status</th>
-                  <th style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredBills.map((bill) => {
+          <>
+            <div className="dash-table-wrapper" style={{ overflowX: 'auto' }}>
+              <table className="dash-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th style={{ padding: '0.85rem 1rem', textAlign: 'left' }}>Invoice #</th>
+                    <th style={{ padding: '0.85rem 1rem', textAlign: 'left' }}>Patient Name</th>
+                    <th style={{ padding: '0.85rem 1rem', textAlign: 'left' }}>Appt Ref</th>
+                    <th style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>Total (₹)</th>
+                    <th style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>Paid (₹)</th>
+                    <th style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>Balance Due (₹)</th>
+                    <th style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>Status</th>
+                    <th style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedBills.map((bill) => {
                   const net = parseFloat(bill.net_amount || bill.total_amount || 0);
                   const paid = parseFloat(bill.paid_amount || 0);
                   const due = parseFloat(bill.balance_due || 0);
@@ -652,7 +665,20 @@ const ReceptionistPaymentsPage = () => {
               </tbody>
             </table>
           </div>
-        )}
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(filteredBills.length / pageSize)}
+            totalCount={filteredBills.length}
+            pageSize={pageSize}
+            onPageChange={(page) => setCurrentPage(page)}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setCurrentPage(1);
+            }}
+          />
+        </>
+      )}
       </div>
 
       {/* ─── MODAL: COLLECT / RECORD PAYMENT ─── */}

@@ -7,6 +7,7 @@ class Gender(models.TextChoices):
     MALE = "MALE", "Male"
     FEMALE = "FEMALE", "Female"
     OTHER = "OTHER", "Other"
+    PREFER_NOT_TO_SAY = "PREFER_NOT_TO_SAY", "Prefer not to say"
 
 
 class BloodGroup(models.TextChoices):
@@ -42,7 +43,7 @@ class Patient(models.Model):
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     date_of_birth = models.DateField(null=True, blank=True)
-    gender = models.CharField(max_length=10, choices=Gender.choices, default=Gender.MALE)
+    gender = models.CharField(max_length=20, choices=Gender.choices, blank=True, null=True)
     blood_group = models.CharField(max_length=5, choices=BloodGroup.choices, blank=True, null=True)
     phone_number = models.CharField(max_length=25, db_index=True)
     email = models.EmailField(blank=True, null=True)

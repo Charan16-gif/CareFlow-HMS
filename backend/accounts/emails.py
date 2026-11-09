@@ -1,7 +1,13 @@
 import logging
+import smtplib
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.utils.html import strip_tags
+from .email_validation import (
+    MSG_EMAIL_ACCEPTED_BY_SMTP,
+    MSG_SMTP_IMMEDIATE_REJECTION,
+    MSG_SMTP_CONNECTION_FAILURE,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -151,19 +157,54 @@ Secure Clinical & Patient Portal
         msg.attach_alternative(html_content, "text/html")
         msg.send(fail_silently=False)
 
-        logger.info(f"Verification OTP email successfully sent to {clean_email}")
+        logger.info(f"Verification OTP email accepted by SMTP for {clean_email}")
         return {
             "success": True,
-            "message": f"Verification code sent to {clean_email}",
+            "status": "ACCEPTED",
+            "message": MSG_EMAIL_ACCEPTED_BY_SMTP,
             "error": None,
+            "is_recipient_error": False,
+        }
+    except smtplib.SMTPRecipientsRefused as exc:
+        err_msg = str(exc)
+        logger.error(f"Recipient address rejected immediately by SMTP for {clean_email}: {err_msg}")
+        return {
+            "success": False,
+            "status": "FAILED",
+            "message": MSG_SMTP_IMMEDIATE_REJECTION,
+            "error": "recipient_refused",
+            "is_recipient_error": True,
+        }
+    except smtplib.SMTPDataError as exc:
+        err_msg = str(exc)
+        logger.error(f"SMTP data error for {clean_email}: {err_msg}")
+        is_recip = any(code in err_msg for code in ("550", "551", "552", "553", "554"))
+        return {
+            "success": False,
+            "status": "FAILED",
+            "message": MSG_SMTP_IMMEDIATE_REJECTION if is_recip else MSG_SMTP_CONNECTION_FAILURE,
+            "error": "data_error",
+            "is_recipient_error": is_recip,
+        }
+    except (smtplib.SMTPAuthenticationError, smtplib.SMTPConnectError, smtplib.SMTPServerDisconnected, TimeoutError) as exc:
+        err_msg = str(exc)
+        logger.error(f"SMTP connection/authentication failure for {clean_email}: {err_msg}")
+        return {
+            "success": False,
+            "status": "FAILED",
+            "message": MSG_SMTP_CONNECTION_FAILURE,
+            "error": "connection_error",
+            "is_recipient_error": False,
         }
     except Exception as exc:
         err_msg = str(exc)
-        logger.error(f"Failed to send OTP email to {clean_email}: {err_msg}", exc_info=True)
+        logger.error(f"Unexpected email dispatch error for {clean_email}: {err_msg}", exc_info=True)
         return {
             "success": False,
-            "message": f"Could not send email to {clean_email}. Please check SMTP configuration.",
+            "status": "FAILED",
+            "message": MSG_SMTP_CONNECTION_FAILURE,
             "error": err_msg,
+            "is_recipient_error": False,
         }
 
 
@@ -492,15 +533,26 @@ Secure Clinical & Staff Portal
         logger.info(f"Welcome credentials email successfully sent to {clean_email}")
         return {
             "success": True,
+            "status": "ACCEPTED",
             "message": f"Welcome credentials email sent to {clean_email}",
             "error": None,
+        }
+    except smtplib.SMTPRecipientsRefused as exc:
+        err_msg = str(exc)
+        logger.error(f"Recipient rejected for welcome email to {clean_email}: {err_msg}")
+        return {
+            "success": False,
+            "status": "FAILED",
+            "message": MSG_SMTP_IMMEDIATE_REJECTION,
+            "error": "recipient_refused",
         }
     except Exception as exc:
         err_msg = str(exc)
         logger.error(f"Failed to send welcome credentials email to {clean_email}: {err_msg}", exc_info=True)
         return {
             "success": False,
-            "message": f"Could not send email to {clean_email}.",
+            "status": "FAILED",
+            "message": MSG_SMTP_CONNECTION_FAILURE,
             "error": err_msg,
         }
 

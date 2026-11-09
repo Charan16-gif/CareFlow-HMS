@@ -1,0 +1,496 @@
+/* CareFlow HMS – Role-Based Notification Center Styles
+   Scoped entirely to .careflow-notification-* to prevent unintended global styling impact.
+   Seamlessly adopts active themes (default, white, black) using CareFlow CSS custom properties.
+*/
+
+.careflow-notification-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Bell Trigger Button */
+.careflow-notification-bell-btn {
+  position: relative;
+  padding: 0.55rem;
+  border-radius: var(--admin-radius-md, 10px);
+  background: var(--admin-surface-secondary, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--admin-border, rgba(255, 255, 255, 0.15));
+  color: var(--admin-text-main, #0f172a);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  backdrop-filter: var(--glass-blur-sm, blur(8px));
+  -webkit-backdrop-filter: var(--glass-blur-sm, blur(8px));
+}
+
+.careflow-notification-bell-btn:hover,
+.careflow-notification-bell-btn.active {
+  border-color: var(--admin-border-highlight, #006a61);
+  background: var(--admin-card-hover, rgba(0, 106, 97, 0.1));
+  box-shadow: 0 4px 14px rgba(0, 106, 97, 0.18);
+  transform: translateY(-1px);
+}
+
+.careflow-bell-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+}
+
+.bell-has-unread {
+  color: var(--primary-teal, #006a61);
+  animation: ntf-bell-wiggle 3s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+@keyframes ntf-bell-wiggle {
+  0%, 85%, 100% {
+    transform: rotate(0deg);
+  }
+  88% {
+    transform: rotate(12deg);
+  }
+  92% {
+    transform: rotate(-10deg);
+  }
+  96% {
+    transform: rotate(6deg);
+  }
+}
+
+/* Unread Count Badge */
+.careflow-notification-badge {
+  position: absolute;
+  top: -7px;
+  right: -9px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.45);
+  border: 1.5px solid var(--admin-surface, #ffffff);
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* Notification Dropdown Panel */
+.careflow-notification-panel {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 410px;
+  max-width: calc(100vw - 32px);
+  max-height: 540px;
+  display: flex;
+  flex-direction: column;
+  background: var(--admin-surface, rgba(255, 255, 255, 0.92));
+  backdrop-filter: var(--glass-blur-lg, blur(20px));
+  -webkit-backdrop-filter: var(--glass-blur-lg, blur(20px));
+  border: 1px solid var(--admin-border, rgba(0, 0, 0, 0.1));
+  border-radius: var(--admin-radius-lg, 16px);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.22), 0 4px 12px rgba(0, 0, 0, 0.08);
+  z-index: 1050;
+  overflow: hidden;
+  animation: ntf-panel-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes ntf-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Panel Header */
+.careflow-notification-panel-header {
+  padding: 0.9rem 1rem 0.6rem 1rem;
+  border-bottom: 1px solid var(--admin-border, rgba(0, 0, 0, 0.08));
+  background: var(--admin-surface-secondary, rgba(255, 255, 255, 0.04));
+  flex-shrink: 0;
+}
+
+.careflow-ntf-header-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+
+.careflow-ntf-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.careflow-ntf-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--admin-text-main, #0f172a);
+  letter-spacing: -0.01em;
+}
+
+.careflow-ntf-pill-badge {
+  font-size: 0.675rem;
+  font-weight: 700;
+  color: var(--primary-teal, #006a61);
+  background: var(--primary-teal-transparent, rgba(0, 106, 97, 0.12));
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+  line-height: 1;
+}
+
+.careflow-ntf-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--admin-text-muted, #64748b);
+  cursor: pointer;
+  padding: 0.3rem;
+  border-radius: var(--admin-radius-sm, 6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.careflow-ntf-close-btn:hover {
+  color: var(--admin-text-main, #0f172a);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* Toolbar & Tabs */
+.careflow-ntf-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.775rem;
+}
+
+.careflow-ntf-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.careflow-ntf-tab {
+  background: transparent;
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--admin-text-muted, #64748b);
+  padding: 0.25rem 0.55rem;
+  border-radius: var(--admin-radius-sm, 6px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.careflow-ntf-tab:hover {
+  color: var(--admin-text-main, #0f172a);
+}
+
+.careflow-ntf-tab.active {
+  color: var(--primary-teal, #006a61);
+  background: var(--primary-teal-transparent, rgba(0, 106, 97, 0.1));
+}
+
+.careflow-ntf-bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.careflow-ntf-action-link {
+  background: transparent;
+  border: none;
+  color: var(--primary-teal, #006a61);
+  font-size: 0.735rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: var(--admin-radius-sm, 6px);
+  transition: all 0.15s ease;
+}
+
+.careflow-ntf-action-link:hover {
+  background: rgba(0, 106, 97, 0.08);
+}
+
+.careflow-ntf-action-link.delete {
+  color: var(--admin-text-muted, #64748b);
+}
+
+.careflow-ntf-action-link.delete:hover {
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.08);
+}
+
+/* Notifications List Container */
+.careflow-notification-list {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 420px;
+  padding: 0.4rem 0;
+}
+
+/* Notification Item */
+.careflow-ntf-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid var(--admin-border, rgba(0, 0, 0, 0.05));
+  cursor: pointer;
+  transition: all 0.18s ease;
+  position: relative;
+  text-align: left;
+}
+
+.careflow-ntf-item:last-child {
+  border-bottom: none;
+}
+
+.careflow-ntf-item:hover {
+  background: var(--admin-card-hover, rgba(0, 106, 97, 0.06));
+}
+
+.careflow-ntf-item.unread {
+  background: var(--admin-surface-secondary, rgba(0, 106, 97, 0.04));
+}
+
+.careflow-ntf-item.unread:hover {
+  background: var(--admin-card-hover, rgba(0, 106, 97, 0.08));
+}
+
+/* Icon Chips */
+.careflow-ntf-item-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.ntf-icon-appointment {
+  background: rgba(14, 165, 233, 0.14);
+  color: #0284c7;
+}
+
+.ntf-icon-prescription {
+  background: rgba(16, 185, 129, 0.14);
+  color: #059669;
+}
+
+.ntf-icon-lab {
+  background: rgba(168, 85, 247, 0.14);
+  color: #9333ea;
+}
+
+.ntf-icon-query {
+  background: rgba(245, 158, 11, 0.14);
+  color: #d97706;
+}
+
+.ntf-icon-payment {
+  background: rgba(16, 185, 129, 0.14);
+  color: #059669;
+}
+
+.ntf-icon-stock {
+  background: rgba(239, 68, 68, 0.14);
+  color: #dc2626;
+}
+
+.ntf-icon-account {
+  background: rgba(99, 102, 241, 0.14);
+  color: #4f46e5;
+}
+
+.ntf-icon-system {
+  background: rgba(100, 116, 139, 0.14);
+  color: #475569;
+}
+
+/* Body & Typography */
+.careflow-ntf-item-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.careflow-ntf-item-top {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.2rem;
+}
+
+.careflow-ntf-item-title {
+  font-size: 0.835rem;
+  font-weight: 700;
+  color: var(--admin-text-main, #0f172a);
+  line-height: 1.25;
+}
+
+.careflow-ntf-unread-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #0284c7;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.careflow-ntf-item-msg {
+  font-size: 0.775rem;
+  color: var(--admin-text-muted, #475569);
+  line-height: 1.35;
+  margin: 0 0 0.35rem 0;
+  word-break: break-word;
+}
+
+.careflow-ntf-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.685rem;
+  color: var(--admin-text-muted, #94a3b8);
+}
+
+.careflow-ntf-item-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.careflow-ntf-type-badge {
+  background: var(--admin-surface-secondary, rgba(0, 0, 0, 0.05));
+  padding: 0.12rem 0.4rem;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+/* Individual Mark As Read Button */
+.careflow-ntf-item-check-btn {
+  background: transparent;
+  border: 1px solid var(--admin-border, rgba(0, 0, 0, 0.1));
+  color: var(--admin-text-muted, #64748b);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  opacity: 0.7;
+  transition: all 0.15s ease;
+  margin-top: 2px;
+}
+
+.careflow-ntf-item-check-btn:hover {
+  opacity: 1;
+  color: #059669;
+  border-color: #059669;
+  background: rgba(5, 150, 105, 0.1);
+  transform: scale(1.08);
+}
+
+/* Empty State */
+.careflow-ntf-empty {
+  padding: 2.2rem 1.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.careflow-ntf-empty-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--admin-surface-secondary, rgba(0, 106, 97, 0.08));
+  color: var(--admin-text-muted, #94a3b8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.8rem;
+}
+
+.careflow-ntf-empty-title {
+  font-size: 0.925rem;
+  font-weight: 700;
+  color: var(--admin-text-main, #0f172a);
+  margin: 0 0 0.35rem 0;
+}
+
+.careflow-ntf-empty-desc {
+  font-size: 0.785rem;
+  color: var(--admin-text-muted, #64748b);
+  margin: 0;
+  max-width: 260px;
+  line-height: 1.4;
+}
+
+/* Loading State */
+.careflow-ntf-loading {
+  padding: 2.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  color: var(--admin-text-muted, #64748b);
+  font-size: 0.825rem;
+}
+
+.careflow-ntf-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--admin-border, rgba(0, 0, 0, 0.1));
+  border-top-color: var(--primary-teal, #006a61);
+  border-radius: 50%;
+  animation: ntf-spin 0.75s linear infinite;
+}
+
+@keyframes ntf-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Mobile Responsive */
+@media (max-width: 640px) {
+  .careflow-notification-panel {
+    position: fixed;
+    top: 76px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
+    max-height: calc(100vh - 100px);
+  }
+}
+

@@ -149,6 +149,11 @@ export const adminService = {
     return res.data;
   },
 
+  resendDoctorCredentials: async (id) => {
+    const res = await apiClient.post(`/staff/doctors/${id}/resend-credentials/`);
+    return res.data;
+  },
+
   // ─── STAFF PROFILES (Lab Staff, Pharmacist, Receptionist) ─────
   getStaff: async (roleFilter = '', search = '') => {
     const params = {};
@@ -170,6 +175,11 @@ export const adminService = {
 
   deleteStaff: async (id) => {
     const res = await apiClient.delete(`/staff/profiles/${id}/`);
+    return res.data;
+  },
+
+  resendStaffCredentials: async (id) => {
+    const res = await apiClient.post(`/staff/profiles/${id}/resend-credentials/`);
     return res.data;
   },
 
@@ -246,6 +256,17 @@ export const adminService = {
       responseType: 'blob',
     });
     return res.data;
+  },
+
+  // ─── PATIENT FEEDBACK ANALYTICS & REVIEWS ─────────────────────
+  getFeedbackAnalytics: async () => {
+    const res = await apiClient.get('/feedback/analytics/');
+    return res.data;
+  },
+
+  getAllFeedback: async (params = {}) => {
+    const res = await apiClient.get('/feedback/', { params });
+    return res.data.results || res.data || [];
   },
 };
 

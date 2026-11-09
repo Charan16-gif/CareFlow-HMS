@@ -10,6 +10,8 @@ import {
   User,
   HeartPulse,
   FlaskConical,
+  Star,
+  MessageSquare,
 } from 'lucide-react';
 
 const patientNavItems = [
@@ -41,6 +43,18 @@ const patientNavItems = [
     path: '/patient/lab-tests',
     label: 'My Lab Tests',
     icon: FlaskConical,
+    end: false,
+  },
+  {
+    path: '/patient/feedback',
+    label: 'Consultation Feedback',
+    icon: Star,
+    end: false,
+  },
+  {
+    path: '/patient/contact-doctor',
+    label: 'Contact Doctor',
+    icon: MessageSquare,
     end: false,
   },
 ];

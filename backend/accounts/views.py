@@ -10,6 +10,10 @@ from .serializers import (
     RegisterSerializer,
     VerifyOTPSerializer,
     ResendOTPSerializer,
+    RealtimeEmailValidationSerializer,
+    EmailCorrectionSerializer,
+    EmailDeliveryStatusSerializer,
+    EmailBounceWebhookSerializer,
     TestEmailSerializer,
     UserProfileSerializer,
     ChangePasswordSerializer,
@@ -17,8 +21,54 @@ from .serializers import (
     PasswordResetConfirmSerializer,
     CareFlowTokenObtainPairSerializer,
 )
+from .email_validation import (
+    MSG_EMAIL_ACCEPTED_BY_SMTP,
+    MSG_SMTP_IMMEDIATE_REJECTION,
+    MSG_INVALID_EMAIL_FORMAT,
+    MSG_OTP_RESENT,
+    MSG_OTP_VERIFIED,
+    MSG_DELIVERY_BOUNCE,
+    verify_email_comprehensive,
+)
 from .emails import send_otp_email
 from .models import EmailOTPVerification
+
+
+class RealtimeEmailValidationView(APIView):
+    """
+    CareFlow HMS Real-Time Email Address Validation Endpoint.
+    Validates email format, domain existence, DNS MX routing, disposable burner domains,
+    common domain typos, and third-party mailbox deliverability before registration.
+    """
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="Real-time email address validation",
+        description=(
+            "Validates email syntax, domain existence, DNS MX records, disposable services, "
+            "domain typos, and third-party mailbox deliverability before registration."
+        ),
+        request=RealtimeEmailValidationSerializer,
+        responses={200: OpenApiTypes.OBJECT},
+    )
+    def post(self, request):
+        serializer = RealtimeEmailValidationSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({
+                "email": request.data.get("email", ""),
+                "status": "INVALID_FORMAT",
+                "is_valid": False,
+                "message": MSG_INVALID_EMAIL_FORMAT,
+                "suggested_email": None,
+                "allow_continue": False,
+                "details": {"syntax": False},
+            }, status=status.HTTP_200_OK)
+
+        email = serializer.validated_data["email"]
+        check_mailbox = serializer.validated_data.get("check_mailbox", True)
+
+        result = verify_email_comprehensive(email, check_mailbox=check_mailbox)
+        return Response(result, status=status.HTTP_200_OK)
 
 
 class RegisterView(APIView):
@@ -41,9 +91,11 @@ class RegisterView(APIView):
         result = serializer.save()
         response_data = {
             "success": True,
-            "message": "Account registered. Verification code has been sent to your email.",
+            "message": MSG_EMAIL_ACCEPTED_BY_SMTP if result["email_sent"] else result["email_message"],
             "email": result["email"],
             "email_sent": result["email_sent"],
+            "delivery_status": result.get("email_status", "PENDING"),
+            "email_message": result["email_message"],
             "email_status": result["email_message"],
         }
         if not result["email_sent"] and result.get("email_error"):
@@ -72,7 +124,7 @@ class VerifyOTPView(APIView):
         result = serializer.save()
         return Response({
             "success": True,
-            "message": "Email verified successfully! You are now authenticated.",
+            "message": MSG_OTP_VERIFIED,
             "user": result["user"],
             "tokens": result["tokens"],
         }, status=status.HTTP_200_OK)
@@ -98,15 +150,132 @@ class ResendOTPView(APIView):
         result = serializer.save()
         response_data = {
             "success": True,
-            "message": f"A new verification code has been dispatched to {result['email']}.",
+            "message": MSG_OTP_RESENT if result["email_sent"] else result["email_message"],
             "email": result["email"],
             "email_sent": result["email_sent"],
+            "delivery_status": result.get("email_status", "PENDING"),
             "email_status": result["email_message"],
         }
         if not result["email_sent"] and result.get("email_error"):
             response_data["email_warning"] = result["email_error"]
 
         return Response(response_data, status=status.HTTP_200_OK)
+
+
+class EmailCorrectionView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="Correct email address and resend OTP",
+        description="Allows an unverified user to correct a mistyped email address, invalidates old OTPs, and sends a new OTP.",
+        request=EmailCorrectionSerializer,
+        responses={
+            200: OpenApiResponse(description="Email updated and new OTP dispatched"),
+            400: OpenApiResponse(description="Validation error"),
+        },
+    )
+    def post(self, request):
+        serializer = EmailCorrectionSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        result = serializer.save()
+        return Response({
+            "success": True,
+            "message": result["message"],
+            "old_email": result["old_email"],
+            "email": result["new_email"],
+            "email_sent": result["email_sent"],
+            "delivery_status": result["email_status"],
+        }, status=status.HTTP_200_OK)
+
+
+class EmailDeliveryStatusView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="Check email delivery and OTP verification status",
+        description="Queries the latest delivery status (PENDING, ACCEPTED, DELIVERED, FAILED, VERIFIED) for an email address.",
+        responses={200: OpenApiTypes.OBJECT},
+    )
+    def get(self, request):
+        email = request.query_params.get("email", "").strip().lower()
+        purpose = request.query_params.get("purpose", "registration")
+        if not email:
+            return Response({"error": "Email parameter is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        otp_rec = EmailOTPVerification.objects.filter(
+            email__iexact=email,
+            purpose=purpose
+        ).order_by("-created_at").first()
+
+        if not otp_rec:
+            return Response({
+                "email": email,
+                "delivery_status": "PENDING",
+                "is_verified": False,
+                "message": "No verification record found."
+            }, status=status.HTTP_200_OK)
+
+        status_msg = {
+            "ACCEPTED": MSG_EMAIL_ACCEPTED_BY_SMTP,
+            "DELIVERED": "Email delivered successfully.",
+            "FAILED": MSG_DELIVERY_BOUNCE if ("bounce" in (otp_rec.delivery_error or "").lower()) else (otp_rec.delivery_error or MSG_SMTP_IMMEDIATE_REJECTION),
+            "VERIFIED": MSG_OTP_VERIFIED,
+            "PENDING": "Email dispatch pending.",
+        }.get(otp_rec.delivery_status, "Status pending.")
+
+        return Response({
+            "email": email,
+            "delivery_status": otp_rec.delivery_status,
+            "is_verified": otp_rec.is_verified,
+            "is_expired": otp_rec.is_expired,
+            "delivery_error": otp_rec.delivery_error,
+            "message": status_msg,
+            "created_at": otp_rec.created_at,
+            "sent_at": otp_rec.sent_at,
+            "verified_at": otp_rec.verified_at,
+        }, status=status.HTTP_200_OK)
+
+
+class EmailBounceWebhookView(APIView):
+    """
+    Receives incoming bounce notifications from email providers or test simulators.
+    Updates the delivery status of matching unverified OTP records to FAILED.
+    """
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="Email bounce webhook handler",
+        description="Processes bounce webhook events and updates email delivery status to FAILED.",
+        request=EmailBounceWebhookSerializer,
+        responses={200: OpenApiTypes.OBJECT},
+    )
+    def post(self, request):
+        serializer = EmailBounceWebhookSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        email = serializer.validated_data["email"].strip().lower()
+        bounce_type = serializer.validated_data.get("bounce_type", "permanent")
+        reason = serializer.validated_data.get("reason", "Undeliverable mailbox")
+
+        # Mark latest unverified OTP verification as FAILED
+        updated_count = EmailOTPVerification.objects.filter(
+            email__iexact=email,
+            is_verified=False
+        ).update(
+            delivery_status="FAILED",
+            delivery_error=f"Bounce ({bounce_type}): {reason}"
+        )
+
+        return Response({
+            "success": True,
+            "email": email,
+            "delivery_status": "FAILED",
+            "message": MSG_DELIVERY_BOUNCE,
+            "updated_records": updated_count,
+        }, status=status.HTTP_200_OK)
 
 
 class EmailConfigStatusView(APIView):

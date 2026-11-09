@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import adminService from '../../services/adminService';
 import ModalPortal from '../../components/common/ModalPortal';
+import Pagination from '../../components/common/Pagination';
 import {
   Users,
   UserCheck,
@@ -18,6 +19,7 @@ import {
   Loader2,
   X,
   ShieldAlert,
+  Send,
 } from 'lucide-react';
 import { toast } from '../../context/ToastContext';
 
@@ -33,8 +35,8 @@ const INITIAL_PATIENT_FORM = {
   first_name: '',
   last_name: '',
   date_of_birth: '',
-  gender: 'MALE',
-  blood_group: 'O+',
+  gender: '',
+  blood_group: '',
   phone: '',
   phone_number: '',
   email: '',
@@ -81,6 +83,15 @@ const AdminUsersPage = () => {
   const [error, setError] = useState(null);
   const [counts, setCounts] = useState({});
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const paginatedUsers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return usersList.slice(start, start + pageSize);
+  }, [usersList, currentPage, pageSize]);
+
   // Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [addRole, setAddRole] = useState(
@@ -107,6 +118,7 @@ const AdminUsersPage = () => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editFormData, setEditFormData] = useState({});
+  const [initialEditFormData, setInitialEditFormData] = useState({});
   const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   // Delete Modal
@@ -185,6 +197,7 @@ const AdminUsersPage = () => {
     setActiveTab(tabId);
     setSearchParams({ tab: tabId });
     setSearchQuery('');
+    setCurrentPage(1);
     if (tabId === 'patients') setAddRole('PATIENT');
     else if (tabId === 'doctors') setAddRole('DOCTOR');
     else if (tabId === 'lab_staff') setAddRole('LAB_STAFF');
@@ -220,13 +233,22 @@ const AdminUsersPage = () => {
     const errors = {};
 
     try {
+      const EMAIL_FORMAT_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+
       if (addRole === 'PATIENT') {
         const phone = (patientForm.phone || patientForm.phone_number || '').trim();
         if (!patientForm.first_name.trim()) errors.first_name = 'First name is required.';
         if (!patientForm.last_name.trim()) errors.last_name = 'Last name is required.';
         if (!patientForm.date_of_birth) errors.date_of_birth = 'Date of birth is required.';
+        if (!patientForm.gender) errors.gender = 'Gender is required.';
         if (!phone) errors.phone = 'Phone number is required.';
-        if (!patientForm.email.trim()) errors.email = 'Email address is required.';
+        if (!patientForm.email.trim()) {
+          errors.email = 'Email address is required.';
+          toast.error('Invalid email address. Please enter a correct email address.', 'Invalid Email');
+        } else if (!EMAIL_FORMAT_REGEX.test(patientForm.email.trim().toLowerCase())) {
+          errors.email = 'Invalid email address. Please enter a correct email address.';
+          toast.error('Invalid email address. Please enter a correct email address.', 'Invalid Email');
+        }
         if (patientForm.password && patientForm.password.length < 8) {
           errors.password = 'Password must be at least 8 characters if provided.';
         }
@@ -241,7 +263,7 @@ const AdminUsersPage = () => {
           ...patientForm,
           phone: phone,
           phone_number: phone,
-          blood_group: patientForm.blood_group || 'O+',
+          blood_group: patientForm.blood_group || null,
         };
 
         await adminService.createPatient(payload);
@@ -249,7 +271,13 @@ const AdminUsersPage = () => {
         const phone = (doctorForm.phone || doctorForm.phone_number || '').trim();
         if (!doctorForm.first_name.trim()) errors.first_name = 'First name is required.';
         if (!doctorForm.last_name.trim()) errors.last_name = 'Last name is required.';
-        if (!doctorForm.email.trim()) errors.email = 'Email address is required.';
+        if (!doctorForm.email.trim()) {
+          errors.email = 'Email address is required.';
+          toast.error('Invalid email address. Please enter a correct email address.', 'Invalid Email');
+        } else if (!EMAIL_FORMAT_REGEX.test(doctorForm.email.trim().toLowerCase())) {
+          errors.email = 'Invalid email address. Please enter a correct email address.';
+          toast.error('Invalid email address. Please enter a correct email address.', 'Invalid Email');
+        }
         if (!doctorForm.username.trim()) errors.username = 'Username is required.';
         if (!doctorForm.password || doctorForm.password.length < 8) {
           errors.password = 'Password must be at least 8 characters.';
@@ -274,12 +302,20 @@ const AdminUsersPage = () => {
         };
 
         await adminService.createDoctor(payload);
+        toast.success(`Doctor Dr. ${doctorForm.first_name} ${doctorForm.last_name} created successfully!`, 'Doctor Created');
+        toast.info('Verification email sending initiated. Please check your inbox.', 'Email Dispatched');
       } else {
         // Staff profiles (LAB_STAFF, PHARMACIST, RECEPTIONIST)
         const phone = (staffForm.phone || staffForm.phone_number || '').trim();
         if (!staffForm.first_name.trim()) errors.first_name = 'First name is required.';
         if (!staffForm.last_name.trim()) errors.last_name = 'Last name is required.';
-        if (!staffForm.email.trim()) errors.email = 'Email address is required.';
+        if (!staffForm.email.trim()) {
+          errors.email = 'Email address is required.';
+          toast.error('Invalid email address. Please enter a correct email address.', 'Invalid Email');
+        } else if (!EMAIL_FORMAT_REGEX.test(staffForm.email.trim().toLowerCase())) {
+          errors.email = 'Invalid email address. Please enter a correct email address.';
+          toast.error('Invalid email address. Please enter a correct email address.', 'Invalid Email');
+        }
         if (!staffForm.username.trim()) errors.username = 'Username is required.';
         if (!staffForm.password || staffForm.password.length < 8) {
           errors.password = 'Password must be at least 8 characters.';
@@ -301,14 +337,13 @@ const AdminUsersPage = () => {
         };
         await adminService.createStaff(payload);
         const roleLabel = addRole === 'LAB_STAFF' ? 'Lab Staff' : addRole === 'PHARMACIST' ? 'Pharmacist' : 'Receptionist';
-        const msg = `${roleLabel} ${staffForm.first_name} ${staffForm.last_name} created successfully! Portal login credentials sent to ${staffForm.email}.`;
+        const msg = `${roleLabel} ${staffForm.first_name} ${staffForm.last_name} created successfully!`;
         toast.success(msg, 'User Created');
+        toast.info('Verification email sending initiated. Please check your inbox.', 'Email Dispatched');
       }
 
       if (addRole === 'PATIENT') {
         toast.success(`Patient ${patientForm.first_name} ${patientForm.last_name} created successfully! Welcome credentials dispatched to ${patientForm.email}.`, 'Patient Created');
-      } else if (addRole === 'DOCTOR') {
-        toast.success(`Doctor Dr. ${doctorForm.first_name} ${doctorForm.last_name} created successfully! Credentials emailed to ${doctorForm.email}.`, 'Doctor Created');
       }
 
       setIsAddModalOpen(false);
@@ -341,31 +376,82 @@ const AdminUsersPage = () => {
     }
   };
 
+  // Resend Credentials for Staff or Doctor
+  const handleResendCredentials = async (user) => {
+    try {
+      if (activeTab === 'doctors' || user.role === 'DOCTOR') {
+        await adminService.resendDoctorCredentials(user.id);
+        toast.success(`Credentials email resent to ${user.email || user.user?.email || 'doctor'}`, 'Email Dispatched');
+        return;
+      }
+      await adminService.resendStaffCredentials(user.id);
+      toast.success(`Credentials email resent to ${user.email || user.user?.email || 'staff'}`, 'Email Dispatched');
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data?.error || err.response?.data?.detail || 'Failed to resend credentials.';
+      toast.error(msg, 'Dispatch Failed');
+    }
+  };
+
   // Open Edit User modal
   const handleOpenEditModal = (user) => {
     setSelectedUser(user);
-    setEditFormData({
+    const init = {
       ...user,
       is_available: user.is_available !== undefined ? user.is_available : (user.status === 'ACTIVE'),
       is_active: user.is_active !== undefined ? user.is_active : (user.status === 'ACTIVE'),
-    });
+    };
+    setEditFormData(init);
+    setInitialEditFormData(init);
     setFormErrors({});
     setIsEditModalOpen(true);
+  };
+
+  const isEditDirty = useMemo(() => {
+    if (!initialEditFormData || !editFormData || Object.keys(initialEditFormData).length === 0) return false;
+    return Object.keys(editFormData).some((key) => {
+      if (['id', 'role', 'username', 'created_at', 'updated_at'].includes(key)) return false;
+      const a = editFormData[key];
+      const b = initialEditFormData[key];
+      if (typeof a === 'string' || typeof b === 'string') {
+        return (String(a || '').trim()) !== (String(b || '').trim());
+      }
+      return a !== b;
+    });
+  }, [editFormData, initialEditFormData]);
+
+  const handleCancelEdit = () => {
+    setEditFormData(initialEditFormData);
+    setFormErrors({});
+    setIsEditModalOpen(false);
   };
 
   // Submit Edit User
   const handleSaveEditSubmit = async (e) => {
     e.preventDefault();
+    if (!isEditDirty || isSavingEdit) return;
     setIsSavingEdit(true);
     setFormErrors({});
 
     try {
+      if (editFormData.email && editFormData.email.trim()) {
+        const cleanEmail = editFormData.email.trim();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+          setFormErrors({ email: 'Please enter a valid email address.' });
+          toast.error('Invalid email address. Please enter a correct email address.', 'Invalid Email');
+          setIsSavingEdit(false);
+          return;
+        }
+      }
+
       const phone = (editFormData.phone_number || editFormData.phone || '').trim();
 
       if (activeTab === 'patients') {
         const payload = {
           first_name: editFormData.first_name,
           last_name: editFormData.last_name,
+          date_of_birth: editFormData.date_of_birth || null,
+          gender: editFormData.gender || null,
+          blood_group: editFormData.blood_group || null,
           phone: phone,
           phone_number: phone,
           email: editFormData.email,
@@ -610,7 +696,7 @@ const AdminUsersPage = () => {
               </tr>
             </thead>
             <tbody>
-              {usersList.map((item) => (
+              {paginatedUsers.map((item) => (
                 <tr key={item.id}>
                   {activeTab === 'patients' ? (
                     <>
@@ -747,12 +833,35 @@ const AdminUsersPage = () => {
                       >
                         <Trash2 size={15} />
                       </button>
+                      {activeTab !== 'patients' && (
+                        <button
+                          type="button"
+                          className="admin-icon-btn"
+                          style={{ color: 'var(--primary-cyan, #06b6d4)' }}
+                          onClick={() => handleResendCredentials(item)}
+                          aria-label="Resend credentials email"
+                          title="Resend Credentials Email"
+                        >
+                          <Send size={15} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          <Pagination
+            currentPage={currentPage}
+            totalCount={usersList.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(sz) => {
+              setPageSize(sz);
+              setCurrentPage(1);
+            }}
+            pageSizeOptions={[10, 20, 50]}
+          />
         </div>
       )}
 
@@ -855,24 +964,29 @@ const AdminUsersPage = () => {
                           {formErrors.date_of_birth && <p className="admin-field-error">{formErrors.date_of_birth}</p>}
                         </div>
                         <div className="admin-form-group">
-                          <label className="admin-form-label">Gender</label>
+                          <label className="admin-form-label">Gender *</label>
                           <select
-                            className="admin-form-select"
+                            className={`admin-form-select ${formErrors.gender ? 'admin-input-error' : ''}`}
                             value={patientForm.gender}
                             onChange={(e) => setPatientForm({ ...patientForm, gender: e.target.value })}
+                            required
                           >
+                            <option value="">-- Select Gender --</option>
                             <option value="MALE">Male</option>
                             <option value="FEMALE">Female</option>
                             <option value="OTHER">Other</option>
+                            <option value="PREFER_NOT_TO_SAY">Prefer not to say</option>
                           </select>
+                          {formErrors.gender && <p className="admin-field-error">{formErrors.gender}</p>}
                         </div>
                         <div className="admin-form-group">
-                          <label className="admin-form-label">Blood Group</label>
+                          <label className="admin-form-label">Blood Group (Optional)</label>
                           <select
                             className="admin-form-select"
                             value={patientForm.blood_group}
                             onChange={(e) => setPatientForm({ ...patientForm, blood_group: e.target.value })}
                           >
+                            <option value="">-- Select Blood Group (Optional) --</option>
                             <option value="A+">A+</option>
                             <option value="A-">A-</option>
                             <option value="B+">B+</option>
@@ -903,12 +1017,11 @@ const AdminUsersPage = () => {
                           <label className="admin-form-label">Email Address *</label>
                           <input
                             type="email"
-                            className={`admin-form-input ${formErrors.email ? 'admin-input-error' : ''}`}
+                            className="admin-form-input"
                             value={patientForm.email}
                             onChange={(e) => setPatientForm({ ...patientForm, email: e.target.value })}
                             required
                           />
-                          {formErrors.email && <p className="admin-field-error">{formErrors.email}</p>}
                         </div>
                       </div>
 
@@ -1079,12 +1192,11 @@ const AdminUsersPage = () => {
                           <label className="admin-form-label">Email *</label>
                           <input
                             type="email"
-                            className={`admin-form-input ${formErrors.email ? 'admin-input-error' : ''}`}
+                            className="admin-form-input"
                             value={doctorForm.email}
                             onChange={(e) => setDoctorForm({ ...doctorForm, email: e.target.value })}
                             required
                           />
-                          {formErrors.email && <p className="admin-field-error">{formErrors.email}</p>}
                         </div>
                         <div className="admin-form-group">
                           <label className="admin-form-label">Phone *</label>
@@ -1221,12 +1333,11 @@ const AdminUsersPage = () => {
                           <label className="admin-form-label">Email *</label>
                           <input
                             type="email"
-                            className={`admin-form-input ${formErrors.email ? 'admin-input-error' : ''}`}
+                            className="admin-form-input"
                             value={staffForm.email}
                             onChange={(e) => setStaffForm({ ...staffForm, email: e.target.value })}
                             required
                           />
-                          {formErrors.email && <p className="admin-field-error">{formErrors.email}</p>}
                         </div>
                         <div className="admin-form-group">
                           <label className="admin-form-label">Phone *</label>
@@ -1528,6 +1639,49 @@ const AdminUsersPage = () => {
                           />
                         </div>
                       </div>
+                      <div className="admin-form-grid">
+                        <div className="admin-form-group">
+                          <label className="admin-form-label">Date of Birth</label>
+                          <input
+                            type="date"
+                            className="admin-form-input"
+                            value={editFormData.date_of_birth || ''}
+                            onChange={(e) => setEditFormData({ ...editFormData, date_of_birth: e.target.value })}
+                          />
+                        </div>
+                        <div className="admin-form-group">
+                          <label className="admin-form-label">Gender</label>
+                          <select
+                            className="admin-form-select"
+                            value={editFormData.gender || ''}
+                            onChange={(e) => setEditFormData({ ...editFormData, gender: e.target.value })}
+                          >
+                            <option value="">-- Select Gender --</option>
+                            <option value="MALE">Male</option>
+                            <option value="FEMALE">Female</option>
+                            <option value="OTHER">Other</option>
+                            <option value="PREFER_NOT_TO_SAY">Prefer not to say</option>
+                          </select>
+                        </div>
+                        <div className="admin-form-group">
+                          <label className="admin-form-label">Blood Group</label>
+                          <select
+                            className="admin-form-select"
+                            value={editFormData.blood_group || ''}
+                            onChange={(e) => setEditFormData({ ...editFormData, blood_group: e.target.value })}
+                          >
+                            <option value="">-- Select Blood Group (Optional) --</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                          </select>
+                        </div>
+                      </div>
                       <div className="admin-form-group">
                         <label className="admin-form-label">Address</label>
                         <input
@@ -1680,7 +1834,7 @@ const AdminUsersPage = () => {
                   <button
                     type="button"
                     className="admin-btn admin-btn-secondary"
-                    onClick={() => setIsEditModalOpen(false)}
+                    onClick={handleCancelEdit}
                     disabled={isSavingEdit}
                   >
                     Cancel
@@ -1688,7 +1842,11 @@ const AdminUsersPage = () => {
                   <button
                     type="submit"
                     className="admin-btn admin-btn-primary"
-                    disabled={isSavingEdit}
+                    disabled={!isEditDirty || isSavingEdit}
+                    style={{
+                      opacity: !isEditDirty && !isSavingEdit ? 0.55 : 1,
+                      cursor: !isEditDirty && !isSavingEdit ? 'not-allowed' : 'pointer',
+                    }}
                   >
                     {isSavingEdit ? (
                       <>

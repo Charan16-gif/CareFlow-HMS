@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import doctorService from '../../services/doctorService';
 import ModalPortal from '../../components/common/ModalPortal';
+import Pagination from '../../components/common/Pagination';
 import {
   FileText,
   Search,
@@ -28,6 +29,13 @@ const DoctorPrescriptionsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Reset page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   // Dropdown reference data
   const [eligiblePatients, setEligiblePatients] = useState([]);
@@ -327,8 +335,8 @@ const DoctorPrescriptionsPage = () => {
       }
 
       const res = await doctorService.createPrescription(payload);
-      const successMessage = `Prescription ${res.prescription_id || 'record'} created and forwarded to pharmacy successfully!`;
-      toast.success(successMessage, 'Prescription Created');
+      const successMessage = `Prescription ${res.prescription_id || 'record'} issued successfully. Patient consultation marked completed & checked out.`;
+      toast.success(successMessage, 'Prescription Issued & Visit Completed');
       setIsCreateModalOpen(false);
       fetchPrescriptions();
     } catch (err) {
@@ -615,21 +623,24 @@ const DoctorPrescriptionsPage = () => {
 
       {/* Data Table */}
       {!loading && !error && prescriptions.length > 0 && (
-        <div className="admin-table-container">
-          <table className="admin-table" aria-label="Doctor prescription records">
-            <thead>
-              <tr>
-                <th scope="col">Prescription ID</th>
-                <th scope="col">Patient</th>
-                <th scope="col">Date Issued</th>
-                <th scope="col">Diagnosis</th>
-                <th scope="col">Medicines</th>
-                <th scope="col">Status</th>
-                <th scope="col" className="text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {prescriptions.map((rx) => {
+        <>
+          <div className="admin-table-container">
+            <table className="admin-table" aria-label="Doctor prescription records">
+              <thead>
+                <tr>
+                  <th scope="col">Prescription ID</th>
+                  <th scope="col">Patient</th>
+                  <th scope="col">Date Issued</th>
+                  <th scope="col">Diagnosis</th>
+                  <th scope="col">Medicines</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" className="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {prescriptions
+                  .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+                  .map((rx) => {
                 const itemCount = rx.items ? rx.items.length : 0;
                 const canEdit = rx.status === 'PENDING';
                 return (
@@ -743,7 +754,20 @@ const DoctorPrescriptionsPage = () => {
             </tbody>
           </table>
         </div>
-      )}
+
+        <Pagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(prescriptions.length / pageSize)}
+          totalCount={prescriptions.length}
+          pageSize={pageSize}
+          onPageChange={(page) => setCurrentPage(page)}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setCurrentPage(1);
+          }}
+        />
+      </>
+    )}
 
       {/* ─────────────────────────────────────────────────────────────
           CREATE PRESCRIPTION MODAL

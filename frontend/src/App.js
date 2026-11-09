@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import HomePage from './pages/HomePage';
@@ -8,7 +8,7 @@ import LoginPage from './pages/LoginPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import EmailVerificationPage from './pages/EmailVerificationPage';
-import NotFoundPage from './pages/NotFoundPage';
+import authService from './services/authService';
 import { ToastProvider } from './context/ToastContext';
 
 // Admin Dashboard Components & Pages
@@ -19,6 +19,8 @@ import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminPrescriptionsPage from './pages/admin/AdminPrescriptionsPage';
 import AdminTabletsPage from './pages/admin/AdminTabletsPage';
 import AdminLabReportsPage from './pages/admin/AdminLabReportsPage';
+import AdminFeedbackPage from './pages/admin/AdminFeedbackPage';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 // Patient Dashboard Components & Pages
 import PatientRoute from './components/patient/PatientRoute';
@@ -28,6 +30,8 @@ import PatientAppointmentsPage from './pages/patient/PatientAppointmentsPage';
 import PatientPrescriptionsPage from './pages/patient/PatientPrescriptionsPage';
 import PatientMedicinesPage from './pages/patient/PatientMedicinesPage';
 import PatientLabTestsPage from './pages/patient/PatientLabTestsPage';
+import PatientFeedbackPage from './pages/patient/PatientFeedbackPage';
+import PatientContactDoctorPage from './pages/patient/PatientContactDoctorPage';
 
 // Doctor Dashboard Components & Pages
 import DoctorRoute from './components/doctor/DoctorRoute';
@@ -37,6 +41,8 @@ import DoctorSchedulePage from './pages/doctor/DoctorSchedulePage';
 import DoctorAppointmentsPage from './pages/doctor/DoctorAppointmentsPage';
 import DoctorPrescriptionsPage from './pages/doctor/DoctorPrescriptionsPage';
 import DoctorLabTestsPage from './pages/doctor/DoctorLabTestsPage';
+import DoctorFeedbackPage from './pages/doctor/DoctorFeedbackPage';
+import DoctorMedicalQueriesPage from './pages/doctor/DoctorMedicalQueriesPage';
 
 // Lab Staff Dashboard Components & Pages
 import LabStaffRoute from './components/labStaff/LabStaffRoute';
@@ -70,6 +76,17 @@ import './styles/adminDashboard.css';
 import './App.css';
 
 const VALID_THEMES = ['default', 'white', 'black'];
+
+const DashboardRedirect = () => {
+  const role = authService.getUserRole();
+  if (role === 'ADMIN') return <Navigate to="/admin" replace />;
+  if (role === 'DOCTOR') return <Navigate to="/doctor" replace />;
+  if (role === 'PATIENT') return <Navigate to="/patient" replace />;
+  if (role === 'LAB_STAFF') return <Navigate to="/lab-staff" replace />;
+  if (role === 'RECEPTIONIST') return <Navigate to="/receptionist" replace />;
+  if (role === 'PHARMACIST') return <Navigate to="/pharmacist" replace />;
+  return <Navigate to="/login" replace />;
+};
 
 const getInitialTheme = () => {
   try {
@@ -136,8 +153,9 @@ function AppContent({ backendConnected, backendChecking }) {
             <Route path="prescriptions" element={<AdminPrescriptionsPage />} />
             <Route path="tablets" element={<AdminTabletsPage />} />
             <Route path="lab-reports" element={<AdminLabReportsPage />} />
+            <Route path="feedback" element={<AdminFeedbackPage />} />
           </Route>
-          <Route path="*" element={<NotFoundPage />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </div>
     );
@@ -164,8 +182,10 @@ function AppContent({ backendConnected, backendChecking }) {
             <Route path="prescriptions" element={<PatientPrescriptionsPage />} />
             <Route path="medicines" element={<PatientMedicinesPage />} />
             <Route path="lab-tests" element={<PatientLabTestsPage />} />
+            <Route path="feedback" element={<PatientFeedbackPage />} />
+            <Route path="contact-doctor" element={<PatientContactDoctorPage />} />
           </Route>
-          <Route path="*" element={<NotFoundPage />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </div>
     );
@@ -192,8 +212,10 @@ function AppContent({ backendConnected, backendChecking }) {
             <Route path="appointments" element={<DoctorAppointmentsPage />} />
             <Route path="prescriptions" element={<DoctorPrescriptionsPage />} />
             <Route path="lab-tests" element={<DoctorLabTestsPage />} />
+            <Route path="feedback" element={<DoctorFeedbackPage />} />
+            <Route path="medical-queries" element={<DoctorMedicalQueriesPage />} />
           </Route>
-          <Route path="*" element={<NotFoundPage />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </div>
     );
@@ -222,7 +244,7 @@ function AppContent({ backendConnected, backendChecking }) {
             <Route path="results/:orderId" element={<LabStaffTestResultDetailsPage />} />
             <Route path="reports" element={<LabStaffReportsPage />} />
           </Route>
-          <Route path="*" element={<NotFoundPage />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </div>
     );
@@ -251,7 +273,7 @@ function AppContent({ backendConnected, backendChecking }) {
             <Route path="schedule" element={<ReceptionistDoctorSchedulePage />} />
             <Route path="payments" element={<ReceptionistPaymentsPage />} />
           </Route>
-          <Route path="*" element={<NotFoundPage />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </div>
     );
@@ -284,15 +306,17 @@ function AppContent({ backendConnected, backendChecking }) {
             <Route path="history" element={<PharmacistBuyingPaymentPage />} />
             <Route path="sales" element={<PharmacistBuyingPaymentPage />} />
           </Route>
-          <Route path="*" element={<NotFoundPage />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </div>
     );
   }
 
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+
   return (
     <div
-      className="careflow-app-layout"
+      className={`careflow-app-layout ${isAuthPage ? 'auth-layout-no-scroll' : ''}`}
       data-theme={theme}
     >
       {/* Navbar present ONLY on landing page */}
@@ -302,19 +326,22 @@ function AppContent({ backendConnected, backendChecking }) {
           onThemeChange={handleThemeChange}
         />
       )}
-      <main className={`careflow-main-content ${isLandingPage ? 'has-fixed-navbar' : ''}`}>
+      <main className={`careflow-main-content ${isLandingPage ? 'has-fixed-navbar' : ''} ${isAuthPage ? 'auth-main-no-scroll' : ''}`}>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/verify-email" element={<EmailVerificationPage />} />
+          <Route path="/verify-otp" element={<EmailVerificationPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="*" element={<NotFoundPage />} />
+          <Route path="/dashboard" element={<DashboardRedirect />} />
+          <Route path="/dashboard/*" element={<DashboardRedirect />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </main>
-      {/* Footer: full navigation on landing page only; minimal copyright on other pages */}
-      <Footer showNavigation={isLandingPage} />
+      {/* Footer: full navigation on landing page only; completely removed on login and register */}
+      {!isAuthPage && <Footer showNavigation={isLandingPage} />}
     </div>
   );
 }
@@ -343,13 +370,16 @@ function App() {
   return (
     <Router>
       <ToastProvider>
-        <AppContent
-          backendConnected={backendConnected}
-          backendChecking={backendChecking}
-        />
+        <ErrorBoundary>
+          <AppContent
+            backendConnected={backendConnected}
+            backendChecking={backendChecking}
+          />
+        </ErrorBoundary>
       </ToastProvider>
     </Router>
   );
 }
 
+export { AppContent };
 export default App;

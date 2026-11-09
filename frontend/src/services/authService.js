@@ -56,9 +56,17 @@ export const authService = {
   },
 
   /**
-   * Logout and clear local tokens and user profile
+   * Logout, blacklist refresh token on server, and clear local tokens and user profile
    */
-  logout: () => {
+  logout: async () => {
+    const refresh = localStorage.getItem('careflow_refresh_token');
+    if (refresh) {
+      try {
+        await apiClient.post('/auth/token/blacklist/', { refresh });
+      } catch (err) {
+        // Silently continue if token is already expired or blacklisted
+      }
+    }
     localStorage.removeItem('careflow_access_token');
     localStorage.removeItem('careflow_refresh_token');
     localStorage.removeItem('careflow_user_role');
@@ -69,7 +77,21 @@ export const authService = {
   /**
    * Register a new user account and trigger real OTP email dispatch
    */
-  register: async ({ firstName, lastName, username, email, phone, password, confirmPassword }) => {
+  register: async ({
+    firstName,
+    lastName,
+    username,
+    email,
+    phone,
+    password,
+    confirmPassword,
+    dateOfBirth,
+    date_of_birth,
+    gender,
+    bloodGroup,
+    blood_group,
+    address,
+  }) => {
     const payload = {
       first_name: firstName,
       last_name: lastName,
@@ -78,6 +100,10 @@ export const authService = {
       phone: phone || '',
       password: password,
       confirm_password: confirmPassword,
+      date_of_birth: dateOfBirth || date_of_birth || null,
+      gender: gender || null,
+      blood_group: bloodGroup || blood_group || null,
+      address: address || null,
     };
     const response = await apiClient.post('/auth/register/', payload);
     return response.data;
@@ -110,6 +136,28 @@ export const authService = {
     const response = await apiClient.post('/auth/resend-otp/', {
       email,
       purpose,
+    });
+    return response.data;
+  },
+
+  /**
+   * Correct an invalid/mistyped email address and dispatch new OTP
+   */
+  correctEmail: async ({ oldEmail, newEmail, purpose = 'registration' }) => {
+    const response = await apiClient.post('/auth/otp/correct-email/', {
+      old_email: oldEmail,
+      new_email: newEmail,
+      purpose,
+    });
+    return response.data;
+  },
+
+  /**
+   * Check email delivery and verification status
+   */
+  getDeliveryStatus: async (email, purpose = 'registration') => {
+    const response = await apiClient.get('/auth/otp/status/', {
+      params: { email, purpose },
     });
     return response.data;
   },
@@ -203,6 +251,18 @@ export const authService = {
       localStorage.setItem('careflow_user_profile', JSON.stringify(res.data));
     }
     return res.data;
+  },
+
+  /**
+   * Real-time email validation before registration
+   * Checks syntax, domain, MX records, disposable email, domain typos, and mailbox deliverability.
+   */
+  validateEmail: async (email, checkMailbox = true) => {
+    const response = await apiClient.post('/auth/validate-email/', {
+      email,
+      check_mailbox: checkMailbox,
+    });
+    return response.data;
   },
 
   /**

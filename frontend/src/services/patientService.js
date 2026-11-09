@@ -1,6 +1,51 @@
 import apiClient from './api';
 
 /**
+ * Evaluates whether a doctor prescription is currently active for the patient
+ * based on the prescribed treatment duration (e.g. 5 Days, 2 Weeks, etc.).
+ */
+export const isPrescriptionCourseActive = (rx) => {
+  if (!rx) return false;
+  if (rx.status === 'CANCELLED') return false;
+
+  // Prefer backend calculated flag if available
+  if (rx.is_active_course !== undefined && rx.is_active_course !== null) {
+    return Boolean(rx.is_active_course);
+  }
+
+  // Prescriptions awaiting pharmacy dispensation are always active
+  if (rx.status === 'PENDING' || rx.status === 'PARTIALLY_DISPENSED') {
+    return true;
+  }
+
+  // Calculate based on the maximum duration specified across prescription items
+  const createdDate = rx.created_at ? new Date(rx.created_at) : new Date();
+  let maxDays = 5;
+
+  if (Array.isArray(rx.items) && rx.items.length > 0) {
+    const daysArr = rx.items.map((item) => {
+      if (!item.duration) return 5;
+      const match = String(item.duration).match(/(\d+)\s*(day|week|month|year)?/i);
+      if (!match) return 5;
+      const num = parseInt(match[1], 10);
+      const unit = (match[2] || 'day').toLowerCase();
+      if (unit.startsWith('w')) return num * 7;
+      if (unit.startsWith('m')) return num * 30;
+      if (unit.startsWith('y')) return num * 365;
+      return num;
+    });
+    maxDays = Math.max(...daysArr);
+  }
+
+  // End of day on (createdDate + maxDays)
+  const expiryDate = new Date(createdDate);
+  expiryDate.setDate(expiryDate.getDate() + maxDays);
+  expiryDate.setHours(23, 59, 59, 999);
+
+  return new Date() <= expiryDate;
+};
+
+/**
  * CareFlow-HMS Patient Dashboard API Service
  * Encapsulates all backend REST API communication for the authenticated patient.
  */
@@ -57,13 +102,9 @@ export const patientService = {
     const nextUpcomingAppointment =
       upcomingAppointments.length > 0 ? upcomingAppointments[0] : null;
 
-    // Filter active vs historical prescriptions
-    const activePrescriptions = prescriptions.filter(
-      (rx) => rx.status === 'PENDING' || rx.status === 'PARTIALLY_DISPENSED'
-    );
-    const historicalPrescriptions = prescriptions.filter(
-      (rx) => rx.status === 'DISPENSED' || rx.status === 'CANCELLED'
-    );
+    // Filter active vs historical prescriptions based on prescription validity duration
+    const activePrescriptions = prescriptions.filter((rx) => isPrescriptionCourseActive(rx));
+    const historicalPrescriptions = prescriptions.filter((rx) => !isPrescriptionCourseActive(rx));
 
     const currentActivePrescription =
       activePrescriptions.length > 0 ? activePrescriptions[0] : null;
@@ -110,16 +151,28 @@ export const patientService = {
     };
   },
 
-  // ─── APPOINTMENTS ───────────────────────────────────────────────
+  // ─── APPOINTMENTS & AUTOMATIC ASSIGNMENT ─────────────────────
+  getHealthProblems: async () => {
+    const res = await apiClient.get('/appointments/health-problems/');
+    return res.data;
+  },
+
   getAppointments: async (params = {}) => {
     const res = await apiClient.get('/appointments/', { params });
     return res.data.results || res.data || [];
   },
 
-  getAvailableSlots: async (doctorId, date) => {
-    const res = await apiClient.get('/appointments/available-slots/', {
-      params: { doctor: doctorId, date },
-    });
+  getAvailableSlots: async (healthProblemOrDoctorId, date) => {
+    const params = { date };
+    if (
+      typeof healthProblemOrDoctorId === 'number' ||
+      (!isNaN(healthProblemOrDoctorId) && !isNaN(parseFloat(healthProblemOrDoctorId)))
+    ) {
+      params.doctor = healthProblemOrDoctorId;
+    } else if (healthProblemOrDoctorId) {
+      params.health_problem = healthProblemOrDoctorId;
+    }
+    const res = await apiClient.get('/appointments/available-slots/', { params });
     return res.data;
   },
 
@@ -198,6 +251,38 @@ export const patientService = {
   emailReport: async (id, email = null) => {
     const payload = email ? { email } : {};
     const res = await apiClient.post(`/laboratory/orders/${id}/send-email/`, payload);
+    return res.data;
+  },
+
+  // ─── PATIENT CONSULTATION FEEDBACK ─────────────────────────────
+  getEligibleFeedbackAppointments: async () => {
+    const res = await apiClient.get('/feedback/eligible-appointments/');
+    return res.data || [];
+  },
+
+  getFeedbackHistory: async () => {
+    const res = await apiClient.get('/feedback/');
+    return res.data.results || res.data || [];
+  },
+
+  submitFeedback: async (payload) => {
+    const res = await apiClient.post('/feedback/', payload);
+    return res.data;
+  },
+
+  // ─── CONTACT DOCTOR / MEDICAL QUERIES ─────────────────────────
+  getEligibleQueryRecords: async () => {
+    const res = await apiClient.get('/medical-queries/eligible-records/');
+    return res.data || { appointments: [], prescriptions: [] };
+  },
+
+  getMedicalQueries: async (params = {}) => {
+    const res = await apiClient.get('/medical-queries/', { params });
+    return res.data.results || res.data || [];
+  },
+
+  submitMedicalQuery: async (payload) => {
+    const res = await apiClient.post('/medical-queries/', payload);
     return res.data;
   },
 

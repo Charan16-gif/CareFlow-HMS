@@ -135,3 +135,66 @@ class PatientModuleTests(TestCase):
         self.client.force_authenticate(user=self.patient1_user)
         res = self.client.delete(f"/api/patients/{self.patient1.id}/")
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_patient_me_endpoint_get_and_update(self):
+        self.client.force_authenticate(user=self.patient1_user)
+        res = self.client.get("/api/patients/me/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data["patient_id"], self.patient1.patient_id)
+
+        update_res = self.client.patch("/api/patients/me/", {
+            "date_of_birth": "1994-06-15",
+            "gender": "PREFER_NOT_TO_SAY",
+            "blood_group": "B+",
+            "address": "42 Galaxy Way, London",
+        }, format="json")
+        self.assertEqual(update_res.status_code, status.HTTP_200_OK)
+        self.patient1.refresh_from_db()
+        self.assertEqual(str(self.patient1.date_of_birth), "1994-06-15")
+        self.assertEqual(self.patient1.gender, "PREFER_NOT_TO_SAY")
+        self.assertEqual(self.patient1.blood_group, "B+")
+        self.assertEqual(self.patient1.address, "42 Galaxy Way, London")
+
+    def test_patient_auth_profile_patch_and_get(self):
+        self.client.force_authenticate(user=self.patient1_user)
+        res = self.client.get("/api/auth/profile/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data["patient_id"], self.patient1.patient_id)
+
+        patch_res = self.client.patch("/api/auth/profile/", {
+            "first_name": "Arthur-Updated",
+            "date_of_birth": "1992-03-10",
+            "gender": "OTHER",
+            "blood_group": "AB-",
+            "address": "Sector 7G",
+        }, format="json")
+        self.assertEqual(patch_res.status_code, status.HTTP_200_OK)
+        self.patient1.refresh_from_db()
+        self.assertEqual(self.patient1.first_name, "Arthur-Updated")
+        self.assertEqual(str(self.patient1.date_of_birth), "1992-03-10")
+        self.assertEqual(self.patient1.gender, "OTHER")
+        self.assertEqual(self.patient1.blood_group, "AB-")
+        self.assertEqual(self.patient1.address, "Sector 7G")
+
+    def test_gender_never_automatically_assigned_male(self):
+        self.client.force_authenticate(user=self.admin_user)
+        payload = {
+            "first_name": "Mystery",
+            "last_name": "Person",
+            "phone_number": "555-0000",
+            "gender": "",
+            "blood_group": "",
+        }
+        res = self.client.post("/api/patients/", payload, format="json")
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        new_p = Patient.objects.get(patient_id=res.data["patient_id"])
+        self.assertIsNone(new_p.gender)
+        self.assertIsNone(new_p.blood_group)
+
+    def test_staff_profile_cannot_set_patient_fields(self):
+        self.client.force_authenticate(user=self.receptionist_user)
+        res = self.client.get("/api/auth/profile/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIsNone(res.data["patient_id"])
+        self.assertIsNone(res.data["date_of_birth"])
+        self.assertIsNone(res.data["gender"])

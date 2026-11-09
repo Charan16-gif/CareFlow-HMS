@@ -210,6 +210,34 @@
 }
 
 /* ═════════════════════════════════════════════════════════════════════════════
+   BLACK THEME ADAPTATION
+   ═════════════════════════════════════════════════════════════════════════════ */
+[data-theme="black"] .careflow-toast-card {
+  background: rgba(10, 14, 22, 0.98) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.8) !important;
+}
+
+[data-theme="black"] .careflow-toast-title {
+  color: #ffffff !important;
+}
+
+[data-theme="black"] .careflow-toast-msg {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="black"] .careflow-toast-close {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="black"] .careflow-toast-close:hover {
+  background: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
    TOAST CONTENT, TYPOGRAPHY & CONTROLS
    ═════════════════════════════════════════════════════════════════════════════ */
 

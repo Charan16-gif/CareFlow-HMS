@@ -168,7 +168,8 @@ class ReceptionistWorkflowBackendTests(APITestCase):
             "doctor": self.doctor.id,
             "appointment_date": str(tomorrow),
             "appointment_time": "14:30:00",
-            "reason_for_visit": "Follow up consultation",
+            "health_problem": "Heart-related Symptoms",
+            "reason_for_visit": "Heart-related Symptoms",
             "status": "SCHEDULED"
         }
         res = self.client.post(url, payload)

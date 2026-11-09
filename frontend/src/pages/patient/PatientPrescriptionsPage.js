@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import patientService from '../../services/patientService';
+import patientService, { isPrescriptionCourseActive } from '../../services/patientService';
 import ModalPortal from '../../components/common/ModalPortal';
+import Pagination from '../../components/common/Pagination';
 import {
   FileText,
   Search,
@@ -10,6 +11,8 @@ import {
   Loader2,
   Eye,
   History,
+  Clock,
+  CheckCircle2,
   X,
 } from 'lucide-react';
 
@@ -21,6 +24,13 @@ const PatientPrescriptionsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+
+  // Reset page when tab or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, searchQuery]);
 
   // Prescription Details Modal State
   const [selectedPrescription, setSelectedPrescription] = useState(null);
@@ -63,13 +73,9 @@ const PatientPrescriptionsPage = () => {
     }
   };
 
-  // Separate active vs historical
-  const activePrescriptions = prescriptions.filter(
-    (rx) => rx.status === 'PENDING' || rx.status === 'PARTIALLY_DISPENSED'
-  );
-  const historicalPrescriptions = prescriptions.filter(
-    (rx) => rx.status === 'DISPENSED' || rx.status === 'CANCELLED'
-  );
+  // Separate active vs historical based on active medication course duration
+  const activePrescriptions = prescriptions.filter((rx) => isPrescriptionCourseActive(rx));
+  const historicalPrescriptions = prescriptions.filter((rx) => !isPrescriptionCourseActive(rx));
 
   const currentList = activeTab === 'active' ? activePrescriptions : historicalPrescriptions;
 
@@ -103,6 +109,8 @@ const PatientPrescriptionsPage = () => {
         );
       case 'DISPENSED':
         return <span className="admin-badge admin-badge-teal">Fully Dispensed</span>;
+      case 'COMPLETED':
+        return <span className="admin-badge admin-badge-success">Completed</span>;
       case 'CANCELLED':
         return <span className="admin-badge admin-badge-danger">Cancelled</span>;
       default:
@@ -219,181 +227,226 @@ const PatientPrescriptionsPage = () => {
               </h4>
               <p>
                 {activeTab === 'active'
-                  ? 'You currently have no active doctor prescriptions awaiting dispensation. When your doctor issues medications, they will appear here.'
-                  : 'Past and completed prescriptions will be archived in this section for your medical history records.'}
+                  ? 'You currently have no active doctor prescriptions undergoing treatment or awaiting dispensation. When your doctor issues medications, they will appear here.'
+                  : 'Past and completed prescriptions will be archived in this section once your treatment course finishes.'}
               </p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              {currentList.map((rx) => (
-                <div
-                  key={rx.id}
-                  style={{
-                    background: 'var(--admin-card-bg)',
-                    border: '1px solid var(--admin-border)',
-                    borderRadius: 'var(--admin-radius-md)',
-                    padding: '1.5rem',
-                    boxShadow: 'var(--admin-shadow-sm)',
-                    transition: 'border-color 0.2s ease',
-                  }}
-                >
-                  {/* Prescription Header */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                      flexWrap: 'wrap',
-                      gap: '0.75rem',
-                      borderBottom: '1px solid var(--admin-border-subtle)',
-                      paddingBottom: '1rem',
-                      marginBottom: '1rem',
-                    }}
-                  >
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                        <span
-                          className="admin-font-mono"
-                          style={{
-                            fontWeight: 700,
-                            color: 'var(--primary-cyan, #06b6d4)',
-                            fontSize: '1.05rem',
-                          }}
-                        >
-                          {rx.prescription_id}
-                        </span>
-                        {getStatusBadge(rx.status)}
-                      </div>
-                      <h4
-                        style={{
-                          fontSize: '1.15rem',
-                          fontWeight: 700,
-                          color: 'var(--admin-heading-color)',
-                          margin: '0.35rem 0 0.15rem',
-                        }}
-                      >
-                        {rx.doctor_name ? (rx.doctor_name.startsWith('Dr.') ? rx.doctor_name : `Dr. ${rx.doctor_name}`) : 'Doctor'}
-                      </h4>
-                      <span style={{ fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>
-                        {rx.doctor_specialization || rx.doctor_department || 'General Practice'} • Issued on {rx.created_at?.slice(0, 10)}
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '0.65rem' }}>
-                      <button
-                        type="button"
-                        className="admin-btn admin-btn-outline admin-btn-sm"
-                        onClick={() => handleOpenDetails(rx)}
-                      >
-                        <Eye size={14} />
-                        <span>View Details</span>
-                      </button>
-                      {activeTab === 'active' && (
-                        <Link
-                          to="/patient/medicines"
-                          className="admin-btn admin-btn-primary admin-btn-sm"
-                        >
-                          <Pill size={14} />
-                          <span>Order Medicines</span>
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Diagnosis */}
-                  {rx.diagnosis && (
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                {currentList
+                  .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+                  .map((rx) => (
                     <div
+                      key={rx.id}
                       style={{
-                        background: 'var(--admin-surface-secondary)',
-                        padding: '0.75rem 1rem',
-                        borderRadius: 'var(--admin-radius-sm)',
-                        marginBottom: '1rem',
-                        border: '1px solid var(--admin-border-subtle)',
+                        background: 'var(--admin-card-bg)',
+                        border: '1px solid var(--admin-border)',
+                        borderRadius: 'var(--admin-radius-md)',
+                        padding: '1.5rem',
+                        boxShadow: 'var(--admin-shadow-sm)',
+                        transition: 'border-color 0.2s ease',
                       }}
                     >
-                      <span
+                      {/* Prescription Header */}
+                      <div
                         style={{
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
-                          color: 'var(--admin-text-muted)',
-                          display: 'block',
-                          marginBottom: '0.2rem',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-start',
+                          flexWrap: 'wrap',
+                          gap: '0.75rem',
+                          borderBottom: '1px solid var(--admin-border-subtle)',
+                          paddingBottom: '1rem',
+                          marginBottom: '1rem',
                         }}
                       >
-                        Clinical Diagnosis & Notes
-                      </span>
-                      <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--admin-text-main)' }}>
-                        {rx.diagnosis}
-                      </p>
-                    </div>
-                  )}
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+                            <span
+                              className="admin-font-mono"
+                              style={{
+                                fontWeight: 700,
+                                color: 'var(--primary-cyan, #06b6d4)',
+                                fontSize: '1.05rem',
+                              }}
+                            >
+                              {rx.prescription_id}
+                            </span>
+                            {getStatusBadge(rx.status)}
+                            {isPrescriptionCourseActive(rx) ? (
+                              <span
+                                className="admin-badge admin-badge-success"
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                              >
+                                <Clock size={12} />
+                                <span>
+                                  Active Course
+                                  {rx.days_remaining !== undefined && rx.days_remaining !== null
+                                    ? ` (${rx.days_remaining}d remaining)`
+                                    : ''}
+                                </span>
+                              </span>
+                            ) : rx.status !== 'CANCELLED' ? (
+                              <span
+                                className="admin-badge"
+                                style={{
+                                  background: 'rgba(148, 163, 184, 0.15)',
+                                  color: '#94a3b8',
+                                  border: '1px solid rgba(148, 163, 184, 0.3)',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                }}
+                              >
+                                <CheckCircle2 size={12} />
+                                <span>Course Completed</span>
+                              </span>
+                            ) : null}
+                          </div>
+                          <h4
+                            style={{
+                              fontSize: '1.15rem',
+                              fontWeight: 700,
+                              color: 'var(--admin-heading-color)',
+                              margin: '0.35rem 0 0.15rem',
+                            }}
+                          >
+                            {rx.doctor_name ? (rx.doctor_name.startsWith('Dr.') ? rx.doctor_name : `Dr. ${rx.doctor_name}`) : 'Doctor'}
+                          </h4>
+                          <span style={{ fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>
+                            {rx.doctor_specialization || rx.doctor_department || 'General Practice'} • Issued on {rx.created_at?.slice(0, 10)}
+                          </span>
+                        </div>
 
-                  {/* Medicines Table */}
-                  <div className="admin-table-container">
-                    <table className="admin-table">
-                      <thead>
-                        <tr>
-                          <th>Medicine Name</th>
-                          <th>Dosage</th>
-                          <th>Frequency</th>
-                          <th>Duration</th>
-                          <th>Prescribed</th>
-                          <th>Dispensed</th>
-                          <th>Instructions</th>
-                          <th style={{ textAlign: 'center' }}>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(rx.items || []).map((item, idx) => {
-                          const remainingQty = item.quantity_prescribed - item.quantity_dispensed;
-                          return (
-                            <tr key={item.id || idx}>
-                              <td className="font-semibold">
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                  <Pill size={15} color="var(--primary-cyan, #06b6d4)" />
-                                  <span>{item.medicine_name} {item.medicine_strength || ''}</span>
-                                </div>
-                              </td>
-                              <td>{item.dosage || '—'}</td>
-                              <td>{item.frequency || '—'}</td>
-                              <td>{item.duration || '—'}</td>
-                              <td className="admin-font-mono font-semibold">
-                                {item.quantity_prescribed}
-                              </td>
-                              <td className="admin-font-mono">
-                                {item.quantity_dispensed}
-                              </td>
-                              <td style={{ fontSize: '0.85rem' }}>
-                                {item.instructions || 'As directed by physician'}
-                              </td>
-                              <td style={{ textAlign: 'center' }}>
-                                {remainingQty > 0 && rx.status !== 'CANCELLED' ? (
-                                  <button
-                                    type="button"
-                                    className="admin-btn admin-btn-primary admin-btn-xs"
-                                    onClick={() =>
-                                      navigate(
-                                        `/patient/medicines?medicine=${item.medicine}&rx=${rx.id}`
-                                      )
-                                    }
-                                  >
-                                    <span>Order ({remainingQty} left)</span>
-                                  </button>
-                                ) : (
-                                  <span style={{ fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>
-                                    Dispensed
-                                  </span>
-                                )}
-                              </td>
+                        <div style={{ display: 'flex', gap: '0.65rem' }}>
+                          <button
+                            type="button"
+                            className="admin-btn admin-btn-outline admin-btn-sm"
+                            onClick={() => handleOpenDetails(rx)}
+                          >
+                            <Eye size={14} />
+                            <span>View Details</span>
+                          </button>
+                          {activeTab === 'active' && (
+                            <Link
+                              to="/patient/medicines"
+                              className="admin-btn admin-btn-primary admin-btn-sm"
+                            >
+                              <Pill size={14} />
+                              <span>Order Medicines</span>
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Diagnosis */}
+                      {rx.diagnosis && (
+                        <div
+                          style={{
+                            background: 'var(--admin-surface-secondary)',
+                            padding: '0.75rem 1rem',
+                            borderRadius: 'var(--admin-radius-sm)',
+                            marginBottom: '1rem',
+                            border: '1px solid var(--admin-border-subtle)',
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              color: 'var(--admin-text-muted)',
+                              display: 'block',
+                              marginBottom: '0.2rem',
+                            }}
+                          >
+                            Clinical Diagnosis & Notes
+                          </span>
+                          <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--admin-text-main)' }}>
+                            {rx.diagnosis}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Medicines Table */}
+                      <div className="admin-table-container">
+                        <table className="admin-table">
+                          <thead>
+                            <tr>
+                              <th>Medicine Name</th>
+                              <th>Dosage</th>
+                              <th>Frequency</th>
+                              <th>Duration</th>
+                              <th>Prescribed</th>
+                              <th>Dispensed</th>
+                              <th>Instructions</th>
+                              <th style={{ textAlign: 'center' }}>Action</th>
                             </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ))}
-            </div>
+                          </thead>
+                          <tbody>
+                            {(rx.items || []).map((item, idx) => {
+                              const remainingQty = item.quantity_prescribed - item.quantity_dispensed;
+                              return (
+                                <tr key={item.id || idx}>
+                                  <td className="font-semibold">
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                      <Pill size={15} color="var(--primary-cyan, #06b6d4)" />
+                                      <span>{item.medicine_name} {item.medicine_strength || ''}</span>
+                                    </div>
+                                  </td>
+                                  <td>{item.dosage || '—'}</td>
+                                  <td>{item.frequency || '—'}</td>
+                                  <td>{item.duration || '—'}</td>
+                                  <td className="admin-font-mono font-semibold">
+                                    {item.quantity_prescribed}
+                                  </td>
+                                  <td className="admin-font-mono">
+                                    {item.quantity_dispensed}
+                                  </td>
+                                  <td style={{ fontSize: '0.85rem' }}>
+                                    {item.instructions || 'As directed by physician'}
+                                  </td>
+                                  <td style={{ textAlign: 'center' }}>
+                                    {remainingQty > 0 && rx.status !== 'CANCELLED' ? (
+                                      <button
+                                        type="button"
+                                        className="admin-btn admin-btn-primary admin-btn-xs"
+                                        onClick={() =>
+                                          navigate(
+                                            `/patient/medicines?medicine=${item.medicine}&rx=${rx.id}`
+                                          )
+                                        }
+                                      >
+                                        <span>Order ({remainingQty} left)</span>
+                                      </button>
+                                    ) : (
+                                      <span style={{ fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>
+                                        Dispensed
+                                      </span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+
+              <Pagination
+                currentPage={currentPage}
+                totalPages={Math.ceil(currentList.length / pageSize)}
+                totalCount={currentList.length}
+                pageSize={pageSize}
+                onPageChange={(page) => setCurrentPage(page)}
+                onPageSizeChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+              />
+            </>
           )}
         </>
       )}
@@ -467,6 +520,51 @@ const PatientPrescriptionsPage = () => {
                           {getStatusBadge(selectedPrescription.status)}
                         </span>
                       </div>
+                      <div className="admin-detail-item">
+                        <span className="admin-detail-label">Regimen Status</span>
+                        <span className="admin-detail-value">
+                          {isPrescriptionCourseActive(selectedPrescription) ? (
+                            <span
+                              className="admin-badge admin-badge-success"
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                            >
+                              <Clock size={12} />
+                              <span>
+                                Active Course
+                                {selectedPrescription.days_remaining !== undefined &&
+                                selectedPrescription.days_remaining !== null
+                                  ? ` (${selectedPrescription.days_remaining}d remaining)`
+                                  : ''}
+                              </span>
+                            </span>
+                          ) : selectedPrescription.status !== 'CANCELLED' ? (
+                            <span
+                              className="admin-badge"
+                              style={{
+                                background: 'rgba(148, 163, 184, 0.15)',
+                                color: '#94a3b8',
+                                border: '1px solid rgba(148, 163, 184, 0.3)',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                              }}
+                            >
+                              <CheckCircle2 size={12} />
+                              <span>Course Completed</span>
+                            </span>
+                          ) : (
+                            <span className="admin-badge admin-badge-danger">Cancelled</span>
+                          )}
+                        </span>
+                      </div>
+                      {selectedPrescription.valid_until && (
+                        <div className="admin-detail-item">
+                          <span className="admin-detail-label">Valid Until</span>
+                          <span className="admin-detail-value font-semibold admin-font-mono">
+                            {selectedPrescription.valid_until}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {selectedPrescription.diagnosis && (

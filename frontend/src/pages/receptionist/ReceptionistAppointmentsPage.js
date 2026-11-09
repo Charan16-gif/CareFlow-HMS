@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import receptionistService from '../../services/receptionistService';
 import ModalPortal from '../../components/common/ModalPortal';
+import Pagination from '../../components/common/Pagination';
 import {
   Calendar,
   Clock,
@@ -29,6 +30,21 @@ const formatSlotDisplay = (t) => {
   return `${hour12}:${parts[1]} ${ampm}`;
 };
 
+const HEALTH_PROBLEMS = [
+  'Fever',
+  'Cold and Cough',
+  'Headache',
+  'Ear Pain',
+  'Eye Problems',
+  'Skin Problems',
+  'Heart-related Symptoms',
+  'Stomach Pain',
+  'Bone and Joint Pain',
+  'Dental Problems',
+  'General Health Checkup',
+  'Other',
+];
+
 const ReceptionistAppointmentsPage = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +54,13 @@ const ReceptionistAppointmentsPage = () => {
   // Filtering
   const [activeTab, setActiveTab] = useState('today'); // 'today' | 'upcoming' | 'previous' | 'completed' | 'cancelled' | 'all'
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Reset page when filter or tab changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, searchQuery]);
 
   // Modals state
   const [isBookModalOpen, setIsBookModalOpen] = useState(false);
@@ -53,6 +76,8 @@ const ReceptionistAppointmentsPage = () => {
   // Booking form state
   const [bookingPatientId, setBookingPatientId] = useState('');
   const [bookingDoctorId, setBookingDoctorId] = useState('');
+  const [bookingHealthProblem, setBookingHealthProblem] = useState('General Health Checkup');
+  const [bookingProblemDesc, setBookingProblemDesc] = useState('');
   const [bookingDate, setBookingDate] = useState('');
   const [bookingSlot, setBookingSlot] = useState('');
   const [bookingReason, setBookingReason] = useState('');
@@ -232,6 +257,10 @@ const ReceptionistAppointmentsPage = () => {
     });
   }, [appointments, activeTab, searchQuery, todayStr]);
 
+  const paginatedAppointments = useMemo(() => {
+    return filteredAppointments.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  }, [filteredAppointments, currentPage, pageSize]);
+
   // Filtered patients for booking dropdown
   const filteredBookingPatients = useMemo(() => {
     if (!patientSearch.trim()) return patients.slice(0, 15);
@@ -274,6 +303,8 @@ const ReceptionistAppointmentsPage = () => {
   const handleOpenBookModal = () => {
     setBookingPatientId('');
     setBookingDoctorId('');
+    setBookingHealthProblem('General Health Checkup');
+    setBookingProblemDesc('');
     setBookingDate(todayStr);
     setBookingSlot('');
     setBookingReason('');
@@ -307,10 +338,12 @@ const ReceptionistAppointmentsPage = () => {
       await receptionistService.bookAppointment({
         patient: bookingPatientId,
         doctor: bookingDoctorId,
+        health_problem: bookingHealthProblem,
+        problem_description: bookingProblemDesc.trim(),
         appointment_date: bookingDate,
         appointment_time: bookingSlot,
-        reason_for_visit: bookingReason.trim() || 'General Consultation',
-        reason: bookingReason.trim() || 'General Consultation',
+        reason_for_visit: bookingReason.trim() || bookingHealthProblem,
+        reason: bookingReason.trim() || bookingHealthProblem,
       });
       setIsBookModalOpen(false);
       toast.success('Appointment booked successfully!', 'Appointment Booked');
@@ -544,7 +577,8 @@ const ReceptionistAppointmentsPage = () => {
             </p>
           </div>
         ) : (
-          <div className="dash-table-wrapper" style={{ overflowX: 'auto' }}>
+          <>
+            <div className="dash-table-wrapper" style={{ overflowX: 'auto' }}>
             <table className="dash-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
@@ -558,7 +592,7 @@ const ReceptionistAppointmentsPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredAppointments.map((app) => {
+                {paginatedAppointments.map((app) => {
                   const patName =
                     app.patient_name ||
                     (app.patient_details
@@ -590,6 +624,18 @@ const ReceptionistAppointmentsPage = () => {
                         <div>{docName}</div>
                         {app.doctor_details?.specialization && (
                           <div style={{ fontSize: '0.8rem', opacity: 0.65 }}>{app.doctor_details.specialization}</div>
+                        )}
+                        {app.health_problem && (
+                          <span
+                            className="dash-badge badge-neutral"
+                            style={{
+                              fontSize: '0.72rem',
+                              marginTop: '3px',
+                              display: 'inline-block',
+                            }}
+                          >
+                            {app.health_problem}
+                          </span>
                         )}
                       </td>
                       <td style={{ padding: '0.85rem 1rem' }}>
@@ -666,7 +712,20 @@ const ReceptionistAppointmentsPage = () => {
               </tbody>
             </table>
           </div>
-        )}
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(filteredAppointments.length / pageSize)}
+            totalCount={filteredAppointments.length}
+            pageSize={pageSize}
+            onPageChange={(page) => setCurrentPage(page)}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setCurrentPage(1);
+            }}
+          />
+        </>
+      )}
       </div>
 
       {/* ─── MODAL: BOOK APPOINTMENT ─── */}
@@ -817,6 +876,41 @@ const ReceptionistAppointmentsPage = () => {
                         )}
                       </div>
                     )}
+                  </div>
+
+                  {/* Health Problem & Problem Description */}
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label className="dash-label" style={{ display: 'block', marginBottom: '0.35rem', fontWeight: 600 }}>
+                      Health Problem / Complaint
+                    </label>
+                    <select
+                      className="dash-input"
+                      value={bookingHealthProblem}
+                      onChange={(e) => setBookingHealthProblem(e.target.value)}
+                    >
+                      {HEALTH_PROBLEMS.map((hp) => (
+                        <option key={hp} value={hp}>
+                          {hp}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label className="dash-label" style={{ display: 'block', marginBottom: '0.35rem', fontWeight: 600 }}>
+                      Problem Description {bookingHealthProblem === 'Other' && <span style={{ color: '#ef4444' }}>*</span>}
+                    </label>
+                    <input
+                      type="text"
+                      className="dash-input"
+                      placeholder={
+                        bookingHealthProblem === 'Other'
+                          ? 'Detailed symptoms (required for Other)...'
+                          : 'Specific symptom notes (optional)...'
+                      }
+                      value={bookingProblemDesc}
+                      onChange={(e) => setBookingProblemDesc(e.target.value)}
+                    />
                   </div>
 
                   {/* Reason for Visit */}

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import doctorService from '../../services/doctorService';
 import ModalPortal from '../../components/common/ModalPortal';
+import Pagination from '../../components/common/Pagination';
 import {
   FlaskConical,
   Search,
@@ -29,6 +30,13 @@ const DoctorLabTestsPage = () => {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Reset page when filter or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, searchQuery]);
 
   // Dropdown data for creating test orders
   const [eligiblePatients, setEligiblePatients] = useState([]);
@@ -572,21 +580,24 @@ const DoctorLabTestsPage = () => {
           </button>
         </div>
       ) : (
-        <div className="admin-table-container">
-          <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Order Identifier</th>
-                  <th>Patient Details</th>
-                  <th>Diagnostic Test</th>
-                  <th>Date Ordered</th>
-                  <th>Current Status</th>
-                  <th>Results / Report</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredOrders.map((order) => {
+        <>
+          <div className="admin-table-container">
+            <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Order Identifier</th>
+                    <th>Patient Details</th>
+                    <th>Diagnostic Test</th>
+                    <th>Date Ordered</th>
+                    <th>Current Status</th>
+                    <th>Results / Report</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredOrders
+                    .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+                    .map((order) => {
                   const isEligibleForCancel =
                     order.status !== 'COMPLETED' &&
                     order.status !== 'CANCELLED' &&
@@ -674,8 +685,8 @@ const DoctorLabTestsPage = () => {
                           </span>
                         )}
                       </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <div style={{ display: 'inline-flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'inline-flex', gap: '0.4rem', justifyContent: 'flex-end', flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
                           <button
                             type="button"
                             className="admin-btn admin-btn-secondary"
@@ -737,7 +748,20 @@ const DoctorLabTestsPage = () => {
               </tbody>
             </table>
           </div>
-        )}
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(filteredOrders.length / pageSize)}
+            totalCount={filteredOrders.length}
+            pageSize={pageSize}
+            onPageChange={(page) => setCurrentPage(page)}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setCurrentPage(1);
+            }}
+          />
+        </>
+      )}
 
       {/* ─────────────────────────────────────────────────────────────
           MODAL: REQUEST LAB TEST

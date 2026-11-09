@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import patientService from '../../services/patientService';
 import ModalPortal from '../../components/common/ModalPortal';
+import Pagination from '../../components/common/Pagination';
 import {
   Pill,
   Search,
@@ -118,6 +119,17 @@ const PatientMedicinesPage = () => {
       });
     });
   });
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, searchQuery]);
+
+  const currentList = activeTab === 'prescribed' ? prescribedItems : activeTab === 'catalogue' ? medicines : receipts;
+
+  const paginatedList = currentList.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handleInitiatePurchase = (medicine, prescription = null) => {
     setSelectedMedicine(medicine);
@@ -354,7 +366,8 @@ const PatientMedicinesPage = () => {
               </button>
             </div>
           ) : (
-            <div className="admin-table-container">
+            <>
+              <div className="admin-table-container">
               <table className="admin-table">
                 <thead>
                   <tr>
@@ -368,7 +381,7 @@ const PatientMedicinesPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {prescribedItems.map((item, idx) => {
+                  {paginatedList.map((item, idx) => {
                     const isOutOfStock = (item.stock_quantity || 0) <= 0;
 
                     return (
@@ -469,11 +482,24 @@ const PatientMedicinesPage = () => {
                 </tbody>
               </table>
             </div>
-          )}
-        </>
-      )}
 
-      {/* ─── TAB 2: PHARMACY CATALOGUE ──────────────────────────────── */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(currentList.length / pageSize)}
+              totalCount={currentList.length}
+              pageSize={pageSize}
+              onPageChange={(page) => setCurrentPage(page)}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setCurrentPage(1);
+              }}
+            />
+          </>
+        )}
+      </>
+    )}
+
+    {/* ─── TAB 2: PHARMACY CATALOGUE ──────────────────────────────── */}
       {!loading && !error && activeTab === 'catalogue' && (
         <>
           {medicines.length === 0 ? (
@@ -485,7 +511,8 @@ const PatientMedicinesPage = () => {
               <p>No medicines matched your query in the hospital pharmacy catalogue.</p>
             </div>
           ) : (
-            <div className="admin-table-container">
+            <>
+              <div className="admin-table-container">
               <table className="admin-table">
                 <thead>
                   <tr>
@@ -499,7 +526,7 @@ const PatientMedicinesPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {medicines.map((med) => {
+                  {paginatedList.map((med) => {
                     const isOutOfStock = med.stock_quantity <= 0;
                     // Check if this medicine is on patient's active prescriptions
                     const linkedPrescriptionItem = prescribedItems.find((p) => p.medicine === med.id);
@@ -588,11 +615,24 @@ const PatientMedicinesPage = () => {
                 </tbody>
               </table>
             </div>
-          )}
-        </>
-      )}
 
-      {/* ─── TAB 3: MY ORDERS & RECEIPTS ────────────────────────────── */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(currentList.length / pageSize)}
+              totalCount={currentList.length}
+              pageSize={pageSize}
+              onPageChange={(page) => setCurrentPage(page)}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setCurrentPage(1);
+              }}
+            />
+          </>
+        )}
+      </>
+    )}
+
+    {/* ─── TAB 3: MY ORDERS & RECEIPTS ────────────────────────────── */}
       {!loading && !error && activeTab === 'receipts' && (
         <>
           {receipts.length === 0 ? (
@@ -606,7 +646,8 @@ const PatientMedicinesPage = () => {
               </p>
             </div>
           ) : (
-            <div className="admin-table-container">
+            <>
+              <div className="admin-table-container">
               <table className="admin-table">
                 <thead>
                   <tr>
@@ -620,7 +661,7 @@ const PatientMedicinesPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {receipts.map((rcpt) => (
+                  {paginatedList.map((rcpt) => (
                     <tr key={rcpt.id}>
                       <td className="admin-font-mono font-semibold" style={{ color: 'var(--primary-cyan, #06b6d4)' }}>
                         {rcpt.receipt_number}
@@ -662,12 +703,25 @@ const PatientMedicinesPage = () => {
                 </tbody>
               </table>
             </div>
-          )}
-        </>
-      )}
 
-      {/* ─────────────────────────────────────────────────────────────
-          PURCHASE / CHECKOUT MODAL (Centered via ModalPortal)
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(currentList.length / pageSize)}
+              totalCount={currentList.length}
+              pageSize={pageSize}
+              onPageChange={(page) => setCurrentPage(page)}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setCurrentPage(1);
+              }}
+            />
+          </>
+        )}
+      </>
+    )}
+
+    {/* ─────────────────────────────────────────────────────────────
+        PURCHASE / CHECKOUT MODAL (Centered via ModalPortal)
       ───────────────────────────────────────────────────────────── */}
       {isPurchaseModalOpen && selectedMedicine && (
         <ModalPortal isOpen={true}>

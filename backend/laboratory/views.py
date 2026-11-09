@@ -168,7 +168,20 @@ class LabOrderViewSet(viewsets.ModelViewSet):
                 "appointment": f"A laboratory test request ({existing_order.order_id}) has already been ordered for this consultation. A second lab request cannot be accessed or created."
             })
 
-        serializer.save(doctor=doctor, appointment=target_appointment, status=LabOrderStatus.REQUESTED)
+        order = serializer.save(doctor=doctor, appointment=target_appointment, status=LabOrderStatus.REQUESTED)
+        try:
+            from notifications.services import notify_role
+            from notifications.models import NotificationType
+            notify_role(
+                role=UserRole.LAB_STAFF,
+                title="New Lab Test Request",
+                message=f"New lab order {order.order_id} requested for patient {order.patient.full_name}.",
+                notification_type=NotificationType.LAB_TEST,
+                action_url="/lab-staff/test-requests",
+                reference_id=order.order_id,
+            )
+        except Exception as notif_err:
+            logger.error("Failed to notify lab staff of lab order: %s", notif_err)
 
     def perform_update(self, serializer):
         user = self.request.user
@@ -269,7 +282,41 @@ class LabOrderViewSet(viewsets.ModelViewSet):
                 extra_kwargs["cancellation_processed_at"] = timezone.now()
                 extra_kwargs["cancelled_by"] = user
 
-            serializer.save(**extra_kwargs)
+            order = serializer.save(**extra_kwargs)
+            try:
+                from notifications.services import create_notification
+                from notifications.models import NotificationType
+                if new_status == LabOrderStatus.COMPLETED or has_file_upload:
+                    if order.patient and order.patient.user:
+                        create_notification(
+                            recipient=order.patient.user,
+                            title="Lab Results Ready",
+                            message=f"Your laboratory results ({order.order_id}) are completed and available for review.",
+                            notification_type=NotificationType.LAB_TEST,
+                            action_url="/patient/lab-tests",
+                            reference_id=order.order_id,
+                        )
+                    if order.doctor and order.doctor.user:
+                        create_notification(
+                            recipient=order.doctor.user,
+                            title="Lab Results Ready",
+                            message=f"Laboratory results for patient {order.patient.full_name} ({order.order_id}) are ready for review.",
+                            notification_type=NotificationType.LAB_TEST,
+                            action_url="/doctor/lab-tests",
+                            reference_id=order.order_id,
+                        )
+                elif new_status == LabOrderStatus.CANCELLED:
+                    if order.patient and order.patient.user:
+                        create_notification(
+                            recipient=order.patient.user,
+                            title="Lab Order Cancelled",
+                            message=f"Laboratory order ({order.order_id}) has been cancelled.",
+                            notification_type=NotificationType.LAB_TEST,
+                            action_url="/patient/lab-tests",
+                            reference_id=order.order_id,
+                        )
+            except Exception:
+                pass
             return
 
         raise PermissionDenied("You do not have permission to modify this laboratory order.")

@@ -10,6 +10,7 @@ import {
   ArrowRight,
   Plus,
   Info,
+  Clock,
 } from 'lucide-react';
 
 const PatientOverviewPage = () => {
@@ -454,9 +455,18 @@ const PatientOverviewPage = () => {
                           Prescribed on {currentPrescription.created_at?.slice(0, 10)}
                         </span>
                       </div>
-                      <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        {currentPrescription.days_remaining !== undefined && currentPrescription.days_remaining !== null ? (
+                          <span
+                            className="admin-badge admin-badge-success"
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                          >
+                            <Clock size={12} />
+                            <span>Active Course ({currentPrescription.days_remaining}d remaining)</span>
+                          </span>
+                        ) : null}
                         <span className="admin-badge admin-badge-teal">
-                          {currentPrescription.status}
+                          {currentPrescription.status === 'DISPENSED' ? 'Dispensed' : currentPrescription.status}
                         </span>
                       </div>
                     </div>

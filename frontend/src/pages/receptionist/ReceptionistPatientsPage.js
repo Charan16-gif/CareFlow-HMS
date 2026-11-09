@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import receptionistService from '../../services/receptionistService';
 import ModalPortal from '../../components/common/ModalPortal';
+import Pagination from '../../components/common/Pagination';
 import {
   Users,
   Search,
@@ -24,6 +25,13 @@ const ReceptionistPatientsPage = () => {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [genderFilter, setGenderFilter] = useState('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Reset page when filter or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, genderFilter]);
 
   // Modals state
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
@@ -41,7 +49,7 @@ const ReceptionistPatientsPage = () => {
     phone_number: '',
     email: '',
     date_of_birth: '',
-    gender: 'MALE',
+    gender: '',
     blood_group: '',
     address: '',
     emergency_contact_name: '',
@@ -58,13 +66,14 @@ const ReceptionistPatientsPage = () => {
     phone_number: '',
     email: '',
     date_of_birth: '',
-    gender: 'MALE',
+    gender: '',
     blood_group: '',
     address: '',
     emergency_contact_name: '',
     emergency_contact_phone: '',
     emergency_contact_relation: '',
   });
+  const [initialEditData, setInitialEditData] = useState({});
   const [editErrors, setEditErrors] = useState({});
   const [submittingEdit, setSubmittingEdit] = useState(false);
 
@@ -114,21 +123,36 @@ const ReceptionistPatientsPage = () => {
   // Open Edit Modal
   const handleOpenEditModal = (patient) => {
     setSelectedPatient(patient);
-    setEditData({
+    const init = {
       first_name: patient.first_name || '',
       last_name: patient.last_name || '',
       phone_number: patient.phone_number || '',
       email: patient.email || '',
       date_of_birth: patient.date_of_birth || '',
-      gender: patient.gender || 'MALE',
+      gender: patient.gender || '',
       blood_group: patient.blood_group || '',
       address: patient.address || '',
       emergency_contact_name: patient.emergency_contact_name || '',
       emergency_contact_phone: patient.emergency_contact_phone || '',
       emergency_contact_relation: patient.emergency_contact_relation || '',
-    });
+    };
+    setEditData(init);
+    setInitialEditData(init);
     setEditErrors({});
     setIsEditModalOpen(true);
+  };
+
+  const isEditDirty = useMemo(() => {
+    if (!initialEditData || !editData || Object.keys(initialEditData).length === 0) return false;
+    return Object.keys(initialEditData).some((k) => {
+      return String(editData[k] || '').trim() !== String(initialEditData[k] || '').trim();
+    });
+  }, [editData, initialEditData]);
+
+  const handleCancelEdit = () => {
+    setEditData(initialEditData);
+    setEditErrors({});
+    setIsEditModalOpen(false);
   };
 
   // Submit Patient Registration
@@ -140,6 +164,8 @@ const ReceptionistPatientsPage = () => {
     if (!registerData.first_name.trim()) errors.first_name = 'First name is required.';
     if (!registerData.last_name.trim()) errors.last_name = 'Last name is required.';
     if (!registerData.phone_number.trim()) errors.phone_number = 'Phone number is required.';
+    if (!registerData.date_of_birth) errors.date_of_birth = 'Date of birth is required.';
+    if (!registerData.gender) errors.gender = 'Gender is required.';
 
     if (Object.keys(errors).length > 0) {
       setRegisterErrors(errors);
@@ -154,7 +180,7 @@ const ReceptionistPatientsPage = () => {
         phone_number: registerData.phone_number.trim(),
         email: registerData.email.trim() || null,
         date_of_birth: registerData.date_of_birth || null,
-        gender: registerData.gender,
+        gender: registerData.gender || null,
         blood_group: registerData.blood_group || null,
         address: registerData.address.trim() || null,
         emergency_contact_name: registerData.emergency_contact_name.trim() || null,
@@ -173,7 +199,7 @@ const ReceptionistPatientsPage = () => {
         phone_number: '',
         email: '',
         date_of_birth: '',
-        gender: 'MALE',
+        gender: '',
         blood_group: '',
         address: '',
         emergency_contact_name: '',
@@ -197,6 +223,7 @@ const ReceptionistPatientsPage = () => {
   // Submit Patient Edit
   const handleEditSubmit = async (e) => {
     e.preventDefault();
+    if (!isEditDirty || submittingEdit) return;
     setEditErrors({});
 
     const errors = {};
@@ -243,11 +270,20 @@ const ReceptionistPatientsPage = () => {
     }
   };
 
-  // Filtered Patients
+  // Filtered Patients (Registered patients only; strictly exclude walk-in customer records)
   const filteredPatients = patients.filter((p) => {
-    const q = searchQuery.toLowerCase().trim();
-    const name = (p.full_name || `${p.first_name} ${p.last_name}`).toLowerCase();
     const pid = (p.patient_id || '').toLowerCase();
+    const name = (p.full_name || `${p.first_name || ''} ${p.last_name || ''}`).toLowerCase();
+    const isWalkIn =
+      pid === 'cf-walkin' ||
+      pid.startsWith('cf-walkin') ||
+      name.includes('walk-in') ||
+      name.includes('walkin') ||
+      name.includes('walk in') ||
+      (p.last_name || '').toLowerCase() === 'customer';
+    if (isWalkIn) return false;
+
+    const q = searchQuery.toLowerCase().trim();
     const phone = (p.phone_number || '').toLowerCase();
     const email = (p.email || '').toLowerCase();
 
@@ -260,6 +296,11 @@ const ReceptionistPatientsPage = () => {
 
     return true;
   });
+
+  const paginatedPatients = filteredPatients.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   return (
     <div className="admin-overview-container">
@@ -371,7 +412,7 @@ const ReceptionistPatientsPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredPatients.map((p) => {
+                {paginatedPatients.map((p) => {
                   const patientName =
                     p.full_name ||
                     `${p.first_name || ''} ${p.last_name || ''}`.trim() ||
@@ -475,7 +516,7 @@ const ReceptionistPatientsPage = () => {
 
           {/* Mobile Responsive Cards View (< 768px) */}
           <div className="receptionist-patient-mobile-cards">
-            {filteredPatients.map((p) => {
+            {paginatedPatients.map((p) => {
               const patientName =
                 p.full_name ||
                 `${p.first_name || ''} ${p.last_name || ''}`.trim() ||
@@ -558,6 +599,18 @@ const ReceptionistPatientsPage = () => {
               );
             })}
           </div>
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(filteredPatients.length / pageSize)}
+            totalCount={filteredPatients.length}
+            pageSize={pageSize}
+            onPageChange={(page) => setCurrentPage(page)}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setCurrentPage(1);
+            }}
+          />
         </>
       )}
 
@@ -686,36 +739,50 @@ const ReceptionistPatientsPage = () => {
                 {/* Demographics Grid */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                   <div className="admin-form-group">
-                    <label className="admin-form-label">Date of Birth</label>
+                    <label className="admin-form-label">Date of Birth *</label>
                     <input
                       type="date"
-                      className="admin-form-input"
+                      className={`admin-form-input ${registerErrors.date_of_birth ? 'admin-input-error' : ''}`}
                       value={registerData.date_of_birth}
                       onChange={(e) => setRegisterData({ ...registerData, date_of_birth: e.target.value })}
+                      required
                     />
+                    {registerErrors.date_of_birth && (
+                      <span style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '0.2rem', display: 'block' }}>
+                        {registerErrors.date_of_birth}
+                      </span>
+                    )}
                   </div>
 
                   <div className="admin-form-group">
-                    <label className="admin-form-label">Gender</label>
+                    <label className="admin-form-label">Gender *</label>
                     <select
-                      className="admin-form-input"
+                      className={`admin-form-input ${registerErrors.gender ? 'admin-input-error' : ''}`}
                       value={registerData.gender}
                       onChange={(e) => setRegisterData({ ...registerData, gender: e.target.value })}
+                      required
                     >
+                      <option value="">-- Select Gender --</option>
                       <option value="MALE">Male</option>
                       <option value="FEMALE">Female</option>
                       <option value="OTHER">Other</option>
+                      <option value="PREFER_NOT_TO_SAY">Prefer not to say</option>
                     </select>
+                    {registerErrors.gender && (
+                      <span style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '0.2rem', display: 'block' }}>
+                        {registerErrors.gender}
+                      </span>
+                    )}
                   </div>
 
                   <div className="admin-form-group">
-                    <label className="admin-form-label">Blood Group</label>
+                    <label className="admin-form-label">Blood Group (Optional)</label>
                     <select
                       className="admin-form-input"
                       value={registerData.blood_group}
                       onChange={(e) => setRegisterData({ ...registerData, blood_group: e.target.value })}
                     >
-                      <option value="">Select...</option>
+                      <option value="">-- Select Blood Group (Optional) --</option>
                       <option value="A+">A+</option>
                       <option value="A-">A-</option>
                       <option value="B+">B+</option>
@@ -948,9 +1015,11 @@ const ReceptionistPatientsPage = () => {
                       value={editData.gender}
                       onChange={(e) => setEditData({ ...editData, gender: e.target.value })}
                     >
+                      <option value="">-- Select Gender --</option>
                       <option value="MALE">Male</option>
                       <option value="FEMALE">Female</option>
                       <option value="OTHER">Other</option>
+                      <option value="PREFER_NOT_TO_SAY">Prefer not to say</option>
                     </select>
                   </div>
 
@@ -961,7 +1030,7 @@ const ReceptionistPatientsPage = () => {
                       value={editData.blood_group}
                       onChange={(e) => setEditData({ ...editData, blood_group: e.target.value })}
                     >
-                      <option value="">Select...</option>
+                      <option value="">-- Select Blood Group (Optional) --</option>
                       <option value="A+">A+</option>
                       <option value="A-">A-</option>
                       <option value="B+">B+</option>
@@ -1025,7 +1094,7 @@ const ReceptionistPatientsPage = () => {
                 <button
                   type="button"
                   className="admin-btn admin-btn-secondary"
-                  onClick={() => setIsEditModalOpen(false)}
+                  onClick={handleCancelEdit}
                   disabled={submittingEdit}
                 >
                   Cancel
@@ -1033,7 +1102,11 @@ const ReceptionistPatientsPage = () => {
                 <button
                   type="submit"
                   className="admin-btn admin-btn-primary"
-                  disabled={submittingEdit}
+                  disabled={!isEditDirty || submittingEdit}
+                  style={{
+                    opacity: !isEditDirty && !submittingEdit ? 0.55 : 1,
+                    cursor: !isEditDirty && !submittingEdit ? 'not-allowed' : 'pointer',
+                  }}
                 >
                   {submittingEdit ? (
                     <>

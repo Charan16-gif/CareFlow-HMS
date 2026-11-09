@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   Circle,
   ArrowRight,
+  ArrowLeft,
   Info,
   AlertCircle,
   Loader2,
@@ -26,6 +27,9 @@ const RegisterPage = () => {
   const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState('');
   const [phone, setPhone] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [gender, setGender] = useState('');
+  const [bloodGroup, setBloodGroup] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -39,6 +43,8 @@ const RegisterPage = () => {
     lastName: false,
     username: false,
     phone: false,
+    dateOfBirth: false,
+    gender: false,
     email: false,
     password: false,
     confirmPassword: false,
@@ -51,6 +57,9 @@ const RegisterPage = () => {
   const lastNameId = useId();
   const usernameId = useId();
   const phoneId = useId();
+  const dateOfBirthId = useId();
+  const genderId = useId();
+  const bloodGroupId = useId();
   const emailId = useId();
   const passwordId = useId();
   const confirmPasswordId = useId();
@@ -103,17 +112,9 @@ const RegisterPage = () => {
     username.trim().length === 0 || /^[a-zA-Z0-9_.-]{3,30}$/.test(username.trim());
   const isPhoneValid =
     /^[0-9+\s()-]{7,20}$/.test(phone.trim()) && phone.replace(/\D/g, '').length >= 7;
-  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const isDateOfBirthValid = Boolean(dateOfBirth && dateOfBirth <= new Date().toISOString().split('T')[0]);
+  const isGenderValid = Boolean(gender && ['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY'].includes(gender));
   const isConfirmPasswordValid = confirmPassword.length > 0 && confirmPassword === password;
-
-  const isFormValid =
-    isFirstNameValid &&
-    isLastNameValid &&
-    isUsernameValid &&
-    isPhoneValid &&
-    isEmailValid &&
-    isPasswordValid &&
-    isConfirmPasswordValid;
 
   const handleBlur = (field) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
@@ -126,77 +127,188 @@ const RegisterPage = () => {
       lastName: true,
       username: true,
       phone: true,
+      dateOfBirth: true,
+      gender: true,
       email: true,
       password: true,
       confirmPassword: true,
     });
 
-    if (!isFormValid) {
+    const cleanEmail = email.trim();
+
+    // 1. Mandatory Email Presence and Format Validation (Immediate Client-side Stop)
+    if (!cleanEmail) {
+      toast.error('Please enter a valid email address.', 'Invalid Email');
       return;
     }
 
+    const EMAIL_FORMAT_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+    if (!EMAIL_FORMAT_REGEX.test(cleanEmail.toLowerCase())) {
+      toast.error('Please enter a valid email address.', 'Invalid Email');
+      return;
+    }
+
+    const parts = cleanEmail.split('@');
+    if (parts.length !== 2 || !parts[1] || !parts[1].includes('.') || parts[1].startsWith('.') || parts[1].endsWith('.')) {
+      toast.error('Please enter a valid email address.', 'Invalid Email');
+      return;
+    }
+
+    // 2. Validate Other Required Form Fields
+    if (!firstName.trim() || !lastName.trim() || !phone.trim() || !password || !confirmPassword) {
+      toast.error('Please enter all required registration details.', 'Missing Information');
+      return;
+    }
+
+    if (!dateOfBirth) {
+      toast.error('Please enter your date of birth.', 'Missing Information');
+      return;
+    }
+
+    if (!isDateOfBirthValid) {
+      toast.error('Date of birth cannot be in the future.', 'Invalid Date');
+      return;
+    }
+
+    if (!gender) {
+      toast.error('Please select your gender.', 'Missing Information');
+      return;
+    }
+
+    if (!isPasswordValid) {
+      toast.error('Please ensure your password satisfies all security requirements.', 'Password Error');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match.', 'Password Error');
+      return;
+    }
+
+    // Lock submission to prevent duplicate concurrent clicks while validating & registering
     setIsSubmitting(true);
     setSubmissionStatus(null);
 
+    // 3. Await Asynchronous Email Verification BEFORE calling registration API
+    try {
+      const valResult = await authService.validateEmail(cleanEmail);
+
+      // Check deliverability, domain existence, mailbox, disposable, typo, and service availability
+      const isInvalid = valResult.is_valid === false;
+      const cannotContinue = valResult.allow_continue === false;
+      const isUnknownService = valResult.status === 'UNKNOWN' && valResult.details?.configured === true;
+
+      if (isInvalid || cannotContinue || isUnknownService) {
+        let errorMsg = 'Please enter a valid email address.';
+
+        if (valResult.status === 'UNKNOWN' || (valResult.status === 'UNKNOWN' && valResult.details?.configured)) {
+          errorMsg = 'Email verification is temporarily unavailable. Please try again later.';
+        } else if (valResult.message) {
+          errorMsg = valResult.message;
+        } else {
+          errorMsg = 'Please enter a valid email address.';
+        }
+
+        toast.error(errorMsg, 'Invalid Email');
+        setIsSubmitting(false);
+        // STRICTLY STOP: DO NOT PROCEED TO REGISTER, DO NOT CREATE USER, DO NOT SEND OTP, DO NOT NAVIGATE!
+        return;
+      }
+    } catch (valErr) {
+      let valErrMsg = 'Please enter a valid email address.';
+      if (valErr.response?.data?.email) {
+        const rawErr = Array.isArray(valErr.response.data.email)
+          ? valErr.response.data.email[0]
+          : valErr.response.data.email;
+        if (rawErr.includes('temporarily unavailable') || rawErr.includes('try again later')) {
+          valErrMsg = 'Email verification is temporarily unavailable. Please try again later.';
+        } else {
+          valErrMsg = 'Please enter a valid email address.';
+        }
+      } else if (valErr.message && (valErr.message.includes('Network Error') || valErr.message.includes('connect') || valErr.message.includes('timeout'))) {
+        valErrMsg = 'Email verification is temporarily unavailable. Please try again later.';
+      }
+
+      toast.error(valErrMsg, 'Invalid Email');
+      setIsSubmitting(false);
+      // STRICTLY STOP: DO NOT PROCEED TO REGISTER!
+      return;
+    }
+
+    // 4. Proceed to Registration API ONLY AFTER Email Passes Validation
     try {
       const response = await authService.register({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         username: username.trim(),
-        email: email.trim(),
+        email: cleanEmail,
         phone: phone.trim(),
+        dateOfBirth: dateOfBirth,
+        gender: gender,
+        bloodGroup: bloodGroup || null,
         password,
         confirmPassword,
       });
 
+      const successMsg = response.message || 'Verification email sending initiated. Please check your inbox.';
       setSubmissionStatus({
         type: 'success',
-        message: 'Account registered! Verification code dispatched to your email. Redirecting...',
+        message: successMsg,
       });
-      toast.success(
-        `Verification code sent to ${email.trim()}. Please verify your account.`,
-        'Account Registered'
-      );
+      toast.success(successMsg, 'Account Registered');
 
       setTimeout(() => {
         navigate('/verify-email', {
           state: {
-            email: email.trim(),
-            message: response.message,
+            email: cleanEmail,
+            message: successMsg,
           },
         });
       }, 1000);
     } catch (err) {
       let errorMsg = 'Registration failed. Please check your details and try again.';
+      let errorTitle = 'Registration Error';
+
       if (err.response?.data) {
-        if (typeof err.response.data === 'string') {
-          errorMsg = err.response.data;
+        if (err.response.data.email) {
+          const rawEmail = Array.isArray(err.response.data.email)
+            ? err.response.data.email[0]
+            : err.response.data.email;
+          if (rawEmail.includes('already registered')) {
+            errorMsg = rawEmail;
+            errorTitle = 'Already Registered';
+          } else if (rawEmail.includes('temporarily unavailable') || rawEmail.includes('try again later')) {
+            errorMsg = 'Email verification is temporarily unavailable. Please try again later.';
+            errorTitle = 'Service Unavailable';
+          } else {
+            errorMsg = 'Please enter a valid email address.';
+            errorTitle = 'Invalid Email';
+          }
         } else if (err.response.data.username) {
           errorMsg = Array.isArray(err.response.data.username)
             ? err.response.data.username[0]
             : err.response.data.username;
-        } else if (err.response.data.email) {
-          errorMsg = Array.isArray(err.response.data.email)
-            ? err.response.data.email[0]
-            : err.response.data.email;
+          errorTitle = 'Invalid Username';
         } else if (err.response.data.password) {
           errorMsg = Array.isArray(err.response.data.password)
             ? err.response.data.password[0]
             : err.response.data.password;
+          errorTitle = 'Invalid Password';
+        } else if (err.response.data.non_field_errors) {
+          errorMsg = Array.isArray(err.response.data.non_field_errors)
+            ? err.response.data.non_field_errors[0]
+            : err.response.data.non_field_errors;
+        } else if (typeof err.response.data === 'string') {
+          errorMsg = err.response.data;
         } else if (err.response.data.detail) {
           errorMsg = err.response.data.detail;
-        } else if (err.response.data.non_field_errors) {
-          errorMsg = err.response.data.non_field_errors[0];
         }
-      } else if (err.message && err.message.includes('Network Error')) {
-        errorMsg = 'Cannot reach the CareFlow authentication server. Please ensure backend is running.';
+      } else if (err.message && (err.message.includes('Network Error') || err.message.includes('connect'))) {
+        errorMsg = 'Unable to connect to the server. Please try again.';
+        errorTitle = 'Connection Error';
       }
 
-      toast.error(errorMsg, 'Registration Failed');
-      setSubmissionStatus({
-        type: 'error',
-        message: errorMsg,
-      });
+      toast.error(errorMsg, errorTitle);
     } finally {
       setIsSubmitting(false);
     }
@@ -281,8 +393,12 @@ const RegisterPage = () => {
         ───────────────────────────────────────────────────────────── */}
         <section className="register-form-column" aria-label="Patient Registration Form">
           <div className="register-glass-card">
-            {/* Step Indicator */}
-            <div>
+            {/* Top Navigation Row: Back to Home & Step Indicator */}
+            <div className="login-top-nav-bar">
+              <Link to="/" className="back-to-home-btn" aria-label="Back to CareFlow Home">
+                <ArrowLeft size={16} />
+                <span>Back to Home</span>
+              </Link>
               <span className="register-step-badge">
                 STEP 1 OF 2 — YOUR DETAILS
               </span>
@@ -358,254 +474,342 @@ const RegisterPage = () => {
                 </div>
               </div>
 
-              {/* Field: Phone Number */}
-              <div className="form-group">
-                <label htmlFor={phoneId} className="form-label">
-                  Phone Number
-                </label>
-                <div className="input-wrapper">
-                  <span className="input-icon">
-                    <Phone size={17} />
-                  </span>
-                  <input
-                    id={phoneId}
-                    type="tel"
-                    className={`form-input ${
-                      touched.phone && !isPhoneValid ? 'form-input-error' : ''
-                    }`}
-                    placeholder="+1 (555) 019-2834"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    onBlur={() => handleBlur('phone')}
-                    autoComplete="tel"
-                    required
-                  />
-                </div>
-                {touched.phone && !isPhoneValid && (
-                  <p className="field-error-msg">
-                    <AlertCircle size={13} />
-                    <span>Please enter a valid phone number (minimum 7 digits).</span>
-                  </p>
-                )}
-              </div>
-
-              {/* Field: Username */}
-              <div className="form-group">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label htmlFor={usernameId} className="form-label">
-                    Username <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', fontWeight: 400 }}>(Optional - or uses email)</span>
+              {/* Row: Phone Number & Blood Group */}
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor={phoneId} className="form-label">
+                    Phone Number
                   </label>
-                </div>
-                <div className="input-wrapper">
-                  <span className="input-icon">
-                    <User size={17} />
-                  </span>
-                  <input
-                    id={usernameId}
-                    type="text"
-                    className={`form-input ${
-                      touched.username && !isUsernameValid ? 'form-input-error' : ''
-                    }`}
-                    placeholder="e.g. eleanor_vance (optional)"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    onBlur={() => handleBlur('username')}
-                    autoComplete="username"
-                  />
-                </div>
-                {touched.username && !isUsernameValid && (
-                  <p className="field-error-msg">
-                    <AlertCircle size={13} />
-                    <span>Username must be 3-30 characters (letters, numbers, underscores, dots, hyphens).</span>
-                  </p>
-                )}
-              </div>
-
-              {/* Field: Email Address */}
-              <div className="form-group">
-                <label htmlFor={emailId} className="form-label">
-                  Email Address
-                </label>
-                <div className="input-wrapper">
-                  <span className="input-icon">
-                    <Mail size={17} />
-                  </span>
-                  <input
-                    id={emailId}
-                    type="email"
-                    className={`form-input ${
-                      touched.email && !isEmailValid ? 'form-input-error' : ''
-                    }`}
-                    placeholder="name@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onBlur={() => handleBlur('email')}
-                    autoComplete="email"
-                    required
-                  />
-                </div>
-                {touched.email && !isEmailValid && (
-                  <p className="field-error-msg">
-                    <AlertCircle size={13} />
-                    <span>Please enter a valid email address.</span>
-                  </p>
-                )}
-              </div>
-
-              {/* Field: Password */}
-              <div className="form-group">
-                <label htmlFor={passwordId} className="form-label">
-                  Password
-                </label>
-                <div className="input-wrapper">
-                  <span className="input-icon">
-                    <Lock size={17} />
-                  </span>
-                  <input
-                    id={passwordId}
-                    type={showPassword ? 'text' : 'password'}
-                    className={`form-input ${
-                      touched.password && !isPasswordValid ? 'form-input-error' : ''
-                    }`}
-                    placeholder="Create a secure password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onBlur={() => handleBlur('password')}
-                    autoComplete="new-password"
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="password-toggle-btn"
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    title={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                  </button>
-                </div>
-
-                {/* Working Real Password Strength Indicator */}
-                <div className="password-strength-container">
-                  <div className="strength-meter-header">
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                      Password Strength
+                  <div className="input-wrapper">
+                    <span className="input-icon">
+                      <Phone size={17} />
                     </span>
-                    {strengthData.label && (
-                      <span
-                        className="strength-label-text"
-                        style={{ color: strengthData.color }}
-                      >
-                        {strengthData.label}
+                    <input
+                      id={phoneId}
+                      type="tel"
+                      className={`form-input ${
+                        touched.phone && !isPhoneValid ? 'form-input-error' : ''
+                      }`}
+                      placeholder="+1 (555) 019-2834"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      onBlur={() => handleBlur('phone')}
+                      autoComplete="tel"
+                      required
+                    />
+                  </div>
+                  {touched.phone && !isPhoneValid && (
+                    <p className="field-error-msg">
+                      <AlertCircle size={13} />
+                      <span>Please enter a valid phone number.</span>
+                    </p>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor={bloodGroupId} className="form-label">
+                    Blood Group <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', fontWeight: 400 }}>(Optional)</span>
+                  </label>
+                  <div className="input-wrapper">
+                    <select
+                      id={bloodGroupId}
+                      className="form-input"
+                      value={bloodGroup}
+                      onChange={(e) => setBloodGroup(e.target.value)}
+                      style={{ paddingLeft: '1rem', cursor: 'pointer' }}
+                    >
+                      <option value="">-- Select Blood Group (Optional) --</option>
+                      <option value="A+">A+</option>
+                      <option value="A-">A-</option>
+                      <option value="B+">B+</option>
+                      <option value="B-">B-</option>
+                      <option value="AB+">AB+</option>
+                      <option value="AB-">AB-</option>
+                      <option value="O+">O+</option>
+                      <option value="O-">O-</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Row: Date of Birth & Gender */}
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor={dateOfBirthId} className="form-label">
+                    Date of Birth
+                  </label>
+                  <div className="input-wrapper">
+                    <input
+                      id={dateOfBirthId}
+                      type="date"
+                      className={`form-input ${
+                        touched.dateOfBirth && !isDateOfBirthValid ? 'form-input-error' : ''
+                      }`}
+                      value={dateOfBirth}
+                      max={new Date().toISOString().split('T')[0]}
+                      onChange={(e) => setDateOfBirth(e.target.value)}
+                      onBlur={() => handleBlur('dateOfBirth')}
+                      required
+                      style={{ paddingLeft: '1rem' }}
+                    />
+                  </div>
+                  {touched.dateOfBirth && !isDateOfBirthValid && (
+                    <p className="field-error-msg">
+                      <AlertCircle size={13} />
+                      <span>Please enter a valid date of birth.</span>
+                    </p>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor={genderId} className="form-label">
+                    Gender
+                  </label>
+                  <div className="input-wrapper">
+                    <select
+                      id={genderId}
+                      className={`form-input ${
+                        touched.gender && !isGenderValid ? 'form-input-error' : ''
+                      }`}
+                      value={gender}
+                      onChange={(e) => setGender(e.target.value)}
+                      onBlur={() => handleBlur('gender')}
+                      required
+                      style={{ paddingLeft: '1rem', cursor: 'pointer' }}
+                    >
+                      <option value="">-- Select Gender --</option>
+                      <option value="MALE">Male</option>
+                      <option value="FEMALE">Female</option>
+                      <option value="OTHER">Other</option>
+                      <option value="PREFER_NOT_TO_SAY">Prefer not to say</option>
+                    </select>
+                  </div>
+                  {touched.gender && !isGenderValid && (
+                    <p className="field-error-msg">
+                      <AlertCircle size={13} />
+                      <span>Please select your gender.</span>
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Row: Username & Email Address */}
+              <div className="form-row">
+                <div className="form-group">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label htmlFor={usernameId} className="form-label">
+                      Username <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', fontWeight: 400 }}>(Optional)</span>
+                    </label>
+                  </div>
+                  <div className="input-wrapper">
+                    <span className="input-icon">
+                      <User size={17} />
+                    </span>
+                    <input
+                      id={usernameId}
+                      type="text"
+                      className={`form-input ${
+                        touched.username && !isUsernameValid ? 'form-input-error' : ''
+                      }`}
+                      placeholder="e.g. eleanor_vance (optional)"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      onBlur={() => handleBlur('username')}
+                      autoComplete="username"
+                    />
+                  </div>
+                  {touched.username && !isUsernameValid && (
+                    <p className="field-error-msg">
+                      <AlertCircle size={13} />
+                      <span>Username must be 3-30 characters.</span>
+                    </p>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor={emailId} className="form-label">
+                    Email Address
+                  </label>
+                  <div className="input-wrapper">
+                    <span className="input-icon">
+                      <Mail size={17} />
+                    </span>
+                    <input
+                      id={emailId}
+                      type="email"
+                      className="form-input"
+                      placeholder="name@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      onBlur={() => handleBlur('email')}
+                      autoComplete="email"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Row: Password & Confirm Password */}
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor={passwordId} className="form-label">
+                    Password
+                  </label>
+                  <div className="input-wrapper">
+                    <span className="input-icon">
+                      <Lock size={17} />
+                    </span>
+                    <input
+                      id={passwordId}
+                      type={showPassword ? 'text' : 'password'}
+                      className={`form-input ${
+                        touched.password && !isPasswordValid ? 'form-input-error' : ''
+                      }`}
+                      placeholder="Create a secure password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      onBlur={() => handleBlur('password')}
+                      autoComplete="new-password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle-btn"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      title={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                    </button>
+                  </div>
+                  {touched.password && !isPasswordValid && (
+                    <p className="field-error-msg">
+                      <AlertCircle size={13} />
+                      <span>Please enter a secure password.</span>
+                    </p>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor={confirmPasswordId} className="form-label">
+                    Confirm Password
+                  </label>
+                  <div className="input-wrapper">
+                    <span className="input-icon">
+                      <Lock size={17} />
+                    </span>
+                    <input
+                      id={confirmPasswordId}
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      className={`form-input ${
+                        touched.confirmPassword && !isConfirmPasswordValid
+                          ? 'form-input-error'
+                          : ''
+                      }`}
+                      placeholder="Re-enter your password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      onBlur={() => handleBlur('confirmPassword')}
+                      autoComplete="new-password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle-btn"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      aria-label={
+                        showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'
+                      }
+                      title={
+                        showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'
+                      }
+                    >
+                      {showConfirmPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                    </button>
+                  </div>
+                  {touched.confirmPassword && !isConfirmPasswordValid && (
+                    <p className="field-error-msg">
+                      <AlertCircle size={13} />
+                      <span>
+                        {confirmPassword.length === 0
+                          ? 'Please confirm your password.'
+                          : 'Passwords do not match.'}
                       </span>
-                    )}
-                  </div>
-
-                  {/* 5-segment meter bar */}
-                  <div className="strength-bars-track">
-                    {[1, 2, 3, 4, 5].map((index) => (
-                      <div
-                        key={index}
-                        className="strength-bar-segment"
-                        style={{
-                          backgroundColor:
-                            index <= strengthData.activeBars
-                              ? strengthData.color
-                              : 'rgba(255, 255, 255, 0.12)',
-                        }}
-                      />
-                    ))}
-                  </div>
-
-                  {/* 5 individual rule check indicators */}
-                  <div className="req-checklist">
-                    {checks.map((rule) => (
-                      <div
-                        key={rule.id}
-                        className={`req-item ${rule.satisfied ? 'satisfied' : ''}`}
-                      >
-                        {rule.satisfied ? (
-                          <CheckCircle2 size={13} style={{ color: '#34d399', flexShrink: 0 }} />
-                        ) : (
-                          <Circle size={13} style={{ color: 'var(--text-dim)', flexShrink: 0 }} />
-                        )}
-                        <span>{rule.label}</span>
-                      </div>
-                    ))}
-                  </div>
+                    </p>
+                  )}
+                  {confirmPassword.length > 0 && isConfirmPasswordValid && (
+                    <p
+                      style={{
+                        fontSize: '0.78rem',
+                        color: '#34d399',
+                        marginTop: '0.35rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.3rem',
+                      }}
+                    >
+                      <CheckCircle2 size={13} />
+                      <span>Passwords match.</span>
+                    </p>
+                  )}
                 </div>
               </div>
 
-              {/* Field: Confirm Password */}
-              <div className="form-group">
-                <label htmlFor={confirmPasswordId} className="form-label">
-                  Confirm Password
-                </label>
-                <div className="input-wrapper">
-                  <span className="input-icon">
-                    <Lock size={17} />
+              {/* Working Real Password Strength Indicator */}
+              <div className="password-strength-container">
+                <div className="strength-meter-header">
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                    Password Strength
                   </span>
-                  <input
-                    id={confirmPasswordId}
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    className={`form-input ${
-                      touched.confirmPassword && !isConfirmPasswordValid
-                        ? 'form-input-error'
-                        : ''
-                    }`}
-                    placeholder="Re-enter your password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    onBlur={() => handleBlur('confirmPassword')}
-                    autoComplete="new-password"
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="password-toggle-btn"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    aria-label={
-                      showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'
-                    }
-                    title={
-                      showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'
-                    }
-                  >
-                    {showConfirmPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                  </button>
-                </div>
-                {touched.confirmPassword && !isConfirmPasswordValid && (
-                  <p className="field-error-msg">
-                    <AlertCircle size={13} />
-                    <span>
-                      {confirmPassword.length === 0
-                        ? 'Please confirm your password.'
-                        : 'Passwords do not match.'}
+                  {strengthData.label && (
+                    <span
+                      className="strength-label-text"
+                      style={{ color: strengthData.color }}
+                    >
+                      {strengthData.label}
                     </span>
-                  </p>
-                )}
-                {confirmPassword.length > 0 && isConfirmPasswordValid && (
-                  <p
-                    style={{
-                      fontSize: '0.78rem',
-                      color: '#34d399',
-                      marginTop: '0.35rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.3rem',
-                    }}
-                  >
-                    <CheckCircle2 size={13} />
-                    <span>Passwords match.</span>
-                  </p>
-                )}
+                  )}
+                </div>
+
+                {/* 5-segment meter bar */}
+                <div className="strength-bars-track">
+                  {[1, 2, 3, 4, 5].map((index) => (
+                    <div
+                      key={index}
+                      className="strength-bar-segment"
+                      style={{
+                        backgroundColor:
+                          index <= strengthData.activeBars
+                            ? strengthData.color
+                            : 'rgba(255, 255, 255, 0.12)',
+                      }}
+                    />
+                  ))}
+                </div>
+
+                {/* 5 individual rule check indicators */}
+                <div className="req-checklist">
+                  {checks.map((rule) => (
+                    <div
+                      key={rule.id}
+                      className={`req-item ${rule.satisfied ? 'satisfied' : ''}`}
+                    >
+                      {rule.satisfied ? (
+                        <CheckCircle2 size={13} style={{ color: '#34d399', flexShrink: 0 }} />
+                      ) : (
+                        <Circle size={13} style={{ color: 'var(--text-dim)', flexShrink: 0 }} />
+                      )}
+                      <span>{rule.label}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Primary Action Button */}
               <button
                 type="submit"
                 className="register-submit-btn"
-                disabled={isSubmitting || !isFormValid}
+                disabled={isSubmitting}
               >
                 {isSubmitting ? (
                   <>

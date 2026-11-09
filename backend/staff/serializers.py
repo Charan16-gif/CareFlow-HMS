@@ -3,6 +3,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from accounts.models import UserRole, UserProfile
 from accounts.emails import send_user_welcome_credentials_email_async
+from accounts.email_validation import validate_email_address_complete, MSG_ALREADY_REGISTERED
 from .models import Doctor, StaffProfile
 
 
@@ -64,6 +65,19 @@ class DoctorSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "doctor_id", "is_available", "is_active", "created_at", "updated_at"]
+
+    def validate_email(self, value):
+        if not value:
+            return ""
+        clean_email = validate_email_address_complete(value)
+        user_id = self.instance.user_id if (self.instance and self.instance.user_id) else None
+        if not user_id and hasattr(self, "initial_data"):
+            user_val = self.initial_data.get("user")
+            if user_val:
+                user_id = getattr(user_val, "id", user_val)
+        if User.objects.filter(email__iexact=clean_email, is_active=True).exclude(id=user_id).exists():
+            raise serializers.ValidationError(MSG_ALREADY_REGISTERED)
+        return clean_email
 
     def create(self, validated_data):
         user = validated_data.get("user")
@@ -185,6 +199,19 @@ class StaffProfileSerializer(serializers.ModelSerializer):
         if value not in (UserRole.RECEPTIONIST, UserRole.LAB_STAFF, UserRole.PHARMACIST):
             raise serializers.ValidationError("Invalid staff role specified.")
         return value
+
+    def validate_email(self, value):
+        if not value:
+            return ""
+        clean_email = validate_email_address_complete(value)
+        user_id = self.instance.user_id if (self.instance and self.instance.user_id) else None
+        if not user_id and hasattr(self, "initial_data"):
+            user_val = self.initial_data.get("user")
+            if user_val:
+                user_id = getattr(user_val, "id", user_val)
+        if User.objects.filter(email__iexact=clean_email, is_active=True).exclude(id=user_id).exists():
+            raise serializers.ValidationError(MSG_ALREADY_REGISTERED)
+        return clean_email
 
     def create(self, validated_data):
         user = validated_data.get("user")

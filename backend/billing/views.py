@@ -574,6 +574,31 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 send_payment_receipt_email_async(payment=payment)
             except Exception:
                 pass
+            try:
+                from notifications.services import create_notification, notify_role
+                from notifications.models import NotificationType
+                bill = payment.bill
+                # Notify Patient
+                if bill.patient and bill.patient.user:
+                    create_notification(
+                        recipient=bill.patient.user,
+                        title="Payment Receipt Available",
+                        message=f"Payment of ${payment.amount} for invoice #{bill.bill_id} has been processed successfully.",
+                        notification_type=NotificationType.PAYMENT,
+                        action_url="/patient/overview",
+                        reference_id=str(payment.id),
+                    )
+                # Notify Receptionists
+                notify_role(
+                    role=UserRole.RECEPTIONIST,
+                    title="Patient Payment Received",
+                    message=f"Payment of ${payment.amount} received for invoice #{bill.bill_id}.",
+                    notification_type=NotificationType.PAYMENT,
+                    action_url="/receptionist/payments",
+                    reference_id=str(payment.id),
+                )
+            except Exception:
+                pass
             return
 
         if role not in (UserRole.ADMIN, UserRole.RECEPTIONIST, UserRole.PHARMACIST) and not user.is_superuser:
@@ -587,6 +612,31 @@ class PaymentViewSet(viewsets.ModelViewSet):
         payment = serializer.save(received_by=user)
         try:
             send_payment_receipt_email_async(payment=payment)
+        except Exception:
+            pass
+        try:
+            from notifications.services import create_notification, notify_role
+            from notifications.models import NotificationType
+            bill = payment.bill
+            # Notify Patient
+            if bill.patient and bill.patient.user:
+                create_notification(
+                    recipient=bill.patient.user,
+                    title="Payment Receipt Available",
+                    message=f"Payment of ${payment.amount} for invoice #{bill.bill_id} has been processed successfully.",
+                    notification_type=NotificationType.PAYMENT,
+                    action_url="/patient/overview",
+                    reference_id=str(payment.id),
+                )
+            # Notify Receptionists
+            notify_role(
+                role=UserRole.RECEPTIONIST,
+                title="Patient Payment Received",
+                message=f"Payment of ${payment.amount} received for invoice #{bill.bill_id}.",
+                notification_type=NotificationType.PAYMENT,
+                action_url="/receptionist/payments",
+                reference_id=str(payment.id),
+            )
         except Exception:
             pass
 

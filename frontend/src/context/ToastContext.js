@@ -12,36 +12,49 @@ const ToastContext = createContext(null);
 
 // Global event bus so toast can be triggered from anywhere (even non-component files)
 const toastListeners = new Set();
-let lastToastKey = '';
-let lastToastTime = 0;
+const recentToastHistory = new Map(); // key -> timestamp for deduplication
 
 export const toast = {
-  show: (type, message, title = '', duration = 4500) => {
+  show: (type, message, title = '', duration = 4000) => {
     if (!message) return;
     const strMsg = typeof message === 'string' ? message : (message?.message || JSON.stringify(message));
     const now = Date.now();
     const key = `${type}:${strMsg}`;
-    if (key === lastToastKey && (now - lastToastTime) < 1500) {
-      return; // Deduplicate rapid identical toasts
+
+    // Deduplicate rapid identical toasts within a 3.5-second debounce window
+    const lastTime = recentToastHistory.get(key) || 0;
+    if (now - lastTime < 3500) {
+      return;
     }
-    lastToastKey = key;
-    lastToastTime = now;
+    recentToastHistory.set(key, now);
+
+    // Prune stale history entries older than 10 seconds
+    for (const [k, time] of recentToastHistory.entries()) {
+      if (now - time > 10000) {
+        recentToastHistory.delete(k);
+      }
+    }
+
+    const uniqueId = `${now}-${Math.random().toString(36).substring(2, 9)}`;
 
     toastListeners.forEach((listener) =>
-      listener({ type, message: strMsg, title, duration, id: now + Math.random() })
+      listener({ type, message: strMsg, title, duration, id: uniqueId })
     );
   },
-  success: (message, title = '', duration = 4500) => {
+  success: (message, title = '', duration = 4000) => {
     toast.show('success', message, title || 'Success', duration);
   },
   error: (message, title = '', duration = 5000) => {
     toast.show('error', message, title || 'Error', duration);
   },
-  info: (message, title = '', duration = 4500) => {
+  info: (message, title = '', duration = 4000) => {
     toast.show('info', message, title || 'Info', duration);
   },
-  warning: (message, title = '', duration = 4500) => {
+  warning: (message, title = '', duration = 4000) => {
     toast.show('warning', message, title || 'Warning', duration);
+  },
+  clearHistory: () => {
+    recentToastHistory.clear();
   },
 };
 
@@ -49,7 +62,18 @@ export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
 
   const addToast = useCallback((toastItem) => {
-    setToasts((prev) => [...prev, toastItem]);
+    setToasts((prev) => {
+      // 1. If an exact duplicate message + type is currently visible, do not stack another copy
+      const alreadyVisible = prev.some(
+        (t) => t.type === toastItem.type && t.message === toastItem.message
+      );
+      if (alreadyVisible) {
+        return prev;
+      }
+      // 2. Limit maximum visible toasts to 4 so they never overwhelm the screen
+      const next = prev.length >= 4 ? prev.slice(prev.length - 3) : prev;
+      return [...next, toastItem];
+    });
   }, []);
 
   const removeToast = useCallback((id) => {
@@ -94,7 +118,7 @@ const ToastContainer = ({ toasts, removeToast }) => {
       aria-live="polite"
     >
       {toasts.map((item) => (
-        <ToastItem key={item.id} item={item} onDismiss={() => removeToast(item.id)} />
+        <ToastItem key={item.id} item={item} onDismiss={removeToast} />
       ))}
     </div>,
     document.body
@@ -107,20 +131,43 @@ const ToastItem = ({ item, onDismiss }) => {
   const timerRef = useRef(null);
   const startTimeRef = useRef(Date.now());
   const remainingRef = useRef(item.duration);
+  const isDismissedRef = useRef(false);
+  const onDismissRef = useRef(onDismiss);
 
-  const handleDismiss = useCallback(() => {
-    setIsExiting(true);
-    setTimeout(() => {
-      onDismiss();
-    }, 280);
+  useEffect(() => {
+    onDismissRef.current = onDismiss;
   }, [onDismiss]);
 
+  const triggerDismiss = useCallback(() => {
+    if (isDismissedRef.current) return;
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    setIsExiting(true);
+    setTimeout(() => {
+      if (!isDismissedRef.current) {
+        isDismissedRef.current = true;
+        onDismissRef.current(item.id);
+      }
+    }, 220);
+  }, [item.id]);
+
+  const handleCloseClick = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    triggerDismiss();
+  };
+
   const startTimer = useCallback(() => {
+    if (isDismissedRef.current) return;
     startTimeRef.current = Date.now();
     timerRef.current = setTimeout(() => {
-      handleDismiss();
+      triggerDismiss();
     }, remainingRef.current);
-  }, [handleDismiss]);
+  }, [triggerDismiss]);
 
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
@@ -132,11 +179,14 @@ const ToastItem = ({ item, onDismiss }) => {
   }, []);
 
   useEffect(() => {
-    if (!isPaused) {
+    if (!isPaused && !isDismissedRef.current) {
       startTimer();
     }
     return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
     };
   }, [isPaused, startTimer]);
 
@@ -172,8 +222,9 @@ const ToastItem = ({ item, onDismiss }) => {
           <p className="careflow-toast-msg">{item.message}</p>
         </div>
         <button
+          type="button"
           className="careflow-toast-close"
-          onClick={handleDismiss}
+          onClick={handleCloseClick}
           aria-label="Dismiss notification"
         >
           <X size={13} />

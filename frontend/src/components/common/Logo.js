@@ -108,23 +108,24 @@ const Logo = ({
                 color: light ? '#ffffff' : 'var(--heading-color)',
                 fontSize: size === 'sm' ? '1.1rem' : size === 'lg' ? '1.75rem' : size === 'xl' ? '2.1rem' : '1.35rem',
                 letterSpacing: '-0.03em',
-                textShadow: light ? '0 2px 10px rgba(0,0,0,0.5)' : 'none',
+                textShadow: light ? '0 2px 14px rgba(0,0,0,0.85), 0 0 24px rgba(6,182,212,0.45)' : 'none',
               }}
             >
-              Care<span className="careflow-brand-title-highlight" style={{ color: light ? '#38bdf8' : 'var(--primary-cyan)' }}>Flow</span>
+              Care<span className="careflow-brand-title-highlight" style={{ color: light ? '#22d3ee' : 'var(--primary-cyan)', textShadow: light ? '0 0 16px rgba(34,211,238,0.8)' : 'none' }}>Flow</span>
             </span>
             <span
               className="careflow-brand-badge"
               style={{
                 fontFamily: 'var(--font-mono)',
                 fontSize: '0.65rem',
-                fontWeight: 700,
+                fontWeight: 800,
                 letterSpacing: '0.08em',
-                padding: '0.12rem 0.4rem',
+                padding: '0.14rem 0.45rem',
                 borderRadius: '6px',
-                background: light ? 'rgba(56, 189, 248, 0.25)' : 'rgba(6, 182, 212, 0.16)',
-                color: light ? '#bae6fd' : 'var(--primary-cyan-light)',
-                border: light ? '1px solid rgba(56, 189, 248, 0.5)' : '1px solid rgba(6, 182, 212, 0.35)',
+                background: light ? 'rgba(6, 182, 212, 0.28)' : 'rgba(6, 182, 212, 0.16)',
+                color: light ? '#e0f2fe' : 'var(--primary-cyan-light)',
+                border: light ? '1.5px solid rgba(56, 189, 248, 0.75)' : '1px solid rgba(6, 182, 212, 0.35)',
+                boxShadow: light ? '0 0 12px rgba(6, 182, 212, 0.35)' : 'none',
                 textTransform: 'uppercase',
               }}
             >
@@ -137,10 +138,10 @@ const Logo = ({
               style={{
                 fontSize: '0.72rem',
                 color: light ? '#f1f5f9' : 'var(--text-muted)',
-                letterSpacing: '0.03em',
+                letterSpacing: '0.04em',
                 fontWeight: light ? 600 : 500,
                 marginTop: '2px',
-                textShadow: light ? '0 1px 6px rgba(0,0,0,0.5)' : 'none',
+                textShadow: light ? '0 1px 8px rgba(0,0,0,0.85)' : 'none',
               }}
             >
               Hospital Management System

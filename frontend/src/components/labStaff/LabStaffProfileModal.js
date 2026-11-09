@@ -32,6 +32,14 @@ const LabStaffProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
     username: '',
   });
 
+  const [initialProfileData, setInitialProfileData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    username: '',
+  });
+
   const [passwordData, setPasswordData] = useState({
     current_password: '',
     new_password: '',
@@ -75,27 +83,45 @@ const LabStaffProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  const isProfileDirty = Boolean(
+    (profileData.first_name || '').trim() !== (initialProfileData.first_name || '').trim() ||
+    (profileData.last_name || '').trim() !== (initialProfileData.last_name || '').trim() ||
+    (profileData.email || '').trim().toLowerCase() !== (initialProfileData.email || '').trim().toLowerCase() ||
+    (profileData.phone || '').trim() !== (initialProfileData.phone || '').trim()
+  );
+
+  const handleCancel = () => {
+    setProfileData(initialProfileData);
+    setProfileErrors({});
+    setProfileSuccessMsg('');
+    onClose();
+  };
+
   const loadProfile = async () => {
     setLoading(true);
     try {
       const data = await labStaffService.getProfile();
-      setProfileData({
+      const init = {
         first_name: data.first_name || '',
         last_name: data.last_name || '',
         email: data.email || '',
         phone: data.phone_number || data.phone || '',
         username: data.username || '',
-      });
+      };
+      setProfileData(init);
+      setInitialProfileData(init);
     } catch (err) {
       const cached = authService.getUserProfile();
       if (cached) {
-        setProfileData({
+        const init = {
           first_name: cached.first_name || '',
           last_name: cached.last_name || '',
           email: cached.email || '',
           phone: cached.phone_number || cached.phone || '',
           username: cached.username || '',
-        });
+        };
+        setProfileData(init);
+        setInitialProfileData(init);
       }
     } finally {
       setLoading(false);
@@ -104,6 +130,7 @@ const LabStaffProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
 
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
+    if (!isProfileDirty || submittingProfile) return;
     setProfileSuccessMsg('');
     setProfileErrors({});
 
@@ -126,6 +153,15 @@ const LabStaffProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
         phone_number: profileData.phone.trim(),
       };
       const updated = await labStaffService.updateProfile(payload);
+      const newInit = {
+        first_name: updated.first_name || profileData.first_name.trim(),
+        last_name: updated.last_name || profileData.last_name.trim(),
+        email: updated.email || profileData.email.trim(),
+        phone: updated.phone_number || profileData.phone.trim(),
+        username: updated.username || profileData.username,
+      };
+      setProfileData(newInit);
+      setInitialProfileData(newInit);
       setProfileSuccessMsg('Laboratory profile updated successfully!');
       toast.success('Laboratory profile updated successfully!', 'Profile Updated');
       if (onProfileUpdated) onProfileUpdated(updated);
@@ -181,7 +217,7 @@ const LabStaffProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
 
   return (
     <ModalPortal isOpen={isOpen}>
-      <div className="admin-modal-backdrop" onClick={onClose}>
+      <div className="admin-modal-backdrop" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="labstaff-profile-title">
         <div
           className="admin-modal-card"
           onClick={(e) => e.stopPropagation()}
@@ -189,21 +225,13 @@ const LabStaffProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
         >
           {/* Header */}
           <div className="admin-modal-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div
-                className="admin-stat-icon-box"
-                style={{
-                  background: 'rgba(6, 182, 212, 0.15)',
-                  color: '#06b6d4',
-                  borderColor: 'rgba(6, 182, 212, 0.3)',
-                }}
-              >
-                <FlaskConical size={20} />
-              </div>
-              <div>
-                <h3 className="admin-modal-title">Laboratory Staff Profile</h3>
-                <p className="admin-modal-subtitle">Manage personal information and account security</p>
-              </div>
+            <div className="admin-modal-title-box">
+              <h3 id="labstaff-profile-title" className="admin-modal-title">
+                Laboratory Staff Profile
+              </h3>
+              <p className="admin-modal-subtitle">
+                Manage personal information and account security
+              </p>
             </div>
             <button
               type="button"
@@ -211,7 +239,7 @@ const LabStaffProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
               onClick={onClose}
               aria-label="Close modal"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
 
@@ -223,7 +251,7 @@ const LabStaffProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
               onClick={() => setActiveTab('profile')}
             >
               <User size={16} />
-              <span>Personal Profile</span>
+              <span>Personal Details</span>
             </button>
             <button
               type="button"
@@ -231,19 +259,19 @@ const LabStaffProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
               onClick={() => setActiveTab('security')}
             >
               <Lock size={16} />
-              <span>Security & Password</span>
+              <span>Change Password</span>
             </button>
           </div>
 
           {/* Body */}
-          <div className="admin-modal-body" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
+          <div className="admin-modal-body">
             {loading ? (
               <div className="admin-loading-card" style={{ padding: '2rem' }}>
                 <Loader2 size={28} className="spinner-icon admin-spinner-teal" />
                 <p>Loading laboratory profile details...</p>
               </div>
             ) : activeTab === 'profile' ? (
-              <form onSubmit={handleProfileSubmit}>
+              <form onSubmit={handleProfileSubmit} noValidate>
                 {profileSuccessMsg && (
                   <div className="admin-alert admin-alert-success" style={{ marginBottom: '1rem' }}>
                     <CheckCircle2 size={16} />
@@ -257,94 +285,149 @@ const LabStaffProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
                   </div>
                 )}
 
-                <div className="admin-form-group" style={{ marginBottom: '1rem' }}>
-                  <label className="admin-form-label">Username</label>
-                  <input
-                    type="text"
-                    className="admin-form-input"
-                    value={profileData.username}
-                    disabled
-                    style={{ opacity: 0.65, cursor: 'not-allowed' }}
-                  />
-                  <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-dim)', marginTop: '0.2rem', display: 'block' }}>
-                    System username assigned by hospital administration.
-                  </span>
+                {/* Account Role Banner */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0.85rem 1rem',
+                    background: 'var(--admin-surface-secondary)',
+                    borderRadius: 'var(--admin-radius-sm)',
+                    border: '1px solid var(--admin-border)',
+                    marginBottom: '1.25rem',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div
+                      style={{
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '50%',
+                        background: 'rgba(6, 182, 212, 0.15)',
+                        border: '1px solid rgba(6, 182, 212, 0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--primary-cyan, #06b6d4)',
+                      }}
+                    >
+                      <FlaskConical size={18} />
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '0.875rem', fontWeight: 600, display: 'block' }}>
+                        Laboratory Diagnostics
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)' }}>
+                        Username: {profileData.username || '—'}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="admin-badge admin-badge-cyan">Laboratory Staff</span>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div className="admin-form-row">
                   <div className="admin-form-group">
-                    <label className="admin-form-label">
+                    <label className="admin-form-label" htmlFor="labstaff-first-name">
                       First Name <span style={{ color: '#ef4444' }}>*</span>
                     </label>
                     <input
+                      id="labstaff-first-name"
                       type="text"
-                      className="admin-form-input"
+                      className={`admin-input ${profileErrors.first_name ? 'admin-input-error' : ''}`}
                       value={profileData.first_name}
                       onChange={(e) => setProfileData({ ...profileData, first_name: e.target.value })}
+                      placeholder="First name"
+                      required
                     />
                     {profileErrors.first_name && (
-                      <span style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '0.2rem', display: 'block' }}>
+                      <span className="admin-form-error" style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '0.2rem', display: 'block' }}>
                         {profileErrors.first_name}
                       </span>
                     )}
                   </div>
 
                   <div className="admin-form-group">
-                    <label className="admin-form-label">
+                    <label className="admin-form-label" htmlFor="labstaff-last-name">
                       Last Name <span style={{ color: '#ef4444' }}>*</span>
                     </label>
                     <input
+                      id="labstaff-last-name"
                       type="text"
-                      className="admin-form-input"
+                      className={`admin-input ${profileErrors.last_name ? 'admin-input-error' : ''}`}
                       value={profileData.last_name}
                       onChange={(e) => setProfileData({ ...profileData, last_name: e.target.value })}
+                      placeholder="Last name"
+                      required
                     />
                     {profileErrors.last_name && (
-                      <span style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '0.2rem', display: 'block' }}>
+                      <span className="admin-form-error" style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '0.2rem', display: 'block' }}>
                         {profileErrors.last_name}
                       </span>
                     )}
                   </div>
                 </div>
 
-                <div className="admin-form-group" style={{ marginBottom: '1rem' }}>
-                  <label className="admin-form-label">
+                <div className="admin-form-group">
+                  <label className="admin-form-label" htmlFor="labstaff-email">
                     Email Address <span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <div className="admin-search-wrapper" style={{ maxWidth: '100%' }}>
-                    <Mail size={16} className="admin-search-icon" />
+                  <div className="admin-input-icon-wrapper">
+                    <Mail size={16} className="admin-input-icon" />
                     <input
+                      id="labstaff-email"
                       type="email"
-                      className="admin-search-input"
+                      className={`admin-input admin-input-with-icon ${
+                        profileErrors.email ? 'admin-input-error' : ''
+                      }`}
                       value={profileData.email}
                       onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                      placeholder="labstaff@careflow.com"
+                      required
                     />
                   </div>
                   {profileErrors.email && (
-                    <span style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '0.2rem', display: 'block' }}>
+                    <span className="admin-form-error" style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '0.2rem', display: 'block' }}>
                       {profileErrors.email}
                     </span>
                   )}
                 </div>
 
-                <div className="admin-form-group" style={{ marginBottom: '1.25rem' }}>
-                  <label className="admin-form-label">Phone Number</label>
-                  <div className="admin-search-wrapper" style={{ maxWidth: '100%' }}>
-                    <Phone size={16} className="admin-search-icon" />
+                <div className="admin-form-group">
+                  <label className="admin-form-label" htmlFor="labstaff-phone">
+                    Phone Number
+                  </label>
+                  <div className="admin-input-icon-wrapper">
+                    <Phone size={16} className="admin-input-icon" />
                     <input
-                      type="text"
-                      className="admin-search-input"
+                      id="labstaff-phone"
+                      type="tel"
+                      className="admin-input admin-input-with-icon"
                       value={profileData.phone}
                       onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                      placeholder="+91 98765 43210"
                     />
                   </div>
+                  {profileErrors.phone && (
+                    <span className="admin-form-error" style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '0.2rem', display: 'block' }}>
+                      {profileErrors.phone}
+                    </span>
+                  )}
                 </div>
 
-                <div className="admin-modal-footer" style={{ padding: '0.75rem 0 0', borderTop: '1px solid var(--admin-border-subtle)' }}>
-                  <button type="button" className="admin-btn admin-btn-secondary" onClick={onClose} disabled={submittingProfile}>
+                <div className="admin-modal-footer" style={{ padding: '1rem 0 0', marginTop: '1rem', borderTop: '1px solid var(--admin-border-subtle)' }}>
+                  <button type="button" className="admin-btn admin-btn-secondary" onClick={handleCancel}>
                     Cancel
                   </button>
-                  <button type="submit" className="admin-btn admin-btn-primary" disabled={submittingProfile}>
+                  <button
+                    type="submit"
+                    className="admin-btn admin-btn-primary"
+                    disabled={!isProfileDirty || submittingProfile}
+                    style={{
+                      opacity: !isProfileDirty && !submittingProfile ? 0.55 : 1,
+                      cursor: !isProfileDirty && !submittingProfile ? 'not-allowed' : 'pointer',
+                    }}
+                  >
                     {submittingProfile ? (
                       <>
                         <Loader2 size={16} className="spinner-icon admin-spinner-teal" />
@@ -353,14 +436,14 @@ const LabStaffProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
                     ) : (
                       <>
                         <ShieldCheck size={16} />
-                        <span>Update Profile</span>
+                        <span>Save Changes</span>
                       </>
                     )}
                   </button>
                 </div>
               </form>
             ) : (
-              <form onSubmit={handlePasswordSubmit}>
+              <form onSubmit={handlePasswordSubmit} noValidate>
                 {passwordSuccessMsg && (
                   <div className="admin-alert admin-alert-success" style={{ marginBottom: '1rem' }}>
                     <CheckCircle2 size={16} />
@@ -374,23 +457,26 @@ const LabStaffProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
                   </div>
                 )}
 
-                <div className="admin-form-group" style={{ marginBottom: '1rem' }}>
-                  <label className="admin-form-label">
+                <div className="admin-form-group">
+                  <label className="admin-form-label" htmlFor="labstaff-current-pwd">
                     Current Password <span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '100%' }}>
+                  <div className="admin-input-icon-wrapper" style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '100%' }}>
                     <input
+                      id="labstaff-current-pwd"
                       type={showCurrentPassword ? 'text' : 'password'}
-                      className="admin-form-input"
-                      style={{ paddingRight: '2.5rem' }}
+                      className={`admin-input ${
+                        passwordErrors.current_password ? 'admin-input-error' : ''
+                      }`}
+                      style={{ paddingRight: '2.75rem' }}
                       value={passwordData.current_password}
                       onChange={(e) => setPasswordData({ ...passwordData, current_password: e.target.value })}
                       placeholder="Enter current password"
+                      required
                     />
                     <button
                       type="button"
-                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                      aria-label={showCurrentPassword ? 'Hide current password' : 'Show current password'}
+                      className="password-toggle-btn"
                       style={{
                         position: 'absolute',
                         right: '0.75rem',
@@ -404,34 +490,39 @@ const LabStaffProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
                         alignItems: 'center',
                         padding: '0.25rem',
                       }}
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      aria-label={showCurrentPassword ? 'Hide current password' : 'Show current password'}
                     >
                       {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
                   {passwordErrors.current_password && (
-                    <span style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '0.2rem', display: 'block' }}>
+                    <span className="admin-form-error" style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '0.2rem', display: 'block' }}>
                       {passwordErrors.current_password}
                     </span>
                   )}
                 </div>
 
-                <div className="admin-form-group" style={{ marginBottom: '1rem' }}>
-                  <label className="admin-form-label">
+                <div className="admin-form-group">
+                  <label className="admin-form-label" htmlFor="labstaff-new-pwd">
                     New Password <span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '100%' }}>
+                  <div className="admin-input-icon-wrapper" style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '100%' }}>
                     <input
+                      id="labstaff-new-pwd"
                       type={showNewPassword ? 'text' : 'password'}
-                      className="admin-form-input"
-                      style={{ paddingRight: '2.5rem' }}
+                      className={`admin-input ${
+                        passwordErrors.new_password ? 'admin-input-error' : ''
+                      }`}
+                      style={{ paddingRight: '2.75rem' }}
                       value={passwordData.new_password}
                       onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
                       placeholder="Minimum 8 characters"
+                      required
                     />
                     <button
                       type="button"
-                      onClick={() => setShowNewPassword(!showNewPassword)}
-                      aria-label={showNewPassword ? 'Hide new password' : 'Show new password'}
+                      className="password-toggle-btn"
                       style={{
                         position: 'absolute',
                         right: '0.75rem',
@@ -445,34 +536,39 @@ const LabStaffProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
                         alignItems: 'center',
                         padding: '0.25rem',
                       }}
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      aria-label={showNewPassword ? 'Hide new password' : 'Show new password'}
                     >
                       {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
                   {passwordErrors.new_password && (
-                    <span style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '0.2rem', display: 'block' }}>
+                    <span className="admin-form-error" style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '0.2rem', display: 'block' }}>
                       {passwordErrors.new_password}
                     </span>
                   )}
                 </div>
 
-                <div className="admin-form-group" style={{ marginBottom: '1.25rem' }}>
-                  <label className="admin-form-label">
+                <div className="admin-form-group">
+                  <label className="admin-form-label" htmlFor="labstaff-confirm-pwd">
                     Confirm New Password <span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '100%' }}>
+                  <div className="admin-input-icon-wrapper" style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '100%' }}>
                     <input
+                      id="labstaff-confirm-pwd"
                       type={showConfirmPassword ? 'text' : 'password'}
-                      className="admin-form-input"
-                      style={{ paddingRight: '2.5rem' }}
+                      className={`admin-input ${
+                        passwordErrors.confirm_password ? 'admin-input-error' : ''
+                      }`}
+                      style={{ paddingRight: '2.75rem' }}
                       value={passwordData.confirm_password}
                       onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
                       placeholder="Re-enter new password"
+                      required
                     />
                     <button
                       type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                      className="password-toggle-btn"
                       style={{
                         position: 'absolute',
                         right: '0.75rem',
@@ -486,18 +582,20 @@ const LabStaffProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
                         alignItems: 'center',
                         padding: '0.25rem',
                       }}
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
                     >
                       {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
                   {passwordErrors.confirm_password && (
-                    <span style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '0.2rem', display: 'block' }}>
+                    <span className="admin-form-error" style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '0.2rem', display: 'block' }}>
                       {passwordErrors.confirm_password}
                     </span>
                   )}
                 </div>
 
-                <div className="admin-modal-footer" style={{ padding: '0.75rem 0 0', borderTop: '1px solid var(--admin-border-subtle)' }}>
+                <div className="admin-modal-footer" style={{ padding: '1rem 0 0', marginTop: '1rem', borderTop: '1px solid var(--admin-border-subtle)' }}>
                   <button type="button" className="admin-btn admin-btn-secondary" onClick={onClose} disabled={submittingPassword}>
                     Cancel
                   </button>

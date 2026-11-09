@@ -729,7 +729,7 @@ describe('CareFlow HMS — Doctor Dashboard Suite', () => {
         expect(screen.getByText('Consultation Details')).toBeInTheDocument();
       });
 
-      expect(screen.getByText(/Primary Complaint/i)).toBeInTheDocument();
+      expect(screen.getByText(/Complaint/i)).toBeInTheDocument();
     });
 
     test('allows doctor to cancel appointment with confirmation modal', async () => {

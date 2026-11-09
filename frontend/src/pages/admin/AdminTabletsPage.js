@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import adminService from '../../services/adminService';
 import ModalPortal from '../../components/common/ModalPortal';
+import Pagination from '../../components/common/Pagination';
 import {
   Pill,
   Search,
@@ -18,6 +19,13 @@ const AdminTabletsPage = () => {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusTab, setStatusTab] = useState('active'); // 'active' | 'all' | 'deactivated'
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Reset to first page when search or tab changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusTab]);
 
   // View Details Modal
   const [viewMedicine, setViewMedicine] = useState(null);
@@ -194,23 +202,26 @@ const AdminTabletsPage = () => {
 
       {/* Inventory Table */}
       {!loading && !error && medicines.length > 0 && (
-        <div className="admin-table-container">
-          <table className="admin-table" aria-label="Pharmacy tablet inventory">
-            <thead>
-              <tr>
-                <th scope="col">Code / ID</th>
-                <th scope="col">Brand Name</th>
-                <th scope="col">Generic / Form</th>
-                <th scope="col">Strength</th>
-                <th scope="col">Batch & Expiry</th>
-                <th scope="col">Available Stock</th>
-                <th scope="col">Unit Price</th>
-                <th scope="col">Status</th>
-                <th scope="col" className="text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {medicines.map((med) => {
+        <>
+          <div className="admin-table-container">
+            <table className="admin-table" aria-label="Pharmacy tablet inventory">
+              <thead>
+                <tr>
+                  <th scope="col">Code / ID</th>
+                  <th scope="col">Brand Name</th>
+                  <th scope="col">Generic / Form</th>
+                  <th scope="col">Strength</th>
+                  <th scope="col">Batch & Expiry</th>
+                  <th scope="col">Available Stock</th>
+                  <th scope="col">Unit Price</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" className="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {medicines
+                  .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+                  .map((med) => {
                 const stockQty = parseInt(med.stock_quantity, 10) || 0;
                 const reorderLvl = parseInt(med.reorder_level, 10) || 20;
                 const isOutOfStock = stockQty <= 0;
@@ -294,7 +305,20 @@ const AdminTabletsPage = () => {
             </tbody>
           </table>
         </div>
-      )}
+
+        <Pagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(medicines.length / pageSize)}
+          totalCount={medicines.length}
+          pageSize={pageSize}
+          onPageChange={(page) => setCurrentPage(page)}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setCurrentPage(1);
+          }}
+        />
+      </>
+    )}
 
       {/* ─────────────────────────────────────────────────────────────
           VIEW MEDICINE DETAILS MODAL

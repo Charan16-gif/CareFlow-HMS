@@ -211,20 +211,8 @@ const DocumentViewerModal = ({
         }}
       >
         <div
-          className="admin-modal-card"
+          className="admin-modal-card doc-viewer-modal-card"
           onClick={(e) => e.stopPropagation()}
-          style={{
-            maxWidth: '1000px',
-            width: '95vw',
-            maxHeight: '92vh',
-            display: 'flex',
-            flexDirection: 'column',
-            background: 'var(--admin-card-bg, #0b1a28)',
-            border: '1px solid var(--admin-border, rgba(56, 189, 248, 0.25))',
-            borderRadius: '16px',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.65)',
-            overflow: 'hidden',
-          }}
         >
           {/* Modal Header */}
           <div
@@ -234,7 +222,7 @@ const DocumentViewerModal = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              borderBottom: '1px solid var(--admin-border, rgba(255, 255, 255, 0.1))',
+              borderBottom: '1px solid var(--admin-border-subtle, rgba(255, 255, 255, 0.1))',
               background: 'rgba(255, 255, 255, 0.02)',
             }}
           >
@@ -373,56 +361,35 @@ const DocumentViewerModal = ({
             </div>
           </div>
 
-          {/* Modal Body: Document Preview */}
-          <div
-            className="admin-modal-body"
-            style={{
-              padding: 0,
-              flex: 1,
-              overflowY: 'auto',
-              maxHeight: 'calc(92vh - 140px)',
-              display: 'flex',
-              flexDirection: 'column',
-              background: '#040d16',
-            }}
-          >
-            {loading ? (
-              <div
-                style={{
-                  padding: '4rem 2rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--admin-text-muted, #94a3b8)',
-                }}
-              >
-                <Loader2 size={36} className="spinner-icon admin-spinner-teal" />
-                <p style={{ marginTop: '1rem', fontSize: '0.9rem' }}>
-                  Retrieving diagnostic document from secure storage...
-                </p>
-              </div>
-            ) : objectUrl && isPdf ? (
-              <div style={{ width: '100%', height: '620px', background: '#0a1926' }}>
-                <iframe
-                  src={objectUrl}
-                  title="PDF Diagnostic Report"
-                  style={{ width: '100%', height: '100%', border: 'none' }}
-                />
-              </div>
-            ) : objectUrl && isImage ? (
-              <div
-                style={{
-                  padding: '1.5rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  minHeight: '400px',
-                  background: 'radial-gradient(circle at center, rgba(6, 182, 212, 0.05) 0%, #03080e 100%)',
-                  overflow: 'auto',
-                }}
-              >
+          {/* Modal Body: Professional Side-by-Side Layout */}
+          <div className="doc-viewer-modal-body">
+            {/* LEFT SIDE: Document Viewer */}
+            <div className="doc-viewer-left-col">
+              {loading ? (
+                <div
+                  style={{
+                    padding: '4rem 2rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--admin-text-muted, #94a3b8)',
+                  }}
+                >
+                  <Loader2 size={36} className="spinner-icon admin-spinner-teal" />
+                  <p style={{ marginTop: '1rem', fontSize: '0.9rem' }}>
+                    Retrieving diagnostic document from secure storage...
+                  </p>
+                </div>
+              ) : objectUrl && isPdf ? (
+                <div style={{ width: '100%', height: '100%', minHeight: '520px' }}>
+                  <iframe
+                    src={objectUrl}
+                    title="PDF Diagnostic Report"
+                    style={{ width: '100%', height: '100%', minHeight: '520px', border: 'none', borderRadius: '8px' }}
+                  />
+                </div>
+              ) : objectUrl && isImage ? (
                 <div
                   style={{
                     transform: `scale(${zoomLevel}) rotate(${rotation}deg)`,
@@ -438,118 +405,90 @@ const DocumentViewerModal = ({
                       maxWidth: '100%',
                       maxHeight: '560px',
                       borderRadius: '8px',
-                      boxShadow: '0 20px 40px rgba(0, 0, 0, 0.6)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      boxShadow: '0 15px 35px rgba(0, 0, 0, 0.35)',
+                      border: '1px solid var(--admin-border-subtle, rgba(255, 255, 255, 0.15))',
                       objectFit: 'contain',
                     }}
                   />
                 </div>
-              </div>
-            ) : (
-              <div
-                style={{
-                  padding: '3rem 2rem',
-                  textAlign: 'center',
-                  color: 'var(--admin-text-muted, #94a3b8)',
-                }}
-              >
-                <AlertCircle size={38} style={{ color: '#f59e0b', marginBottom: '0.75rem' }} />
-                <h4 style={{ margin: '0 0 0.5rem 0', color: '#ffffff' }}>
-                  No Direct File Preview Available
-                </h4>
-                <p style={{ maxWidth: '420px', margin: '0 auto', fontSize: '0.85rem' }}>
-                  The diagnostic test findings and clinical values are displayed in the record summary below.
-                </p>
-              </div>
-            )}
-
-            {/* Structured Clinical Test Findings Card */}
-            {order && (
-              <div
-                style={{
-                  padding: '1.25rem 1.5rem',
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-                }}
-              >
+              ) : (
                 <div
                   style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                    gap: '1rem',
+                    padding: '3rem 2rem',
+                    textAlign: 'center',
+                    color: 'var(--admin-text-muted, #94a3b8)',
                   }}
                 >
-                  <div>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted, #94a3b8)', display: 'block' }}>
-                      Patient Details
-                    </span>
-                    <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#ffffff' }}>
-                      {order.patient_name || '—'}
-                    </span>
-                    <span style={{ fontSize: '0.75rem', color: '#38bdf8', display: 'block' }}>
-                      ID: {order.patient_identifier || `PAT-${order.patient || '—'}`}
-                    </span>
-                  </div>
-
-                  <div>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted, #94a3b8)', display: 'block' }}>
-                      Diagnostic Test
-                    </span>
-                    <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#ffffff' }}>
-                      {order.test_name || '—'}
-                    </span>
-                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>
-                      Category: {order.test_category || 'Laboratory'}
-                    </span>
-                  </div>
-
-                  <div>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted, #94a3b8)', display: 'block' }}>
-                      Quantitative Result
-                    </span>
-                    <span
-                      style={{
-                        fontSize: '0.95rem',
-                        fontWeight: 700,
-                        color: order.result_value ? '#10b981' : '#94a3b8',
-                      }}
-                    >
-                      {order.result_value
-                        ? `${order.result_value} ${order.result_unit || ''}`
-                        : 'Awaiting Result'}
-                    </span>
-                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>
-                      Normal Range: {order.reference_range_used || order.test_reference_range || 'Normal'}
-                    </span>
-                  </div>
-
-                  <div>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted, #94a3b8)', display: 'block' }}>
-                      Ordering Doctor
-                    </span>
-                    <span style={{ fontSize: '0.9rem', fontWeight: 500, color: '#ffffff' }}>
-                      {order.doctor_name || 'Assigned Physician'}
-                    </span>
-                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>
-                      {order.completed_at
-                        ? `Verified ${new Date(order.completed_at).toLocaleDateString()}`
-                        : 'Ordered by Clinical Staff'}
-                    </span>
-                  </div>
+                  <AlertCircle size={38} style={{ color: '#f59e0b', marginBottom: '0.75rem' }} />
+                  <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--admin-heading-color, #ffffff)' }}>
+                    No Direct File Preview Available
+                  </h4>
+                  <p style={{ maxWidth: '360px', margin: '0 auto', fontSize: '0.85rem' }}>
+                    Diagnostic findings and clinical readings are displayed in the record details on the right.
+                  </p>
                 </div>
+              )}
+            </div>
 
-                {order.result_interpretation && (
-                  <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted, #94a3b8)', display: 'block' }}>
-                      Clinical Pathologist Interpretation
-                    </span>
-                    <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: '#e2e8f0' }}>
-                      {order.result_interpretation}
-                    </p>
-                  </div>
-                )}
+            {/* RIGHT SIDE: Associated Report Information */}
+            <div className="doc-viewer-right-col">
+              <div style={{ borderBottom: '1px solid var(--admin-border-subtle, rgba(255,255,255,0.08))', paddingBottom: '0.75rem', marginBottom: '0.25rem' }}>
+                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: 'var(--admin-heading-color, #ffffff)' }}>
+                  Diagnostic Report Information
+                </h4>
+                <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted, #94a3b8)' }}>
+                  Official hospital pathology requisition & findings
+                </span>
               </div>
-            )}
+
+              {/* 1. Patient Details & ID */}
+              <div className="doc-viewer-info-card">
+                <span className="doc-viewer-info-label">Patient Details</span>
+                <span className="doc-viewer-info-value">{order?.patient_name || '—'}</span>
+                <span className="doc-viewer-info-sub" style={{ color: '#0284c7', fontWeight: 600 }}>
+                  Patient ID: {order?.patient_identifier || (order?.patient ? `CF-P-${order.patient}` : '—')}
+                </span>
+              </div>
+
+              {/* 2. Diagnostic Test & Category */}
+              <div className="doc-viewer-info-card">
+                <span className="doc-viewer-info-label">Diagnostic Test</span>
+                <span className="doc-viewer-info-value">{order?.test_name || 'Diagnostic Laboratory Test'}</span>
+                <span className="doc-viewer-info-sub">
+                  Category: {order?.test_category || 'Clinical Pathology'}
+                </span>
+              </div>
+
+              {/* 3. Quantitative Result & Normal Range */}
+              <div className="doc-viewer-info-card">
+                <span className="doc-viewer-info-label">Quantitative Result</span>
+                <span className="doc-viewer-result-value">
+                  {order?.result_value
+                    ? `${order.result_value} ${order.result_unit || ''}`
+                    : 'Awaiting Result'}
+                </span>
+                <span className="doc-viewer-info-sub">
+                  Normal Range: {order?.reference_range_used || order?.test_reference_range || 'Normal'}
+                </span>
+              </div>
+
+              {/* 4. Ordering Doctor & Verification Date */}
+              <div className="doc-viewer-info-card">
+                <span className="doc-viewer-info-label">Ordering Doctor</span>
+                <span className="doc-viewer-info-value">{order?.doctor_name || 'Assigned Physician'}</span>
+                <span className="doc-viewer-info-sub">
+                  Verification Date: {order?.completed_at ? new Date(order.completed_at).toLocaleDateString() : 'Pending Completion'}
+                </span>
+              </div>
+
+              {/* 5. Clinical Pathologist Interpretation */}
+              <div className="doc-viewer-info-card" style={{ flex: 1 }}>
+                <span className="doc-viewer-info-label">Clinical Pathologist Interpretation</span>
+                <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', lineHeight: 1.45, color: 'var(--admin-text-main, #e2e8f0)' }}>
+                  {order?.result_interpretation || 'Normal physiological findings. No significant diagnostic abnormalities detected.'}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

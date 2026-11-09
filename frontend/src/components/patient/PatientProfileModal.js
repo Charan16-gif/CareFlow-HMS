@@ -27,6 +27,20 @@ const PatientProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
     last_name: '',
     email: '',
     phone: '',
+    date_of_birth: '',
+    gender: '',
+    blood_group: '',
+    address: '',
+  });
+  const [initialFormData, setInitialFormData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    date_of_birth: '',
+    gender: '',
+    blood_group: '',
+    address: '',
   });
   const [profileErrors, setProfileErrors] = useState({});
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -81,32 +95,63 @@ const PatientProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  const isProfileDirty = Boolean(
+    (formData.first_name || '').trim() !== (initialFormData.first_name || '').trim() ||
+    (formData.last_name || '').trim() !== (initialFormData.last_name || '').trim() ||
+    (formData.email || '').trim().toLowerCase() !== (initialFormData.email || '').trim().toLowerCase() ||
+    (formData.phone || '').trim() !== (initialFormData.phone || '').trim() ||
+    (formData.date_of_birth || '') !== (initialFormData.date_of_birth || '') ||
+    (formData.gender || '') !== (initialFormData.gender || '') ||
+    (formData.blood_group || '') !== (initialFormData.blood_group || '') ||
+    (formData.address || '').trim() !== (initialFormData.address || '').trim()
+  );
+
+  const handleCancel = () => {
+    setFormData(initialFormData);
+    setProfileErrors({});
+    setProfileSuccessMsg('');
+    onClose();
+  };
+
   const loadProfile = async () => {
     try {
       const data = await patientService.getProfile();
       setProfile(data);
-      setFormData({
+      const init = {
         first_name: data.first_name || '',
         last_name: data.last_name || '',
         email: data.email || '',
         phone: data.phone_number || data.phone || '',
-      });
+        date_of_birth: data.date_of_birth || '',
+        gender: data.gender || '',
+        blood_group: data.blood_group || '',
+        address: data.address || '',
+      };
+      setFormData(init);
+      setInitialFormData(init);
     } catch (err) {
       const cached = authService.getUserProfile();
       if (cached) {
         setProfile(cached);
-        setFormData({
+        const init = {
           first_name: cached.first_name || '',
           last_name: cached.last_name || '',
           email: cached.email || '',
           phone: cached.phone_number || cached.phone || '',
-        });
+          date_of_birth: cached.date_of_birth || '',
+          gender: cached.gender || '',
+          blood_group: cached.blood_group || '',
+          address: cached.address || '',
+        };
+        setFormData(init);
+        setInitialFormData(init);
       }
     }
   };
 
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
+    if (!isProfileDirty || isSavingProfile) return;
     setProfileErrors({});
     setProfileSuccessMsg('');
 
@@ -132,8 +177,24 @@ const PatientProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
         last_name: formData.last_name.trim(),
         email: formData.email.trim().toLowerCase(),
         phone: formData.phone.trim(),
+        date_of_birth: formData.date_of_birth || null,
+        gender: formData.gender || null,
+        blood_group: formData.blood_group || null,
+        address: formData.address.trim() || null,
       });
+      const newInit = {
+        first_name: updated.first_name || formData.first_name.trim(),
+        last_name: updated.last_name || formData.last_name.trim(),
+        email: updated.email || formData.email.trim().toLowerCase(),
+        phone: updated.phone || updated.phone_number || formData.phone.trim(),
+        date_of_birth: updated.date_of_birth || formData.date_of_birth || '',
+        gender: updated.gender || formData.gender || '',
+        blood_group: updated.blood_group || formData.blood_group || '',
+        address: updated.address || formData.address.trim() || '',
+      };
       setProfile(updated);
+      setFormData(newInit);
+      setInitialFormData(newInit);
       setProfileSuccessMsg('Profile information updated successfully.');
       toast.success('Your profile details have been updated successfully!', 'Profile Updated');
       if (onProfileUpdated) {
@@ -307,7 +368,7 @@ const PatientProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
                     <HeartPulse size={18} color="var(--primary-teal, #14b8a6)" />
                     <div>
                       <span style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block' }}>
-                        CareFlow Registered Patient
+                        CareFlow Registered Patient {profile?.patient_id ? `(${profile.patient_id})` : ''}
                       </span>
                       <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)' }}>
                         Username: {profile?.username || '—'}
@@ -401,18 +462,102 @@ const PatientProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
                   </div>
                 </div>
 
+                <div className="admin-form-row">
+                  <div className="admin-form-group">
+                    <label className="admin-form-label" htmlFor="patient-dob">
+                      Date of Birth
+                    </label>
+                    <input
+                      id="patient-dob"
+                      type="date"
+                      className="admin-input"
+                      value={formData.date_of_birth}
+                      max={new Date().toISOString().split('T')[0]}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, date_of_birth: e.target.value }))
+                      }
+                    />
+                  </div>
+
+                  <div className="admin-form-group">
+                    <label className="admin-form-label" htmlFor="patient-gender">
+                      Gender
+                    </label>
+                    <select
+                      id="patient-gender"
+                      className="admin-input"
+                      value={formData.gender}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, gender: e.target.value }))
+                      }
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <option value="">-- Select Gender --</option>
+                      <option value="MALE">Male</option>
+                      <option value="FEMALE">Female</option>
+                      <option value="OTHER">Other</option>
+                      <option value="PREFER_NOT_TO_SAY">Prefer not to say</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="admin-form-group">
+                  <label className="admin-form-label" htmlFor="patient-blood-group">
+                    Blood Group <span style={{ fontSize: '0.78rem', color: 'var(--admin-text-muted)' }}>(Optional)</span>
+                  </label>
+                  <select
+                    id="patient-blood-group"
+                    className="admin-input"
+                    value={formData.blood_group}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, blood_group: e.target.value }))
+                    }
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <option value="">-- Select Blood Group (Optional) --</option>
+                    <option value="A+">A+</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B-</option>
+                    <option value="AB+">AB+</option>
+                    <option value="AB-">AB-</option>
+                    <option value="O+">O+</option>
+                    <option value="O-">O-</option>
+                  </select>
+                </div>
+
+                <div className="admin-form-group">
+                  <label className="admin-form-label" htmlFor="patient-address">
+                    Residential Address
+                  </label>
+                  <input
+                    id="patient-address"
+                    type="text"
+                    className="admin-input"
+                    value={formData.address}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, address: e.target.value }))
+                    }
+                    placeholder="Street, City, Postal Code"
+                  />
+                </div>
+
                 <div className="admin-modal-footer" style={{ padding: '1rem 0 0', marginTop: '1rem' }}>
                   <button
                     type="button"
                     className="admin-btn admin-btn-secondary"
-                    onClick={onClose}
+                    onClick={handleCancel}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     className="admin-btn admin-btn-primary"
-                    disabled={isSavingProfile}
+                    disabled={!isProfileDirty || isSavingProfile}
+                    style={{
+                      opacity: !isProfileDirty && !isSavingProfile ? 0.55 : 1,
+                      cursor: !isProfileDirty && !isSavingProfile ? 'not-allowed' : 'pointer',
+                    }}
                   >
                     {isSavingProfile ? (
                       <>

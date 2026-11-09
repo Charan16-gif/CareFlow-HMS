@@ -40,13 +40,30 @@ Maintains cryptographically secure 6-digit OTP codes for patient self-registrati
 - `id` (BigInt, PK)
 - `email` (EmailField, Indexed)
 - `user_id` (Integer, FK -> `auth_user.id`, Nullable, On Delete CASCADE)
-- `otp_code` (Varchar(6))
+- `otp_code` (Varchar(255), Cryptographic hash, never plain text)
 - `purpose` (Varchar(30), choices: `registration`, `login`, `password_reset`)
 - `attempts` (Integer, Default 0, Max 5 attempts)
 - `is_verified` (Boolean, Default False)
 - `created_at` (Timestamp with time zone)
 - `expires_at` (Timestamp with time zone, 10 min window)
 - *Indexes*: Composite index on `(email, purpose, is_verified)`.
+
+#### `accounts_databasebackuprecord`
+Audit ledger tracking complete PostgreSQL database backups, file integrity checksums, retention policies, and audited restoration events.
+- `id` (BigInt, PK)
+- `filename` (Varchar(255), Unique, Indexed)
+- `file_path` (Varchar(500))
+- `file_size_bytes` (BigInt, Default 0)
+- `sha256_checksum` (Varchar(64), Nullable, SHA-256 integrity hash)
+- `status` (Varchar(20), choices: `SUCCESS`, `FAILED`, `RESTORED`, Indexed)
+- `is_automated` (Boolean, Default False)
+- `notes` (Text, Nullable)
+- `error_message` (Text, Nullable)
+- `created_by_id` (Integer, FK -> `auth_user.id`, Nullable, On Delete SET_NULL)
+- `created_at` (Timestamp with time zone, Indexed)
+- `restored_at` (Timestamp with time zone, Nullable)
+- `restored_by_id` (Integer, FK -> `auth_user.id`, Nullable, On Delete SET_NULL)
+- *Access Control*: Restricted strictly to the single `ADMIN` role. Backups are stored outside web roots with SHA-256 and TOC integrity verification.
 
 ---
 
@@ -331,6 +348,7 @@ Financial payment receipts recorded against patient invoices.
 erDiagram
     auth_user ||--|| accounts_userprofile : "has profile"
     auth_user ||--o{ accounts_emailotpverification : "verifies via"
+    auth_user ||--o{ accounts_databasebackuprecord : "creates/restores"
     auth_user ||--o| patients_patient : "links to"
     auth_user ||--o| staff_doctor : "authenticates"
     auth_user ||--o| staff_staffprofile : "authenticates"
@@ -373,3 +391,9 @@ erDiagram
    - Only Doctors can prescribe medications and order diagnostic lab tests.
    - Only Pharmacists can dispense medications.
    - Only Lab Staff can update diagnostic test results and upload reports.
+6. **Database Backup & Recovery Safeguards**:
+   - PostgreSQL custom-format (`pg_dump -Fc`) backups stored outside web roots.
+   - SHA-256 and `pg_restore -l` table-of-contents integrity verification before marking backups successful.
+   - Pre-restore safety snapshots taken automatically prior to applying any restoration.
+   - Safe restoration commands require explicit cryptographic token confirmation (`RESTORE-CONFIRM-<filename>`).
+   - Automated retention policies prune backups beyond configurable limits (`BACKUP_RETENTION_DAYS`, `BACKUP_MAX_COUNT`) while maintaining audit logs.

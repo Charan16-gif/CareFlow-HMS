@@ -1,5 +1,6 @@
 import React from 'react';
 import ThemeSwitcher from '../common/ThemeSwitcher';
+import NotificationCenter from '../common/NotificationCenter';
 import { Menu, X, User, Pill } from 'lucide-react';
 
 const PharmacistHeader = ({
@@ -37,6 +38,9 @@ const PharmacistHeader = ({
       <div className="admin-header-right">
         {/* Universal Theme Switcher across all pages */}
         <ThemeSwitcher currentTheme={currentTheme} onThemeChange={onThemeChange} />
+
+        {/* Centralized Role-Based Notification Bell */}
+        <NotificationCenter />
 
         <button
           type="button"

@@ -11,6 +11,9 @@ class PatientSerializer(serializers.ModelSerializer):
     username = serializers.CharField(write_only=True, required=False)
     password = serializers.CharField(write_only=True, required=False)
     phone = serializers.CharField(write_only=True, required=False)
+    date_of_birth = serializers.DateField(required=False, allow_null=True)
+    gender = serializers.CharField(max_length=20, required=False, allow_null=True, allow_blank=True)
+    blood_group = serializers.CharField(max_length=10, required=False, allow_null=True, allow_blank=True)
     has_booked_appointment = serializers.SerializerMethodField()
     has_prescription = serializers.SerializerMethodField()
     has_unbilled_prescription = serializers.SerializerMethodField()
@@ -53,7 +56,25 @@ class PatientSerializer(serializers.ModelSerializer):
             return False
         return self.get_has_unbilled_prescription(obj)
 
+    GENDER_MAP = {
+        "MALE": "MALE", "male": "MALE", "Male": "MALE",
+        "FEMALE": "FEMALE", "female": "FEMALE", "Female": "FEMALE",
+        "OTHER": "OTHER", "other": "OTHER", "Other": "OTHER",
+        "PREFER_NOT_TO_SAY": "PREFER_NOT_TO_SAY",
+        "prefer_not_to_say": "PREFER_NOT_TO_SAY",
+        "Prefer not to say": "PREFER_NOT_TO_SAY",
+        "PREFER NOT TO SAY": "PREFER_NOT_TO_SAY",
+    }
+
     BLOOD_GROUP_MAP = {
+        "A+": "A+",
+        "A-": "A-",
+        "B+": "B+",
+        "B-": "B-",
+        "AB+": "AB+",
+        "AB-": "AB-",
+        "O+": "O+",
+        "O-": "O-",
         "A_POSITIVE": "A+",
         "A_NEGATIVE": "A-",
         "B_POSITIVE": "B+",
@@ -68,8 +89,20 @@ class PatientSerializer(serializers.ModelSerializer):
         data = data.copy() if hasattr(data, "copy") else dict(data)
         if "phone" in data and ("phone_number" not in data or not data["phone_number"]):
             data["phone_number"] = data.get("phone")
-        if "blood_group" in data and data["blood_group"] in self.BLOOD_GROUP_MAP:
-            data["blood_group"] = self.BLOOD_GROUP_MAP[data["blood_group"]]
+        if "gender" in data:
+            val = data["gender"]
+            if val in self.GENDER_MAP:
+                data["gender"] = self.GENDER_MAP[val]
+            elif val == "" or val is None:
+                data["gender"] = None
+        if "blood_group" in data:
+            val = data["blood_group"]
+            if val in self.BLOOD_GROUP_MAP:
+                data["blood_group"] = self.BLOOD_GROUP_MAP[val]
+            elif val == "" or val is None:
+                data["blood_group"] = None
+        if "date_of_birth" in data and (data["date_of_birth"] == "" or data["date_of_birth"] is None):
+            data["date_of_birth"] = None
         return super().to_internal_value(data)
 
     class Meta:
@@ -105,6 +138,16 @@ class PatientSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "patient_id", "has_booked_appointment", "has_prescription", "has_unbilled_prescription", "can_generate_bill", "created_at", "updated_at"]
+
+    def validate_email(self, value):
+        if not value:
+            return ""
+        from accounts.email_validation import validate_email_address_complete
+        clean_email = validate_email_address_complete(value)
+        user_id = self.instance.user_id if (self.instance and self.instance.user_id) else None
+        if User.objects.filter(email__iexact=clean_email, is_active=True).exclude(id=user_id).exists():
+            raise serializers.ValidationError("A user with this email address already exists.")
+        return clean_email
 
     def create(self, validated_data):
         user = validated_data.get("user")

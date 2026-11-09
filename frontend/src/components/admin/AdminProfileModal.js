@@ -28,6 +28,12 @@ const AdminProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
     email: '',
     phone: '',
   });
+  const [initialFormData, setInitialFormData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+  });
   const [profileErrors, setProfileErrors] = useState({});
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileSuccessMsg, setProfileSuccessMsg] = useState('');
@@ -84,33 +90,52 @@ const AdminProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  const isProfileDirty = Boolean(
+    (formData.first_name || '').trim() !== (initialFormData.first_name || '').trim() ||
+    (formData.last_name || '').trim() !== (initialFormData.last_name || '').trim() ||
+    (formData.email || '').trim().toLowerCase() !== (initialFormData.email || '').trim().toLowerCase() ||
+    (formData.phone || '').trim() !== (initialFormData.phone || '').trim()
+  );
+
+  const handleCancel = () => {
+    setFormData(initialFormData);
+    setProfileErrors({});
+    setProfileSuccessMsg('');
+    onClose();
+  };
+
   const loadProfile = async () => {
     try {
       const data = await adminService.getProfile();
       setProfile(data);
-      setFormData({
+      const init = {
         first_name: data.first_name || '',
         last_name: data.last_name || '',
         email: data.email || '',
         phone: data.phone || '',
-      });
+      };
+      setFormData(init);
+      setInitialFormData(init);
     } catch (err) {
       // Fallback to cached profile
       const cached = authService.getUserProfile();
       if (cached) {
         setProfile(cached);
-        setFormData({
+        const init = {
           first_name: cached.first_name || '',
           last_name: cached.last_name || '',
           email: cached.email || '',
           phone: cached.phone || '',
-        });
+        };
+        setFormData(init);
+        setInitialFormData(init);
       }
     }
   };
 
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
+    if (!isProfileDirty || isSavingProfile) return;
     setProfileSuccessMsg('');
     const errors = {};
 
@@ -133,7 +158,15 @@ const AdminProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
 
     try {
       const updated = await adminService.updateProfile(formData);
+      const newInit = {
+        first_name: updated.first_name || formData.first_name.trim(),
+        last_name: updated.last_name || formData.last_name.trim(),
+        email: updated.email || formData.email.trim().toLowerCase(),
+        phone: updated.phone || formData.phone.trim(),
+      };
       setProfile(updated);
+      setFormData(newInit);
+      setInitialFormData(newInit);
       setProfileSuccessMsg('Profile details successfully updated.');
       toast.success('Admin profile details successfully updated!', 'Profile Updated');
       if (onProfileUpdated) {
@@ -378,15 +411,18 @@ const AdminProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
                 <button
                   type="button"
                   className="admin-btn admin-btn-secondary"
-                  onClick={onClose}
-                  disabled={isSavingProfile}
+                  onClick={handleCancel}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   className="admin-btn admin-btn-primary"
-                  disabled={isSavingProfile}
+                  disabled={!isProfileDirty || isSavingProfile}
+                  style={{
+                    opacity: !isProfileDirty && !isSavingProfile ? 0.55 : 1,
+                    cursor: !isProfileDirty && !isSavingProfile ? 'not-allowed' : 'pointer',
+                  }}
                 >
                   {isSavingProfile ? (
                     <>
@@ -394,7 +430,7 @@ const AdminProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
                       <span>Saving Details...</span>
                     </>
                   ) : (
-                    <span>Update Details</span>
+                    <span>Save Changes</span>
                   )}
                 </button>
               </div>

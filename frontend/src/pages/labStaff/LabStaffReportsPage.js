@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import labStaffService from '../../services/labStaffService';
 import ModalPortal from '../../components/common/ModalPortal';
+import Pagination from '../../components/common/Pagination';
 import {
   FileCheck,
   Search,
@@ -29,6 +30,13 @@ const LabStaffReportsPage = () => {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('ALL'); // ALL, AWAITING, UPLOADED, COMPLETED
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Reset page when filter or tab changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, searchQuery]);
 
   // Upload Modal State
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -360,7 +368,9 @@ const LabStaffReportsPage = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredOrders.map((o) => (
+              {filteredOrders
+                .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+                .map((o) => (
                 <tr key={o.id}>
                   <td>
                     <span style={{ fontWeight: 600, color: 'var(--color-primary-400)' }}>
@@ -473,6 +483,20 @@ const LabStaffReportsPage = () => {
           </table>
         )}
       </div>
+
+      {!loading && filteredOrders.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(filteredOrders.length / pageSize)}
+          totalCount={filteredOrders.length}
+          pageSize={pageSize}
+          onPageChange={(page) => setCurrentPage(page)}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setCurrentPage(1);
+          }}
+        />
+      )}
 
       {/* Upload / Replace Report Modal */}
       {isUploadModalOpen && selectedOrderForUpload && (

@@ -1,4 +1,4 @@
-from datetime import date, time
+from datetime import date, time, timedelta
 from django.utils import timezone
 from django.test import TestCase
 from django.contrib.auth.models import User
@@ -96,10 +96,14 @@ class AppointmentModuleTests(TestCase):
 
     def test_receptionist_can_book_appointment_via_api(self):
         self.client.force_authenticate(user=self.rec_user)
+        target_date = date.today() + timedelta(days=1)
+        while target_date.weekday() >= 5:
+            target_date += timedelta(days=1)
+
         payload = {
             "patient": self.patient1.id,
             "doctor": self.doctor.id,
-            "appointment_date": "2026-11-05",
+            "appointment_date": target_date.strftime("%Y-%m-%d"),
             "appointment_time": "14:00",
             "reason_for_visit": "Follow up consultation"
         }
@@ -144,6 +148,7 @@ class AppointmentModuleTests(TestCase):
             "reason_for_visit": "Persistent headache and fever",
         }
         res = self.client.post("/api/appointments/", payload, format="json")
+        print("API_DATA:", res.data)
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         self.assertEqual(res.data["status"], AppointmentStatus.SCHEDULED)
         self.assertEqual(res.data["patient"], self.patient1.id)

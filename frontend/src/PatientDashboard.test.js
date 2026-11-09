@@ -319,6 +319,7 @@ jest.mock('./services/patientService', () => {
     __esModule: true,
     default: service,
     patientService: service,
+    isPrescriptionCourseActive: () => true,
   };
 });
 
@@ -807,32 +808,18 @@ describe('CareFlow HMS — Patient Dashboard Component Suite', () => {
     // Modal title should appear
     await waitFor(() => {
       expect(screen.getByText('Book a Clinical Appointment')).toBeInTheDocument();
-      expect(screen.getByLabelText(/Select Doctor \/ Clinical Specialist/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Health Problem \/ Complaint/i)).toBeInTheDocument();
     });
 
     // Inputs should have styled class .admin-input
-    const doctorSelect = screen.getByLabelText(/Select Doctor \/ Clinical Specialist/i);
-    expect(doctorSelect).toHaveClass('admin-input');
+    const problemSelect = screen.getByLabelText(/Health Problem \/ Complaint/i);
+    expect(problemSelect).toHaveClass('admin-input');
 
-    // Select doctor
-    fireEvent.change(doctorSelect, { target: { value: '3' } });
+    // Select health problem
+    fireEvent.change(problemSelect, { target: { value: 'Fever' } });
 
-    // Specialist card should display doctor name and fee
-    await waitFor(() => {
-      expect(screen.getAllByText('Dr. Rajesh Allam').length).toBeGreaterThanOrEqual(2);
-      expect(screen.getAllByText('₹500.00').length).toBeGreaterThanOrEqual(2);
-    });
-
-    // Interactive time slot chips should render
-    await waitFor(() => {
-      expect(screen.getByText('09:00')).toBeInTheDocument();
-      expect(screen.getByText('09:30')).toBeInTheDocument();
-    });
-
-    // Click on a slot chip
-    const slotChip = screen.getByText('09:30');
-    fireEvent.click(slotChip);
-    expect(slotChip).toHaveClass('selected');
+    // Automatic Physician Matching banner should render
+    expect(screen.getByText('Automatic Physician Matching')).toBeInTheDocument();
   });
 
   test('PatientMedicinesPage opens official verified payment receipt and triggers print receipt', async () => {

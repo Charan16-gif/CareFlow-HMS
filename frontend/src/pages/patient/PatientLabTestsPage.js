@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import patientService from '../../services/patientService';
 import ModalPortal from '../../components/common/ModalPortal';
+import Pagination from '../../components/common/Pagination';
 import {
   FlaskConical,
   Search,
@@ -35,6 +36,13 @@ const PatientLabTestsPage = () => {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('ALL'); // 'ALL' | 'ACTIVE' | 'COMPLETED'
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Reset page when filter or tab changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, searchQuery]);
 
   // Details Modal
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -395,21 +403,24 @@ const PatientLabTestsPage = () => {
           </p>
         </div>
       ) : (
-        <div className="admin-table-container">
-          <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Diagnostic Test</th>
-                  <th>Order Reference</th>
-                  <th>Ordering Physician</th>
-                  <th>Date Requested</th>
-                  <th>Analysis Progress</th>
-                  <th>Status</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredOrders.map((order) => {
+        <>
+          <div className="admin-table-container">
+            <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Diagnostic Test</th>
+                    <th>Order Reference</th>
+                    <th>Ordering Physician</th>
+                    <th>Date Requested</th>
+                    <th>Analysis Progress</th>
+                    <th>Status</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredOrders
+                    .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+                    .map((order) => {
                   const stepIdx = getStepIndex(order.status);
                   const isCancelled = order.status === 'CANCELLED';
                   const hasReport = Boolean(order.report_file);
@@ -484,8 +495,8 @@ const PatientLabTestsPage = () => {
                         )}
                       </td>
                       <td>{getStatusBadge(order.status)}</td>
-                      <td style={{ textAlign: 'right' }}>
-                        <div style={{ display: 'inline-flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'inline-flex', gap: '0.4rem', justifyContent: 'flex-end', flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
                           <button
                             type="button"
                             className="admin-btn admin-btn-secondary"
@@ -544,7 +555,20 @@ const PatientLabTestsPage = () => {
               </tbody>
             </table>
           </div>
-        )}
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(filteredOrders.length / pageSize)}
+            totalCount={filteredOrders.length}
+            pageSize={pageSize}
+            onPageChange={(page) => setCurrentPage(page)}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setCurrentPage(1);
+            }}
+          />
+        </>
+      )}
 
       {/* ─────────────────────────────────────────────────────────────
           MODAL: TEST DETAILS & STRUCTURED RESULTS (PATIENT VIEW)

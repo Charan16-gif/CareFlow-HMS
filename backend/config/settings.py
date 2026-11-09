@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "pharmacy",
     "laboratory",
     "billing",
+    "notifications",
 ]
 
 MIDDLEWARE = [
@@ -171,6 +172,18 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
+    "EXCEPTION_HANDLER": "config.exceptions.careflow_exception_handler",
+    "DEFAULT_THROTTLE_CLASSES": (
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ),
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "120/minute",
+        "user": "300/minute",
+        "auth": "10/minute",
+        "otp": "5/minute",
+        "sensitive": "15/minute",
+    },
 }
 
 
@@ -225,3 +238,130 @@ DEFAULT_FROM_EMAIL = os.getenv(
     EMAIL_HOST_USER if EMAIL_HOST_USER else "CareFlow-HMS <noreply@careflow-hms.com>"
 )
 EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "15"))
+
+# Real-Time Email Address Validation & Mailbox Verification Provider
+EMAIL_VERIFICATION_PROVIDER = os.getenv("EMAIL_VERIFICATION_PROVIDER", "abstractapi").lower().strip()
+EMAIL_VERIFICATION_API_KEY = os.getenv("EMAIL_VERIFICATION_API_KEY", "").strip()
+EMAIL_VERIFICATION_TIMEOUT = int(os.getenv("EMAIL_VERIFICATION_TIMEOUT", "5"))
+EMAIL_VERIFICATION_CACHE_TTL = int(os.getenv("EMAIL_VERIFICATION_CACHE_TTL", "3600"))
+
+
+# ==============================================================================
+# Database Backup and Recovery Configuration
+# ==============================================================================
+BACKUP_DIR = BASE_DIR / "backups"
+BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+BACKUP_RETENTION_DAYS = int(os.getenv("BACKUP_RETENTION_DAYS", "30"))
+BACKUP_MAX_COUNT = int(os.getenv("BACKUP_MAX_COUNT", "50"))
+PG_DUMP_PATH = os.getenv("PG_DUMP_PATH", r"C:\Program Files\PostgreSQL\18\bin\pg_dump.exe")
+PG_RESTORE_PATH = os.getenv("PG_RESTORE_PATH", r"C:\Program Files\PostgreSQL\18\bin\pg_restore.exe")
+
+
+# ==============================================================================
+# Centralized Logging Configuration
+# ==============================================================================
+LOGS_DIR = BASE_DIR / "logs"
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[%(asctime)s] [%(levelname)s] [%(name)s:%(lineno)d] %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        },
+        "simple": {
+            "format": "[%(levelname)s] %(message)s",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+        "file_app": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": str(LOGS_DIR / "careflow.log"),
+            "maxBytes": 10 * 1024 * 1024,  # 10 MB
+            "backupCount": 5,
+            "formatter": "verbose",
+            "encoding": "utf-8",
+        },
+        "file_errors": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": str(LOGS_DIR / "errors.log"),
+            "level": "ERROR",
+            "maxBytes": 10 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "verbose",
+            "encoding": "utf-8",
+        },
+        "file_security": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": str(LOGS_DIR / "security.log"),
+            "level": "INFO",
+            "maxBytes": 10 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "verbose",
+            "encoding": "utf-8",
+        },
+        "file_backups": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": str(LOGS_DIR / "backups.log"),
+            "level": "INFO",
+            "maxBytes": 10 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "verbose",
+            "encoding": "utf-8",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console", "file_app"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "django.request": {
+            "handlers": ["console", "file_errors"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+        "accounts": {
+            "handlers": ["console", "file_app"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "security": {
+            "handlers": ["console", "file_security"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "backups": {
+            "handlers": ["console", "file_backups"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "frontend": {
+            "handlers": ["console", "file_errors"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+    },
+}
+
+
+# ==============================================================================
+# Production Security Headers & SSL Hardening (Configurable)
+# ==============================================================================
+if not DEBUG:
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = "DENY"
+    SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "31536000"))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "False").lower() in ("true", "1", "yes")
+    SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "False").lower() in ("true", "1", "yes")
+    CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", "False").lower() in ("true", "1", "yes")
+

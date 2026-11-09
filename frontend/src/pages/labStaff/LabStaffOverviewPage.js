@@ -548,8 +548,8 @@ const LabStaffOverviewPage = () => {
                         {order.completed_at ? new Date(order.completed_at).toLocaleDateString() : '—'}
                       </span>
                     </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', gap: '0.4rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'inline-flex', gap: '0.4rem', justifyContent: 'flex-end', flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
                         {/* View Details */}
                         <button
                           type="button"

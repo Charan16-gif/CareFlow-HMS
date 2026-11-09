@@ -4,6 +4,7 @@ import Logo from '../components/common/Logo';
 import doctorImage from '../assets/doctor-hospital.webp';
 import authService from '../services/authService';
 import { toast } from '../context/ToastContext';
+import { maskEmail } from '../utils/emailMasking';
 import {
   Mail,
   ShieldCheck,
@@ -74,6 +75,24 @@ const EmailVerificationPage = () => {
       isMounted = false;
     };
   }, []);
+
+  // Check email delivery status to detect bounces or delivery failures
+  useEffect(() => {
+    if (!email) return;
+    authService
+      .getDeliveryStatus(email.trim())
+      .then((res) => {
+        if (res && res.delivery_status === 'FAILED') {
+          const bounceMsg = 'Email delivery failed. Please correct your email address.';
+          setFeedback({
+            type: 'error',
+            message: bounceMsg,
+          });
+          toast.error(bounceMsg, 'Delivery Issue');
+        }
+      })
+      .catch(() => {});
+  }, [email]);
 
   // Resend Countdown Timer
   useEffect(() => {
@@ -185,7 +204,7 @@ const EmailVerificationPage = () => {
     setFeedback(null);
 
     try {
-      const response = await authService.verifyOtp({
+      await authService.verifyOtp({
         email: email.trim(),
         otpCode,
         purpose: 'registration',
@@ -193,14 +212,15 @@ const EmailVerificationPage = () => {
 
       setFeedback({
         type: 'success',
-        message: response.message || 'Email verified successfully! Welcome to CareFlow.',
+        message: 'Email verified successfully.',
       });
-      toast.success('Email verified successfully! Welcome to CareFlow.', 'Account Verified');
+      toast.success('Email verified successfully.', 'Account Verified');
 
       // Redirect to login page upon successful verification
       setTimeout(() => {
         navigate('/login', {
           state: {
+            email: email.trim(),
             successMessage: 'Email verified successfully! Please sign in with your credentials.',
           },
         });
@@ -253,11 +273,12 @@ const EmailVerificationPage = () => {
         purpose: 'registration',
       });
 
+      const resendMsg = response.message || 'A new OTP sending request has been processed.';
       setFeedback({
         type: 'success',
-        message: response.message || 'A new verification code has been dispatched to your email.',
+        message: resendMsg,
       });
-      toast.info(`A new 6-digit OTP code has been dispatched to ${email.trim()}`, 'Code Dispatched');
+      toast.info(resendMsg, 'Code Resent');
 
       // Clear input fields and reset cooldown
       setOtpDigits(Array(OTP_LENGTH).fill(''));
@@ -286,19 +307,75 @@ const EmailVerificationPage = () => {
   };
 
   // Save modified email
-  const handleSaveEmail = (e) => {
+  const handleSaveEmail = async (e) => {
     e.preventDefault();
-    if (!tempEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(tempEmail.trim())) {
-      setFeedback({
-        type: 'error',
-        message: 'Please enter a valid email address.',
-      });
+    const cleanEmail = tempEmail.trim();
+
+    if (!cleanEmail) {
+      toast.error('Invalid email address. Please enter a correct email address.', 'Invalid Email');
       return;
     }
-    setEmail(tempEmail.trim());
-    setIsEditingEmail(false);
-    setOtpDigits(Array(OTP_LENGTH).fill(''));
-    setTimer(0); // Allow immediate resend for new email
+
+    const EMAIL_FORMAT_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+    if (!EMAIL_FORMAT_REGEX.test(cleanEmail.toLowerCase())) {
+      toast.error('Invalid email address. Please enter a correct email address.', 'Invalid Email');
+      return;
+    }
+
+    const parts = cleanEmail.split('@');
+    if (parts.length !== 2 || !parts[1].includes('.') || parts[1].endsWith('.')) {
+      toast.error('Invalid email domain. Please check your email address.', 'Invalid Email Domain');
+      return;
+    }
+
+    if (cleanEmail.toLowerCase() === email.trim().toLowerCase()) {
+      setIsEditingEmail(false);
+      return;
+    }
+
+    setIsResending(true);
+    setFeedback(null);
+
+    try {
+      const res = await authService.correctEmail({
+        oldEmail: email.trim(),
+        newEmail: cleanEmail,
+        purpose: 'registration',
+      });
+      setEmail(cleanEmail);
+      setIsEditingEmail(false);
+      setOtpDigits(Array(OTP_LENGTH).fill(''));
+      setTimer(RESEND_COOLDOWN);
+      const msg = res.message || 'A new OTP sending request has been processed.';
+      setFeedback({
+        type: 'success',
+        message: msg,
+      });
+      toast.info(msg, 'Email Corrected');
+      inputRefs.current[0]?.focus();
+    } catch (err) {
+      let errorMsg = 'Failed to update email. Please try again.';
+      if (err.response?.data) {
+        if (err.response.data.new_email) {
+          errorMsg = Array.isArray(err.response.data.new_email)
+            ? err.response.data.new_email[0]
+            : err.response.data.new_email;
+        } else if (err.response.data.email) {
+          errorMsg = Array.isArray(err.response.data.email)
+            ? err.response.data.email[0]
+            : err.response.data.email;
+        } else if (err.response.data.detail) {
+          errorMsg = err.response.data.detail;
+        }
+      }
+      setFeedback({
+        type: 'error',
+        message: errorMsg,
+      });
+      toast.error(errorMsg, 'Email Correction Failed');
+    } finally {
+      setIsResending(false);
+    }
   };
 
   return (
@@ -444,7 +521,7 @@ const EmailVerificationPage = () => {
               <div className="otp-email-chip">
                 <Mail size={16} color="#38bdf8" />
                 <span className="otp-email-text" title={email}>
-                  {email}
+                  {maskEmail(email)}
                 </span>
                 <button
                   type="button"

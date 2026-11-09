@@ -11,6 +11,7 @@ import {
   EyeOff,
   ShieldCheck,
   ArrowRight,
+  ArrowLeft,
   Loader2,
   HeartPulse,
   Stethoscope,
@@ -28,9 +29,10 @@ const ROLES = [
   { id: 'ADMIN', label: 'Admin', icon: ShieldCheck },
 ];
 
+const EMAIL_FORMAT_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+
 const LoginPage = () => {
   const navigate = useNavigate();
-
   const location = useLocation();
 
   const [selectedRole, setSelectedRole] = useState('PATIENT');
@@ -52,6 +54,11 @@ const LoginPage = () => {
 
   useEffect(() => {
     document.title = 'Sign In to Patient & Staff Portal — CareFlow-HMS';
+
+    if (location.state?.email) {
+      setUsername(location.state.email.trim());
+    }
+
     if (location.state?.successMessage) {
       toast.success(location.state.successMessage, 'Sign In Notification');
     }
@@ -72,9 +79,29 @@ const LoginPage = () => {
       password: true,
     });
 
-    if (!username.trim() || !password) {
+    const rawInput = username.trim();
+
+    if (!rawInput || !password) {
       toast.error('Please enter your required login details.', 'Missing Information');
       return;
+    }
+
+    // Email format validation prior to submission
+    if (rawInput.includes('@')) {
+      if (!EMAIL_FORMAT_REGEX.test(rawInput.toLowerCase())) {
+        toast.error('Please enter a valid email address.', 'Invalid Email');
+        return;
+      }
+      const parts = rawInput.split('@');
+      if (parts.length !== 2 || !parts[1].includes('.') || parts[1].endsWith('.')) {
+        toast.error('Please enter a valid email address.', 'Invalid Email');
+        return;
+      }
+    } else {
+      if (rawInput.length < 2) {
+        toast.error('Please enter a valid username.', 'Invalid Details');
+        return;
+      }
     }
 
     if (!isFormValid) {
@@ -84,7 +111,16 @@ const LoginPage = () => {
     setIsSubmitting(true);
 
     try {
-      const authResult = await authService.login(username.trim(), password, selectedRole);
+      const authResult = await authService.login(rawInput, password, selectedRole);
+
+      // Remember or forget email based on checkbox
+      try {
+        if (rememberMe) {
+          localStorage.setItem('careflow_remembered_email', rawInput);
+        } else {
+          localStorage.removeItem('careflow_remembered_email');
+        }
+      } catch (err) {}
 
       toast.success('Welcome back! You have signed in successfully.', 'Sign In Successful');
 
@@ -220,8 +256,12 @@ const LoginPage = () => {
         ───────────────────────────────────────────────────────────── */}
         <section className="register-form-column" aria-label="Patient & Staff Login Form">
           <div className="register-glass-card">
-            {/* Portal Badge */}
-            <div>
+            {/* Top Navigation Row: Back to Home & Portal Badge */}
+            <div className="login-top-nav-bar">
+              <Link to="/" className="back-to-home-btn" aria-label="Back to CareFlow Home">
+                <ArrowLeft size={16} />
+                <span>Back to Home</span>
+              </Link>
               <span className="register-step-badge">
                 SECURE PORTAL ACCESS
               </span>
@@ -261,7 +301,7 @@ const LoginPage = () => {
                 </div>
               </div>
 
-              {/* Username / Email */}
+              {/* Username / Email Field */}
               <div className="form-group">
                 <label htmlFor={usernameId} className="form-label">
                   Username or Email
@@ -353,7 +393,7 @@ const LoginPage = () => {
                 type="submit"
                 className="register-submit-btn"
                 disabled={isSubmitting}
-                style={{ marginTop: '0.75rem' }}
+                style={{ marginTop: '0.5rem' }}
               >
                 {isSubmitting ? (
                   <>

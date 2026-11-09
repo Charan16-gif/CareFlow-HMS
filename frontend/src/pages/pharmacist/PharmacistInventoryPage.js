@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import pharmacistService from '../../services/pharmacistService';
 import ModalPortal from '../../components/common/ModalPortal';
+import Pagination from '../../components/common/Pagination';
 import {
   Pill,
   Plus,
@@ -50,6 +51,13 @@ const PharmacistInventoryPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [stockFilter, setStockFilter] = useState('ALL'); // ALL | HIGH | NORMAL | LOW | OUT | NEAR_EXPIRY | EXPIRED
   const [dosageFilter, setDosageFilter] = useState('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Reset page when filter or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, stockFilter, dosageFilter]);
 
   // Modals state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -62,6 +70,7 @@ const PharmacistInventoryPage = () => {
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editForm, setEditForm] = useState({});
+  const [initialEditForm, setInitialEditForm] = useState({});
   const [editErrors, setEditErrors] = useState({});
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
 
@@ -198,6 +207,10 @@ const PharmacistInventoryPage = () => {
     });
   }, [medicines, stockFilter, dosageFilter]);
 
+  const paginatedMedicines = useMemo(() => {
+    return filteredMedicines.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  }, [filteredMedicines, currentPage, pageSize]);
+
   // Handle Add Medicine Submit
   const handleAddSubmit = async (e) => {
     e.preventDefault();
@@ -255,26 +268,42 @@ const PharmacistInventoryPage = () => {
   // Open Edit Modal
   const handleOpenEdit = (med) => {
     setSelectedMedicine(med);
-    setEditForm({
+    const init = {
       name: med.name || '',
       generic_name: med.generic_name || '',
       brand_name: med.brand_name || '',
       dosage_form: med.dosage_form || 'TABLET',
       strength: med.strength || '',
-      unit_price: med.unit_price || '',
+      unit_price: String(med.unit_price ?? ''),
       stock_quantity: String(med.stock_quantity ?? '0'),
       reorder_level: String(med.reorder_level ?? '20'),
       manufacturer: med.manufacturer || '',
       batch_number: med.batch_number || '',
       expiry_date: med.expiry_date || '',
-    });
+    };
+    setEditForm(init);
+    setInitialEditForm(init);
     setEditErrors({});
     setIsEditModalOpen(true);
+  };
+
+  const isEditDirty = useMemo(() => {
+    if (!initialEditForm || !editForm || Object.keys(initialEditForm).length === 0) return false;
+    return Object.keys(initialEditForm).some((k) => {
+      return String(editForm[k] || '').trim() !== String(initialEditForm[k] || '').trim();
+    });
+  }, [editForm, initialEditForm]);
+
+  const handleCancelEdit = () => {
+    setEditForm(initialEditForm);
+    setEditErrors({});
+    setIsEditModalOpen(false);
   };
 
   // Handle Edit Submit
   const handleEditSubmit = async (e) => {
     e.preventDefault();
+    if (!isEditDirty || isSubmittingEdit) return;
     setEditErrors({});
 
     const errors = {};
@@ -553,7 +582,8 @@ const PharmacistInventoryPage = () => {
               )}
             </div>
           ) : (
-            <div className="admin-table-container" style={{ border: 'none', borderRadius: 0, boxShadow: 'none' }}>
+            <>
+              <div className="admin-table-container" style={{ border: 'none', borderRadius: 0, boxShadow: 'none' }}>
               <table className="admin-table">
                 <thead>
                   <tr>
@@ -567,7 +597,7 @@ const PharmacistInventoryPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredMedicines.map((med) => {
+                  {paginatedMedicines.map((med) => {
                     const qty = parseInt(med.stock_quantity, 10) || 0;
                     const reorder = parseInt(med.reorder_level, 10) || 10;
                     const isOut = qty <= 0;
@@ -645,8 +675,8 @@ const PharmacistInventoryPage = () => {
                         <td>
                           <div style={{ fontSize: '0.85rem' }}>{med.manufacturer || '—'}</div>
                         </td>
-                        <td style={{ textAlign: 'right' }}>
-                          <div style={{ display: 'inline-flex', gap: '0.35rem', alignItems: 'center' }}>
+                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          <div style={{ display: 'inline-flex', gap: '0.35rem', alignItems: 'center', flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
                             <button
                               type="button"
                               className="admin-btn admin-btn-sm admin-btn-outline"
@@ -699,7 +729,21 @@ const PharmacistInventoryPage = () => {
                 </tbody>
               </table>
             </div>
-          )}
+
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(filteredMedicines.length / pageSize)}
+              totalCount={filteredMedicines.length}
+              pageSize={pageSize}
+              pageSizeOptions={[10, 25, 50, 100]}
+              onPageChange={(page) => setCurrentPage(page)}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setCurrentPage(1);
+              }}
+            />
+          </>
+        )}
         </div>
       </section>
 
@@ -1055,14 +1099,19 @@ const PharmacistInventoryPage = () => {
                   <button
                     type="button"
                     className="admin-btn admin-btn-outline"
-                    onClick={() => setIsEditModalOpen(false)}
+                    onClick={handleCancelEdit}
+                    disabled={isSubmittingEdit}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     className="admin-btn admin-btn-primary"
-                    disabled={isSubmittingEdit}
+                    disabled={!isEditDirty || isSubmittingEdit}
+                    style={{
+                      opacity: !isEditDirty && !isSubmittingEdit ? 0.55 : 1,
+                      cursor: !isEditDirty && !isSubmittingEdit ? 'not-allowed' : 'pointer',
+                    }}
                   >
                     {isSubmittingEdit ? (
                       <>

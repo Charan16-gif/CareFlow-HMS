@@ -94,6 +94,14 @@ class EmailOTPVerification(models.Model):
         ("password_reset", "Password Reset"),
     )
 
+    DELIVERY_STATUS_CHOICES = (
+        ("PENDING", "Pending"),
+        ("ACCEPTED", "Accepted by SMTP"),
+        ("DELIVERED", "Delivered"),
+        ("FAILED", "Delivery Failed"),
+        ("VERIFIED", "Verified by User"),
+    )
+
     email = models.EmailField(db_index=True)
     user = models.ForeignKey(
         User,
@@ -109,6 +117,16 @@ class EmailOTPVerification(models.Model):
     purpose = models.CharField(max_length=30, choices=PURPOSE_CHOICES, default="registration")
     attempts = models.PositiveIntegerField(default=0)
     is_verified = models.BooleanField(default=False)
+    delivery_status = models.CharField(
+        max_length=20,
+        choices=DELIVERY_STATUS_CHOICES,
+        default="PENDING",
+        db_index=True,
+    )
+    delivery_error = models.TextField(blank=True, default="")
+    registration_data = models.JSONField(blank=True, null=True, default=dict)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    verified_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
 
@@ -152,7 +170,8 @@ class EmailOTPVerification(models.Model):
         email: str,
         user: User = None,
         purpose: str = "registration",
-        validity_minutes: int = 10
+        validity_minutes: int = 10,
+        registration_data: dict = None,
     ):
         """
         Invalidates previous active unverified OTPs for the same email and purpose,
@@ -160,6 +179,15 @@ class EmailOTPVerification(models.Model):
         Only the cryptographic hash is persisted to the database.
         """
         clean_email = email.strip().lower()
+        if registration_data is None:
+            prev_otp = cls.objects.filter(
+                email=clean_email,
+                purpose=purpose,
+                is_verified=False
+            ).order_by("-created_at").first()
+            if prev_otp and prev_otp.registration_data:
+                registration_data = prev_otp.registration_data
+
         cls.objects.filter(
             email=clean_email,
             purpose=purpose,
@@ -175,7 +203,8 @@ class EmailOTPVerification(models.Model):
             user=user,
             otp_code=hashed_code,
             purpose=purpose,
-            expires_at=expires
+            expires_at=expires,
+            registration_data=registration_data or {},
         )
         return record, plain_code
 
@@ -189,3 +218,59 @@ def create_or_update_user_profile(sender, instance, created, **kwargs):
     if created:
         role = UserRole.ADMIN if instance.is_superuser else UserRole.PATIENT
         UserProfile.objects.get_or_create(user=instance, defaults={"role": role})
+
+
+class DatabaseBackupRecord(models.Model):
+    """
+    CareFlow HMS Database Backup & Audit Ledger.
+    Tracks complete PostgreSQL database backups, file integrity checksums,
+    retention lifecycles, and audited restoration events.
+    """
+    BACKUP_STATUS_CHOICES = (
+        ("SUCCESS", "Success"),
+        ("FAILED", "Failed"),
+        ("RESTORED", "Restored"),
+    )
+
+    filename = models.CharField(max_length=255, unique=True, db_index=True)
+    file_path = models.CharField(max_length=500)
+    file_size_bytes = models.BigIntegerField(default=0)
+    sha256_checksum = models.CharField(max_length=64, blank=True, null=True)
+    status = models.CharField(max_length=20, choices=BACKUP_STATUS_CHOICES, default="SUCCESS", db_index=True)
+    is_automated = models.BooleanField(default=False)
+    notes = models.TextField(blank=True, null=True)
+    error_message = models.TextField(blank=True, null=True)
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="backups_created"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    restored_at = models.DateTimeField(null=True, blank=True)
+    restored_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="backups_restored"
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Database Backup Record"
+        verbose_name_plural = "Database Backup Records"
+
+    @property
+    def file_size_display(self):
+        bytes_val = self.file_size_bytes or 0
+        if bytes_val >= 1024 * 1024:
+            return f"{round(bytes_val / (1024 * 1024), 2)} MB"
+        elif bytes_val >= 1024:
+            return f"{round(bytes_val / 1024, 2)} KB"
+        return f"{bytes_val} B"
+
+    def __str__(self):
+        return f"{self.filename} ({self.status}) - {self.created_at}"
+

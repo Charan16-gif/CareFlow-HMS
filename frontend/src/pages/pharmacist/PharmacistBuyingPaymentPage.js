@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import pharmacistService from '../../services/pharmacistService';
 import ModalPortal from '../../components/common/ModalPortal';
+import Pagination from '../../components/common/Pagination';
 import {
   ShoppingCart,
   Receipt,
@@ -195,6 +196,17 @@ const PharmacistBuyingPaymentPage = () => {
     });
   }, [medicines, shopSearch, shopDosageFilter]);
 
+  const [shopPage, setShopPage] = useState(1);
+  const [shopPageSize, setShopPageSize] = useState(10);
+
+  useEffect(() => {
+    setShopPage(1);
+  }, [shopSearch, shopDosageFilter]);
+
+  const paginatedShopMedicines = useMemo(() => {
+    return filteredShopMedicines.slice((shopPage - 1) * shopPageSize, shopPage * shopPageSize);
+  }, [filteredShopMedicines, shopPage, shopPageSize]);
+
   // Extracted doctor-prescribed medicine lines with pending quantities
   const prescribedLines = useMemo(() => {
     const list = [];
@@ -251,6 +263,17 @@ const PharmacistBuyingPaymentPage = () => {
     );
   }, [prescriptions, medicines, rxSearch]);
 
+  const [rxPage, setRxPage] = useState(1);
+  const [rxPageSize, setRxPageSize] = useState(10);
+
+  useEffect(() => {
+    setRxPage(1);
+  }, [rxSearch]);
+
+  const paginatedPrescribedLines = useMemo(() => {
+    return prescribedLines.slice((rxPage - 1) * rxPageSize, rxPage * rxPageSize);
+  }, [prescribedLines, rxPage, rxPageSize]);
+
   // Filtered Payments History
   const filteredPayments = useMemo(() => {
     if (!historySearch.trim()) return payments;
@@ -264,6 +287,17 @@ const PharmacistBuyingPaymentPage = () => {
         p.transaction_reference?.toLowerCase().includes(q)
     );
   }, [payments, historySearch]);
+
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyPageSize, setHistoryPageSize] = useState(10);
+
+  useEffect(() => {
+    setHistoryPage(1);
+  }, [historySearch]);
+
+  const paginatedPayments = useMemo(() => {
+    return filteredPayments.slice((historyPage - 1) * historyPageSize, historyPage * historyPageSize);
+  }, [filteredPayments, historyPage, historyPageSize]);
 
   // Filtered Patients for counter selector
   const filteredPatients = useMemo(() => {
@@ -736,24 +770,26 @@ const PharmacistBuyingPaymentPage = () => {
                 </button>
               </div>
             ) : (
-              <div className="admin-table-container">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Medicine</th>
-                      <th>Form & Strength</th>
-                      <th>Batch & Expiry</th>
-                      <th>Stock Level</th>
-                      <th>Unit Price</th>
-                      <th style={{ textAlign: 'right' }}>Counter Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredShopMedicines.map((med) => {
+              <>
+                <div className="admin-table-container">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Medicine</th>
+                        <th>Form & Strength</th>
+                        <th>Batch & Expiry</th>
+                        <th>Stock Level</th>
+                        <th>Unit Price</th>
+                        <th style={{ textAlign: 'right' }}>Counter Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedShopMedicines.map((med) => {
                       const qty = parseInt(med.stock_quantity, 10) || 0;
                       const isOut = qty <= 0;
                       const isLow = qty > 0 && (med.is_low_stock || qty <= (med.reorder_level || 10));
                       const cartItem = cart.find((c) => c.medicine_id === med.id && !c.prescription_id);
+                      const cartIndex = cart.findIndex((c) => c.medicine_id === med.id && !c.prescription_id);
 
                       return (
                         <tr key={med.id}>
@@ -807,7 +843,7 @@ const PharmacistBuyingPaymentPage = () => {
                               ₹{parseFloat(med.unit_price).toFixed(2)}
                             </strong>
                           </td>
-                          <td style={{ textAlign: 'right' }}>
+                          <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                             {isOut ? (
                               <button
                                 type="button"
@@ -818,22 +854,32 @@ const PharmacistBuyingPaymentPage = () => {
                                 Out of Stock
                               </button>
                             ) : cartItem ? (
-                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'nowrap' }}>
+                                <button
+                                  type="button"
+                                  className="admin-btn admin-btn-sm admin-btn-secondary"
+                                  onClick={() => updateCartQuantity(cartIndex, -1)}
+                                  title="Decrease quantity"
+                                  style={{ minWidth: '30px', height: '30px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                                >
+                                  <Minus size={14} />
+                                </button>
+                                <span
+                                  className="admin-badge admin-badge-primary"
+                                  style={{ padding: '0.3rem 0.6rem', minWidth: '68px', textAlign: 'center', whiteSpace: 'nowrap' }}
+                                >
+                                  {cartItem.quantity} in cart
+                                </span>
                                 <button
                                   type="button"
                                   className="admin-btn admin-btn-sm admin-btn-secondary"
                                   onClick={() => addToCart(med, null, 1)}
                                   disabled={cartItem.quantity >= qty}
                                   title="Add one more"
+                                  style={{ minWidth: '30px', height: '30px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                                 >
                                   <Plus size={14} />
                                 </button>
-                                <span
-                                  className="admin-badge admin-badge-primary"
-                                  style={{ padding: '0.3rem 0.6rem' }}
-                                >
-                                  {cartItem.quantity} in cart
-                                </span>
                               </div>
                             ) : (
                               <button
@@ -852,13 +898,27 @@ const PharmacistBuyingPaymentPage = () => {
                   </tbody>
                 </table>
               </div>
-            )}
-          </div>
-        </section>
-      )}
 
-      {/* ─────────────────────────────────────────────────────────────
-          TAB 2: DOCTOR-PRESCRIBED SUGGESTIONS
+              <Pagination
+                currentPage={shopPage}
+                totalPages={Math.ceil(filteredShopMedicines.length / shopPageSize)}
+                totalCount={filteredShopMedicines.length}
+                pageSize={shopPageSize}
+                pageSizeOptions={[10, 25, 50, 100]}
+                onPageChange={(page) => setShopPage(page)}
+                onPageSizeChange={(size) => {
+                  setShopPageSize(size);
+                  setShopPage(1);
+                }}
+              />
+            </>
+          )}
+        </div>
+      </section>
+    )}
+
+    {/* ─────────────────────────────────────────────────────────────
+        TAB 2: DOCTOR-PRESCRIBED SUGGESTIONS
          ───────────────────────────────────────────────────────────── */}
       {!loading && activeTab === 'prescriptions' && (
         <section className="admin-card">
@@ -907,7 +967,8 @@ const PharmacistBuyingPaymentPage = () => {
                 </button>
               </div>
             ) : (
-              <div className="admin-table-container">
+              <>
+                <div className="admin-table-container">
                 <table className="admin-table">
                   <thead>
                     <tr>
@@ -921,10 +982,13 @@ const PharmacistBuyingPaymentPage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {prescribedLines.map((line) => {
+                    {paginatedPrescribedLines.map((line) => {
                       const isStockSufficient = line.current_stock >= line.remaining_quantity;
                       const isOutOfStock = line.current_stock <= 0;
                       const inCart = cart.find(
+                        (c) => c.medicine_id === line.medicine_id && c.prescription_id === line.rx_id
+                      );
+                      const inCartIdx = cart.findIndex(
                         (c) => c.medicine_id === line.medicine_id && c.prescription_id === line.rx_id
                       );
 
@@ -971,7 +1035,7 @@ const PharmacistBuyingPaymentPage = () => {
                               ₹{parseFloat(line.unit_price).toFixed(2)}
                             </strong>
                           </td>
-                          <td style={{ textAlign: 'right' }}>
+                          <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                             {line.is_archived ? (
                               <button
                                 type="button"
@@ -992,10 +1056,41 @@ const PharmacistBuyingPaymentPage = () => {
                                 Out of Stock
                               </button>
                             ) : inCart ? (
-                              <span className="admin-badge admin-badge-success">
-                                <Check size={12} />
-                                <span>In Cart ({inCart.quantity})</span>
-                              </span>
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'nowrap' }}>
+                                <button
+                                  type="button"
+                                  className="admin-btn admin-btn-sm admin-btn-secondary"
+                                  onClick={() => {
+                                    if (inCartIdx >= 0) updateCartQuantity(inCartIdx, -1);
+                                  }}
+                                  title="Decrease quantity"
+                                  style={{ minWidth: '30px', height: '30px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                                >
+                                  <Minus size={14} />
+                                </button>
+                                <span
+                                  className="admin-badge admin-badge-success"
+                                  style={{ padding: '0.3rem 0.55rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', whiteSpace: 'nowrap' }}
+                                >
+                                  <Check size={12} />
+                                  <span>{inCart.quantity} in cart</span>
+                                </span>
+                                <button
+                                  type="button"
+                                  className="admin-btn admin-btn-sm admin-btn-secondary"
+                                  onClick={() => {
+                                    const medObj = medicines.find((m) => m.id === line.medicine_id);
+                                    if (medObj) {
+                                      addToCart(medObj, line, 1);
+                                    }
+                                  }}
+                                  disabled={inCart.quantity >= Math.min(line.current_stock, line.remaining_quantity)}
+                                  title="Add one more"
+                                  style={{ minWidth: '30px', height: '30px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                                >
+                                  <Plus size={14} />
+                                </button>
+                              </div>
                             ) : (
                               <button
                                 type="button"
@@ -1018,7 +1113,21 @@ const PharmacistBuyingPaymentPage = () => {
                   </tbody>
                 </table>
               </div>
-            )}
+
+              <Pagination
+                currentPage={rxPage}
+                totalPages={Math.ceil(prescribedLines.length / rxPageSize)}
+                totalCount={prescribedLines.length}
+                pageSize={rxPageSize}
+                pageSizeOptions={[10, 25, 50, 100]}
+                onPageChange={(p) => setRxPage(p)}
+                onPageSizeChange={(s) => {
+                  setRxPageSize(s);
+                  setRxPage(1);
+                }}
+              />
+            </>
+          )}
           </div>
         </section>
       )}
@@ -1420,7 +1529,8 @@ const PharmacistBuyingPaymentPage = () => {
                 <p>No transaction receipts matched your search.</p>
               </div>
             ) : (
-              <div className="admin-table-container">
+              <>
+                <div className="admin-table-container">
                 <table className="admin-table">
                   <thead>
                     <tr>
@@ -1435,7 +1545,7 @@ const PharmacistBuyingPaymentPage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredPayments.map((pay) => (
+                    {paginatedPayments.map((pay) => (
                       <tr key={pay.id}>
                         <td>
                           <strong style={{ color: 'var(--primary-cyan, #06b6d4)' }} className="admin-font-mono">
@@ -1464,8 +1574,8 @@ const PharmacistBuyingPaymentPage = () => {
                         <td>
                           <span className="admin-badge admin-badge-success">Paid</span>
                         </td>
-                        <td style={{ textAlign: 'right' }}>
-                          <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
+                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          <div style={{ display: 'inline-flex', gap: '0.45rem', justifyContent: 'flex-end', flexWrap: 'nowrap' }}>
                             <button
                               type="button"
                               className="admin-btn admin-btn-sm admin-btn-secondary"
@@ -1491,7 +1601,21 @@ const PharmacistBuyingPaymentPage = () => {
                   </tbody>
                 </table>
               </div>
-            )}
+
+              <Pagination
+                currentPage={historyPage}
+                totalPages={Math.ceil(filteredPayments.length / historyPageSize)}
+                totalCount={filteredPayments.length}
+                pageSize={historyPageSize}
+                pageSizeOptions={[10, 25, 50, 100]}
+                onPageChange={(p) => setHistoryPage(p)}
+                onPageSizeChange={(s) => {
+                  setHistoryPageSize(s);
+                  setHistoryPage(1);
+                }}
+              />
+            </>
+          )}
           </div>
         </section>
       )}

@@ -4,6 +4,12 @@ import Logo from './Logo';
 
 const Footer = ({ showNavigation }) => {
   const location = useLocation();
+
+  // Completely remove footer on login and registration pages
+  if (location.pathname === '/login' || location.pathname === '/register') {
+    return null;
+  }
+
   const shouldShowNav =
     showNavigation !== undefined ? showNavigation : location.pathname === '/';
 

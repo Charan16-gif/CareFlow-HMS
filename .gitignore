@@ -12,10 +12,13 @@ __pycache__/
 *.py[cod]
 *.sqlite3
 *.log
+*.dump
 backend/venv/
 backend/env/
 backend/staticfiles/
 backend/media/
+backend/backups/
+backend/logs/
 
 # Node / React
 node_modules/

@@ -461,3 +461,135 @@ class PharmacyModuleTests(TestCase):
         # 4. Delete access (DELETE) MUST be forbidden
         delete_res = self.client.delete(f"/api/pharmacy/medicines/{self.paracetamol.id}/")
         self.assertEqual(delete_res.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class PrescriptionActiveCourseDurationTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+        # Doctor
+        self.doc_user = User.objects.create_user(
+            username="dr_allam",
+            email="allam@careflow.com",
+            password="Password@123",
+        )
+        self.doctor = Doctor.objects.create(
+            user=self.doc_user,
+            first_name="Rajesh",
+            last_name="Allam",
+            specialization="General Medicine",
+            qualification="MBBS",
+            license_number="LIC-ALLAM-999",
+            phone_number="1234567890",
+            email="allam@careflow.com",
+        )
+
+        # Patient
+        self.pat_user = User.objects.create_user(
+            username="doraemon",
+            email="doraemon@careflow.com",
+            password="Password@123",
+        )
+        pat_prof, _ = UserProfile.objects.get_or_create(user=self.pat_user)
+        pat_prof.role = UserRole.PATIENT
+        pat_prof.save()
+
+        self.patient = Patient.objects.create(
+            user=self.pat_user,
+            first_name="Doraemon",
+            last_name="Nobi",
+            date_of_birth="2000-01-01",
+            gender="MALE",
+            phone_number="9876543210",
+            email="doraemon@careflow.com",
+        )
+
+        # Medicine
+        self.dolo = Medicine.objects.create(
+            name="Dolo 650",
+            generic_name="Paracetamol",
+            dosage_form="TABLET",
+            strength="650mg",
+            unit_price=Decimal("5.00"),
+            stock_quantity=100,
+            is_active=True,
+        )
+
+    def test_dispensed_prescription_within_duration_is_active(self):
+        """Prescriptions that are DISPENSED remain active for the duration of the prescribed regimen (e.g. 5 days)."""
+        rx = Prescription.objects.create(
+            patient=self.patient,
+            doctor=self.doctor,
+            status=PrescriptionStatus.DISPENSED,
+            diagnosis="acute fever",
+        )
+        PrescriptionItem.objects.create(
+            prescription=rx,
+            medicine=self.dolo,
+            dosage="1 Tablet",
+            frequency="1-0-1",
+            duration="5 Days",
+            quantity_prescribed=10,
+            quantity_dispensed=10,
+            is_dispensed=True,
+        )
+
+        self.client.force_authenticate(user=self.pat_user)
+        res = self.client.get(f"/api/pharmacy/prescriptions/{rx.id}/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data["status"], PrescriptionStatus.DISPENSED)
+        self.assertTrue(res.data["is_active_course"])
+        self.assertEqual(res.data["max_duration_days"], 5)
+        self.assertGreaterEqual(res.data["days_remaining"], 1)
+
+    def test_cancelled_prescription_is_never_active(self):
+        """Cancelled prescriptions are immediately inactive regardless of duration."""
+        rx = Prescription.objects.create(
+            patient=self.patient,
+            doctor=self.doctor,
+            status=PrescriptionStatus.CANCELLED,
+            diagnosis="resolved fever",
+        )
+        PrescriptionItem.objects.create(
+            prescription=rx,
+            medicine=self.dolo,
+            dosage="1 Tablet",
+            frequency="1-0-1",
+            duration="5 Days",
+            quantity_prescribed=10,
+            quantity_dispensed=0,
+        )
+
+        self.client.force_authenticate(user=self.pat_user)
+        res = self.client.get(f"/api/pharmacy/prescriptions/{rx.id}/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertFalse(res.data["is_active_course"])
+
+    def test_expired_course_prescription_is_not_active(self):
+        """Prescriptions whose duration window has completely passed are no longer active courses."""
+        from datetime import timedelta
+        rx = Prescription.objects.create(
+            patient=self.patient,
+            doctor=self.doctor,
+            status=PrescriptionStatus.DISPENSED,
+            diagnosis="past infection",
+        )
+        PrescriptionItem.objects.create(
+            prescription=rx,
+            medicine=self.dolo,
+            dosage="1 Tablet",
+            frequency="1-0-1",
+            duration="3 Days",
+            quantity_prescribed=6,
+            quantity_dispensed=6,
+        )
+        # Artificially set created_at to 10 days ago
+        ten_days_ago = timezone.now() - timedelta(days=10)
+        Prescription.objects.filter(id=rx.id).update(created_at=ten_days_ago)
+
+        self.client.force_authenticate(user=self.pat_user)
+        res = self.client.get(f"/api/pharmacy/prescriptions/{rx.id}/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertFalse(res.data["is_active_course"])
+        self.assertEqual(res.data["days_remaining"], 0)
+

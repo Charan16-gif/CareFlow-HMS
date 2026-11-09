@@ -31,6 +31,14 @@ const PharmacistProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
     username: '',
   });
 
+  const [initialProfileData, setInitialProfileData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    username: '',
+  });
+
   const [passwordData, setPasswordData] = useState({
     current_password: '',
     new_password: '',
@@ -74,27 +82,45 @@ const PharmacistProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  const isProfileDirty = Boolean(
+    (profileData.first_name || '').trim() !== (initialProfileData.first_name || '').trim() ||
+    (profileData.last_name || '').trim() !== (initialProfileData.last_name || '').trim() ||
+    (profileData.email || '').trim().toLowerCase() !== (initialProfileData.email || '').trim().toLowerCase() ||
+    (profileData.phone || '').trim() !== (initialProfileData.phone || '').trim()
+  );
+
+  const handleCancel = () => {
+    setProfileData(initialProfileData);
+    setProfileErrors({});
+    setProfileSuccessMsg('');
+    onClose();
+  };
+
   const loadProfile = async () => {
     setLoading(true);
     try {
       const data = await pharmacistService.getProfile();
-      setProfileData({
+      const init = {
         first_name: data.first_name || '',
         last_name: data.last_name || '',
         email: data.email || '',
         phone: data.phone_number || data.phone || '',
         username: data.username || '',
-      });
+      };
+      setProfileData(init);
+      setInitialProfileData(init);
     } catch (err) {
       const cached = authService.getUserProfile();
       if (cached) {
-        setProfileData({
+        const init = {
           first_name: cached.first_name || '',
           last_name: cached.last_name || '',
           email: cached.email || '',
           phone: cached.phone_number || cached.phone || '',
           username: cached.username || '',
-        });
+        };
+        setProfileData(init);
+        setInitialProfileData(init);
       }
     } finally {
       setLoading(false);
@@ -103,6 +129,7 @@ const PharmacistProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
 
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
+    if (!isProfileDirty || submittingProfile) return;
     setProfileSuccessMsg('');
     setProfileErrors({});
 
@@ -124,6 +151,16 @@ const PharmacistProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
         email: profileData.email.trim(),
         phone_number: profileData.phone.trim(),
       });
+
+      const newInit = {
+        first_name: updated.first_name || profileData.first_name.trim(),
+        last_name: updated.last_name || profileData.last_name.trim(),
+        email: updated.email || profileData.email.trim(),
+        phone: updated.phone_number || profileData.phone.trim(),
+        username: updated.username || profileData.username,
+      };
+      setProfileData(newInit);
+      setInitialProfileData(newInit);
 
       const cached = authService.getUserProfile() || {};
       const merged = { ...cached, ...updated };
@@ -371,13 +408,17 @@ const PharmacistProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
                 </div>
 
                 <div className="admin-modal-footer" style={{ marginTop: '1.5rem', paddingBottom: 0, paddingRight: 0 }}>
-                  <button type="button" className="admin-btn admin-btn-outline" onClick={onClose}>
+                  <button type="button" className="admin-btn admin-btn-outline" onClick={handleCancel}>
                     Cancel
                   </button>
                   <button
                     type="submit"
                     className="admin-btn admin-btn-primary"
-                    disabled={submittingProfile}
+                    disabled={!isProfileDirty || submittingProfile}
+                    style={{
+                      opacity: !isProfileDirty && !submittingProfile ? 0.55 : 1,
+                      cursor: !isProfileDirty && !submittingProfile ? 'not-allowed' : 'pointer',
+                    }}
                   >
                     {submittingProfile ? (
                       <>
@@ -385,7 +426,7 @@ const PharmacistProfileModal = ({ isOpen, onClose, onProfileUpdated }) => {
                         <span>Saving Changes...</span>
                       </>
                     ) : (
-                      <span>Save Profile Changes</span>
+                      <span>Save Changes</span>
                     )}
                   </button>
                 </div>
