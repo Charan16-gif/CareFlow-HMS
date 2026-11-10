@@ -248,6 +248,11 @@ CORS_ALLOWED_ORIGINS = [
     for origin in cors_origins_env.split(",")
     if origin.strip()
 ]
+CORS_EXPOSE_HEADERS = [
+    "Content-Disposition",
+    "Content-Type",
+    "Content-Length",
+]
 
 # CSRF Configuration
 csrf_origins_env = os.getenv(
@@ -264,13 +269,13 @@ CSRF_TRUSTED_ORIGINS = [
 # Brevo Transactional Email API Configuration
 BREVO_API_KEY = os.getenv("BREVO_API_KEY", "").strip()
 BREVO_API_URL = os.getenv("BREVO_API_URL", "https://api.brevo.com/v3/smtp/email").strip()
-BREVO_SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL", "").strip()
+BREVO_SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL", "careflowofficial@gmail.com").strip()
 BREVO_SENDER_NAME = os.getenv("BREVO_SENDER_NAME", "CareFlow HMS").strip()
-BREVO_REPLY_TO_EMAIL = os.getenv("BREVO_REPLY_TO_EMAIL", "").strip()
+BREVO_REPLY_TO_EMAIL = os.getenv("BREVO_REPLY_TO_EMAIL", "careflowofficial@gmail.com").strip()
 BREVO_REPLY_TO_NAME = os.getenv("BREVO_REPLY_TO_NAME", "CareFlow HMS").strip()
 DEFAULT_FROM_EMAIL = os.getenv(
     "DEFAULT_FROM_EMAIL",
-    f"{BREVO_SENDER_NAME} <{BREVO_SENDER_EMAIL}>" if BREVO_SENDER_EMAIL else f"{BREVO_SENDER_NAME} <noreply@careflow.com>"
+    f"{BREVO_SENDER_NAME} <{BREVO_SENDER_EMAIL}>"
 ).strip()
 EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "15"))
 
@@ -278,7 +283,7 @@ EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "15"))
 EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "").strip()
 RESEND_API_URL = os.getenv("RESEND_API_URL", "https://api.resend.com/emails").strip()
-RESEND_REPLY_TO = os.getenv("RESEND_REPLY_TO", "charanadabala16@gmail.com").strip()
+RESEND_REPLY_TO = os.getenv("RESEND_REPLY_TO", "careflowofficial@gmail.com").strip()
 
 # Real-Time Email Address Validation & Mailbox Verification Provider
 EMAIL_VERIFICATION_PROVIDER = os.getenv("EMAIL_VERIFICATION_PROVIDER", "abstractapi").lower().strip()

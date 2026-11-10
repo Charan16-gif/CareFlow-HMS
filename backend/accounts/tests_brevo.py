@@ -37,7 +37,7 @@ class MockBrevoHttpResponse:
 
 @override_settings(
     BREVO_API_KEY="xkeysib-test-dummy-api-key-12345",
-    BREVO_SENDER_EMAIL="notifications@careflow.com",
+    BREVO_SENDER_EMAIL="careflowofficial@gmail.com",
     BREVO_SENDER_NAME="CareFlow HMS",
     BREVO_API_URL="https://api.brevo.com/v3/smtp/email"
 )
@@ -80,7 +80,7 @@ class BrevoConfigurationAndServiceTests(TestCase):
         # Verify Brevo request payload structure
         sent_body = json.loads(req_arg.data.decode("utf-8"))
         self.assertEqual(sent_body["sender"]["name"], "CareFlow HMS")
-        self.assertEqual(sent_body["sender"]["email"], "notifications@careflow.com")
+        self.assertEqual(sent_body["sender"]["email"], "careflowofficial@gmail.com")
         self.assertEqual(sent_body["to"], [{"email": "patient@example.com"}])
         self.assertEqual(sent_body["subject"], "CareFlow Email Verification")
         self.assertEqual(sent_body["htmlContent"], "<p>Your code is 123456</p>")
@@ -201,10 +201,26 @@ class BrevoConfigurationAndServiceTests(TestCase):
         self.assertEqual(sent_body["attachment"][0]["name"], "report.pdf")
         self.assertTrue(len(sent_body["attachment"][0]["content"]) > 0)
 
+    @patch("urllib.request.urlopen")
+    def test_send_brevo_email_enforces_careflowofficial_sender(self, mock_urlopen):
+        """Verifies that careflowofficial@gmail.com is strictly enforced and legacy email is never used."""
+        mock_urlopen.return_value = MockBrevoHttpResponse(status_code=201)
+        result = send_brevo_email(
+            to="patient@example.com",
+            subject="Test",
+            html="<p>Test</p>",
+            from_email="charanadabala16@gmail.com",
+        )
+        self.assertTrue(result["success"])
+        req_arg = mock_urlopen.call_args[0][0]
+        sent_body = json.loads(req_arg.data.decode("utf-8"))
+        self.assertEqual(sent_body["sender"]["email"], "careflowofficial@gmail.com")
+        self.assertNotEqual(sent_body["sender"]["email"], "charanadabala16@gmail.com")
+
 
 @override_settings(
     BREVO_API_KEY="xkeysib-test-dummy-api-key-12345",
-    BREVO_SENDER_EMAIL="notifications@careflow.com",
+    BREVO_SENDER_EMAIL="careflowofficial@gmail.com",
     BREVO_SENDER_NAME="CareFlow HMS"
 )
 class CareFlowRegistrationAndBrevoIntegrationTests(TestCase):
@@ -361,7 +377,7 @@ class CareFlowRegistrationAndBrevoIntegrationTests(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertTrue(resp.data["is_configured"])
         self.assertEqual(resp.data["provider"], "Brevo Transactional Email API")
-        self.assertEqual(resp.data["sender_email"], "notifications@careflow.com")
+        self.assertEqual(resp.data["sender_email"], "careflowofficial@gmail.com")
         self.assertEqual(resp.data["sender_name"], "CareFlow HMS")
         self.assertIn("api.brevo.com", resp.data["api_host"])
 

@@ -614,3 +614,55 @@ class LaboratoryModuleTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("verified records cannot be modified", str(res.data))
 
+    def test_download_report_generates_pdf_when_file_not_on_disk(self):
+        """Verifies that download-report dynamically generates official PDF when file is missing on storage."""
+        order = LabOrder.objects.create(
+            order_id="CF-LAB-99001",
+            patient=self.patient,
+            doctor=self.doctor,
+            test=self.cbc_test,
+            status=LabOrderStatus.COMPLETED,
+            result_value="14.2 g/dL",
+            result_notes="All hematology indices within normal adult limits.",
+            completed_at=timezone.now()
+        )
+        # Patient downloads own report
+        self.client.force_authenticate(user=self.patient_user)
+        res = self.client.get(f"/api/laboratory/orders/{order.id}/download-report/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res["Content-Type"], "application/pdf")
+        self.assertIn("CareFlow_Lab_Report_CF-LAB-99001.pdf", res["Content-Disposition"])
+        self.assertTrue(res.content.startswith(b"%PDF-1.4"))
+        self.assertTrue(b"CAREFLOW HOSPITAL MANAGEMENT SYSTEM" in res.content)
+
+    def test_download_report_authorization_enforced(self):
+        """Verifies role permissions: Admin, assigned Doctor, and Patient permitted; unrelated forbidden."""
+        order = LabOrder.objects.create(
+            order_id="CF-LAB-99002",
+            patient=self.patient,
+            doctor=self.doctor,
+            test=self.cbc_test,
+            status=LabOrderStatus.COMPLETED,
+            completed_at=timezone.now()
+        )
+        # 1. Admin access -> permitted
+        self.client.force_authenticate(user=self.admin_user)
+        res_admin = self.client.get(f"/api/laboratory/orders/{order.id}/download-report/")
+        self.assertEqual(res_admin.status_code, status.HTTP_200_OK)
+
+        # 2. Assigned Doctor access -> permitted
+        self.client.force_authenticate(user=self.doc_user)
+        res_doc = self.client.get(f"/api/laboratory/orders/{order.id}/download-report/")
+        self.assertEqual(res_doc.status_code, status.HTTP_200_OK)
+
+        # 3. Patient access -> permitted
+        self.client.force_authenticate(user=self.patient_user)
+        res_pat = self.client.get(f"/api/laboratory/orders/{order.id}/download-report/")
+        self.assertEqual(res_pat.status_code, status.HTTP_200_OK)
+
+        # 4. Unrelated Patient -> forbidden
+        self.client.force_authenticate(user=self.unrelated_patient_user)
+        res_unrelated = self.client.get(f"/api/laboratory/orders/{order.id}/download-report/")
+        self.assertEqual(res_unrelated.status_code, status.HTTP_403_FORBIDDEN)
+
+

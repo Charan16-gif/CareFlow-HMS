@@ -1,7 +1,7 @@
 import os
 import mimetypes
 from django.utils import timezone
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, HttpResponse
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -12,6 +12,7 @@ from accounts.permissions import get_user_role
 from .models import LabTest, LabOrder, LabOrderStatus
 from .serializers import LabTestSerializer, LabOrderSerializer
 from .validators import validate_lab_report_file
+from .report_generator import generate_clinical_lab_report_pdf
 from accounts.emails import send_lab_report_email, send_lab_report_email_async
 
 
@@ -448,9 +449,12 @@ class LabOrderViewSet(viewsets.ModelViewSet):
         """
         Secure, authorized endpoint to retrieve or download the attached laboratory report.
         Strictly verifies that caller is the patient, requesting doctor, lab staff, or admin.
+        If a physical report file is attached and available in storage, it is streamed directly.
+        If the order is completed but no file is attached (or if ephemeral cloud storage is refreshed),
+        generates an official CareFlow Clinical Pathology Diagnostic Report PDF on-the-fly.
         """
         try:
-            order = LabOrder.objects.select_related("doctor", "patient").get(pk=pk)
+            order = LabOrder.objects.select_related("doctor", "patient", "test").get(pk=pk)
         except LabOrder.DoesNotExist:
             raise NotFound("Laboratory order not found.")
 
@@ -469,21 +473,28 @@ class LabOrderViewSet(viewsets.ModelViewSet):
         if not is_authorized:
             raise PermissionDenied("You do not have permission to view or download this diagnostic report.")
 
-        if not order.report_file:
-            raise NotFound("No diagnostic report file is attached to this laboratory order.")
+        # 1. Attempt to stream physical attached file if it exists and can be read
+        if order.report_file:
+            try:
+                file_handle = order.report_file.open("rb")
+                filename = os.path.basename(order.report_file.name)
+                mime_type, _ = mimetypes.guess_type(filename)
+                if not mime_type:
+                    mime_type = "application/octet-stream"
 
-        try:
-            file_handle = order.report_file.open("rb")
-        except Exception:
-            raise NotFound("Diagnostic report file could not be read from storage.")
+                response = FileResponse(file_handle, content_type=mime_type)
+                response["Content-Disposition"] = f'inline; filename="{filename}"'
+                return response
+            except Exception:
+                # Ephemeral storage refreshed or file moved: fall back to dynamic clinical PDF generation
+                pass
 
-        filename = os.path.basename(order.report_file.name)
-        mime_type, _ = mimetypes.guess_type(filename)
-        if not mime_type:
-            mime_type = "application/octet-stream"
-
-        response = FileResponse(file_handle, content_type=mime_type)
-        response["Content-Disposition"] = f'inline; filename="{filename}"'
+        # 2. Dynamic generation of verified clinical report PDF for completed or requested orders
+        pdf_bytes = generate_clinical_lab_report_pdf(order)
+        report_filename = f"CareFlow_Lab_Report_{order.order_id}.pdf"
+        response = HttpResponse(pdf_bytes, content_type="application/pdf")
+        response["Content-Disposition"] = f'inline; filename="{report_filename}"'
+        response["Content-Length"] = len(pdf_bytes)
         return response
 
     @action(detail=False, methods=["get"], url_path="stats")

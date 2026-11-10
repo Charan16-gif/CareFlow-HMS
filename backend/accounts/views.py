@@ -298,13 +298,13 @@ class EmailConfigStatusView(APIView):
         brevo_sender = getattr(settings, "BREVO_SENDER_EMAIL", "").strip()
         brevo_name = getattr(settings, "BREVO_SENDER_NAME", "CareFlow HMS").strip()
         default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip()
-        sender_account = f"{brevo_name} <{brevo_sender}>" if brevo_sender else default_from
+        sender_account = default_from or (f"{brevo_name} <{brevo_sender}>" if brevo_sender else "")
 
         reply_to = (
             getattr(settings, "BREVO_REPLY_TO_EMAIL", "").strip()
             or getattr(settings, "RESEND_REPLY_TO", "").strip()
             or brevo_sender
-            or "charanadabala16@gmail.com"
+            or "careflowofficial@gmail.com"
         )
         is_configured = bool(effective_key and (brevo_sender or default_from))
         provider_name = "Brevo Transactional Email API" if brevo_key or not resend_key else "Resend Email API"

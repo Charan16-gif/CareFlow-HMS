@@ -82,7 +82,11 @@ def send_brevo_email(
     clean_to = to_list[0]["email"] if len(to_list) == 1 else [r["email"] for r in to_list]
 
     # 2. Determine and validate sender
-    brevo_sender_email = getattr(settings, "BREVO_SENDER_EMAIL", "").strip()
+    brevo_sender_email = getattr(settings, "BREVO_SENDER_EMAIL", "")
+    if brevo_sender_email is not None:
+        brevo_sender_email = str(brevo_sender_email).strip()
+    else:
+        brevo_sender_email = ""
     brevo_sender_name = getattr(settings, "BREVO_SENDER_NAME", "").strip() or "CareFlow HMS"
 
     sender_email = ""
@@ -116,6 +120,16 @@ def send_brevo_email(
             "is_recipient_error": False,
             "id": None,
         }
+
+    # Enforce configured sender consistency with authorized Brevo sender
+    AUTHORIZED_BREVO_SENDER = "careflowofficial@gmail.com"
+    if sender_email.lower() != AUTHORIZED_BREVO_SENDER:
+        logger.warning(
+            "Configured sender %s differs from required authorized Brevo sender %s. Normalizing to authorized sender.",
+            sender_email,
+            AUTHORIZED_BREVO_SENDER,
+        )
+        sender_email = AUTHORIZED_BREVO_SENDER
 
     # 3. Determine reply-to
     reply_email = ""
@@ -461,7 +475,7 @@ def send_password_reset_link_email(email: str, reset_url: str, user_name: str = 
     Returns dict: {"success": bool, "message": str, "error": Optional[str]}
     """
     clean_email = email.strip().lower()
-    default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow-HMS <onboarding@resend.dev>"
+    default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow HMS <careflowofficial@gmail.com>"
     from_email = default_from
 
     subject = "CareFlow-HMS: Password Reset Request"
@@ -600,7 +614,7 @@ def send_user_welcome_credentials_email(
     containing their portal credentials, assigned role, ID, and login link.
     """
     clean_email = email.strip().lower()
-    default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow-HMS <onboarding@resend.dev>"
+    default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow HMS <careflowofficial@gmail.com>"
     from_email = default_from
 
     portal_url = login_url or "http://localhost:3000/login"
@@ -797,7 +811,7 @@ def send_patient_welcome_email(user, email: str = None) -> dict:
         return {"success": False, "message": "No email provided for patient welcome.", "error": "Missing email"}
 
     user_name = f"{getattr(user, 'first_name', '')} {getattr(user, 'last_name', '')}".strip() or getattr(user, 'username', 'Valued Patient')
-    default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow-HMS <onboarding@resend.dev>"
+    default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow HMS <careflowofficial@gmail.com>"
     from_email = default_from
 
     subject = "Welcome to CareFlow-HMS: Your Patient Healthcare Portal is Ready"
@@ -950,7 +964,7 @@ def send_lab_report_email(order, recipient_email: str = None) -> dict:
     result_notes = order.result_notes or "Results have been reviewed and validated by CareFlow Diagnostic Pathology."
     completed_date = order.completed_at.strftime("%B %d, %Y at %I:%M %p") if order.completed_at else "Recently Completed"
 
-    default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow-HMS <onboarding@resend.dev>"
+    default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow HMS <careflowofficial@gmail.com>"
     from_email = default_from
 
     subject = f"Diagnostic Test Report Ready: {test_name} ({order_id})"
@@ -1078,6 +1092,18 @@ CareFlow Hospital Management System
         except Exception as file_err:
             logger.warning(f"Could not read report file for email: {file_err}")
 
+    # Fallback to dynamic clinical pathology PDF generation if physical file was not on disk
+    if not attachments:
+        try:
+            from laboratory.report_generator import generate_clinical_lab_report_pdf
+            pdf_bytes = generate_clinical_lab_report_pdf(order)
+            attachments.append({
+                "filename": f"CareFlow_Lab_Report_{order_id}.pdf",
+                "content": pdf_bytes,
+            })
+        except Exception as gen_err:
+            logger.warning(f"Could not generate dynamic lab report PDF for email: {gen_err}")
+
     res = send_brevo_email(
         to=clean_email,
         subject=subject,
@@ -1118,7 +1144,7 @@ def send_appointment_confirmation_email(appointment, recipient_email: str = None
     apt_time = appointment.appointment_time.strftime("%I:%M %p") if hasattr(appointment.appointment_time, "strftime") else str(appointment.appointment_time)
     reason = appointment.reason_for_visit or "Standard Consultation"
 
-    default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow-HMS <onboarding@resend.dev>"
+    default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow HMS <careflowofficial@gmail.com>"
     from_email = default_from
 
     subject = f"Appointment Confirmed with {doctor_name} on {apt_date} ({apt_id})"
@@ -1277,7 +1303,7 @@ def send_prescription_notification_email(prescription, recipient_email: str = No
         instructions = getattr(prescription, "instructions", None) or "Take medications strictly as instructed."
         portal_url = "http://localhost:3000/patient/prescriptions"
 
-        default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow-HMS <onboarding@resend.dev>"
+        default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow HMS <careflowofficial@gmail.com>"
         from_email = default_from
 
         subject = f"New Medical Prescription Issued: {rx_id} by {doctor_name}"
@@ -1421,7 +1447,7 @@ def send_medicine_dispense_email(dispense, recipient_email: str = None) -> dict:
         patient_name = f"{getattr(patient, 'first_name', '')} {getattr(patient, 'last_name', '')}".strip() or "Valued Patient"
         dispense_id = getattr(dispense, "dispense_id", "DSP-PENDING")
         total_amt = f"₹{float(getattr(dispense, 'total_amount', 0) or 0):.2f}"
-        default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow-HMS <onboarding@resend.dev>"
+        default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow HMS <careflowofficial@gmail.com>"
         from_email = default_from
 
         subject = f"Medications Dispensed Successfully — Ref #{dispense_id}"
@@ -1516,7 +1542,7 @@ def send_payment_receipt_email(payment, recipient_email: str = None) -> dict:
         txn_ref = getattr(payment, "transaction_reference", None) or "N/A"
         pay_date = payment.payment_date.strftime("%B %d, %Y at %I:%M %p") if hasattr(payment.payment_date, "strftime") else str(payment.payment_date)
 
-        default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow-HMS <onboarding@resend.dev>"
+        default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow HMS <careflowofficial@gmail.com>"
         from_email = default_from
 
         subject = f"Official Payment Receipt: #{receipt_no} for Invoice #{bill_no}"
