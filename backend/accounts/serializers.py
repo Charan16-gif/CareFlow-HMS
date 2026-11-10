@@ -191,18 +191,18 @@ class RegisterSerializer(serializers.Serializer):
             otp_record.delivery_error = email_result.get("message", "")
         otp_record.save(update_fields=["delivery_status", "sent_at", "delivery_error"])
 
-        if not email_result.get("success") and email_result.get("is_recipient_error"):
-            # Recipient mailbox rejected / delivery failure
-            user.delete()
-            raise serializers.ValidationError({"email": email_result["message"]})
+        if not email_result.get("success"):
+            # Email delivery failed: keep user unverified (is_active=False) so retry works,
+            # and raise ValidationError to prevent HTTP 201 Created and inform frontend.
+            raise serializers.ValidationError({"email": email_result.get("message") or MSG_SMTP_CONNECTION_FAILURE})
 
         return {
             "user": user,
             "email": email,
-            "email_sent": email_result["success"],
-            "email_status": email_result.get("status", "PENDING"),
+            "email_sent": True,
+            "email_status": email_result.get("status", "ACCEPTED"),
             "email_message": email_result["message"],
-            "email_error": email_result.get("error"),
+            "email_error": None,
         }
 
 
@@ -433,15 +433,15 @@ class ResendOTPSerializer(serializers.Serializer):
             otp_record.delivery_error = email_result.get("message", "")
         otp_record.save(update_fields=["delivery_status", "sent_at", "delivery_error"])
 
-        if not email_result.get("success") and email_result.get("is_recipient_error"):
-            raise serializers.ValidationError({"email": email_result["message"]})
+        if not email_result.get("success"):
+            raise serializers.ValidationError({"detail": email_result.get("message") or MSG_SMTP_CONNECTION_FAILURE})
 
         return {
             "email": email,
-            "email_sent": email_result["success"],
-            "email_status": email_result.get("status", "PENDING"),
-            "email_message": MSG_OTP_RESENT if email_result["success"] else email_result["message"],
-            "email_error": email_result.get("error"),
+            "email_sent": True,
+            "email_status": email_result.get("status", "ACCEPTED"),
+            "email_message": MSG_OTP_RESENT,
+            "email_error": None,
         }
 
 
@@ -511,16 +511,16 @@ class EmailCorrectionSerializer(serializers.Serializer):
             otp_record.delivery_error = email_result.get("message", "")
         otp_record.save(update_fields=["delivery_status", "sent_at", "delivery_error"])
 
-        if not email_result.get("success") and email_result.get("is_recipient_error"):
-            raise serializers.ValidationError({"new_email": email_result["message"]})
+        if not email_result.get("success"):
+            raise serializers.ValidationError({"new_email": email_result.get("message") or MSG_SMTP_CONNECTION_FAILURE})
 
         return {
-            "message": MSG_OTP_RESENT if email_result["success"] else email_result["message"],
+            "message": MSG_OTP_RESENT,
             "old_email": old_email,
             "new_email": new_email,
-            "email_sent": email_result["success"],
-            "email_status": email_result.get("status", "PENDING"),
-            "email_message": MSG_OTP_RESENT if email_result["success"] else email_result["message"],
+            "email_sent": True,
+            "email_status": email_result.get("status", "ACCEPTED"),
+            "email_message": MSG_OTP_RESENT,
         }
 
 

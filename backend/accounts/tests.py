@@ -498,9 +498,8 @@ class EmailOTPAuthenticationTests(TestCase):
             "is_recipient_error": False,
         }
         res = self.client.post("/api/auth/register/", self.valid_payload, format="json")
-        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
-        self.assertFalse(res.data["email_sent"])
-        self.assertEqual(res.data["email_message"], "Unable to send verification email. Please try again later.")
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("Unable to send verification email. Please try again later.", str(res.data))
 
     def test_realtime_email_validation_syntax_errors(self):
         invalid_syntax_emails = [

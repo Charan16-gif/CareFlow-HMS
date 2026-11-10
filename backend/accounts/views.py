@@ -281,33 +281,29 @@ class EmailBounceWebhookView(APIView):
 class EmailConfigStatusView(APIView):
     """
     Returns email service setup status without exposing credentials.
-    Useful for diagnostic health checks in development.
+    Useful for diagnostic health checks in development and production.
     """
     permission_classes = [AllowAny]
 
     @extend_schema(
-        summary="Check SMTP email service configuration",
-        description="Verifies whether real SMTP credentials are set in the backend environment.",
+        summary="Check email service configuration",
+        description="Verifies whether Resend API credentials are set in the backend environment.",
         responses={200: OpenApiTypes.OBJECT},
     )
     def get(self, request):
-        host_user = getattr(settings, "EMAIL_HOST_USER", "")
-        host = getattr(settings, "EMAIL_HOST", "")
-        has_password = bool(getattr(settings, "EMAIL_HOST_PASSWORD", ""))
-        is_configured = bool(host_user and has_password)
-
-        masked_user = ""
-        if host_user and "@" in host_user:
-            name, domain = host_user.split("@", 1)
-            masked_name = name[:2] + ("*" * max(1, len(name) - 2))
-            masked_user = f"{masked_name}@{domain}"
+        resend_key = getattr(settings, "RESEND_API_KEY", "").strip()
+        default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow-HMS <onboarding@resend.dev>"
+        reply_to = getattr(settings, "RESEND_REPLY_TO", "").strip() or "charanadabala16@gmail.com"
+        is_configured = bool(resend_key)
 
         return Response({
             "is_configured": is_configured,
-            "smtp_host": host,
-            "smtp_port": getattr(settings, "EMAIL_PORT", 587),
-            "sender_account": masked_user if masked_user else "(Not configured)",
-            "use_tls": getattr(settings, "EMAIL_USE_TLS", True),
+            "provider": "Resend Email API",
+            "sender_account": default_from,
+            "reply_to": reply_to,
+            "api_configured": is_configured,
+            "smtp_host": "api.resend.com (HTTPS Port 443)",
+            "use_tls": True,
         })
 
 

@@ -1,5 +1,12 @@
+import base64
+import json
 import logging
+import mimetypes
+import os
 import smtplib
+import threading
+import urllib.error
+import urllib.request
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.utils.html import strip_tags
@@ -12,21 +19,209 @@ from .email_validation import (
 logger = logging.getLogger(__name__)
 
 
+def send_resend_email(
+    to,
+    subject: str,
+    html: str,
+    text: str = None,
+    from_email: str = None,
+    reply_to: str = None,
+    attachments: list = None,
+) -> dict:
+    """
+    Dispatches an email via the Resend REST API (POST https://api.resend.com/emails).
+    Requires RESEND_API_KEY environment variable.
+    Returns dict: {"success": bool, "status": str, "message": str, "error": Optional[str], "is_recipient_error": bool, "id": Optional[str]}
+    """
+    if isinstance(to, str):
+        recipients = [to.strip().lower()] if to.strip() else []
+    elif isinstance(to, (list, tuple)):
+        recipients = [str(r).strip().lower() for r in to if str(r).strip()]
+    else:
+        recipients = []
+
+    if not recipients:
+        return {
+            "success": False,
+            "status": "FAILED",
+            "message": "Recipient email address is required.",
+            "error": "missing_recipient",
+            "is_recipient_error": True,
+            "id": None,
+        }
+
+    clean_to = recipients[0] if len(recipients) == 1 else recipients
+
+    # Determine sender address
+    default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow-HMS <onboarding@resend.dev>"
+    sender = from_email.strip() if (from_email and from_email.strip()) else default_from
+    if "<" not in sender and "@" in sender:
+        sender = f"CareFlow-HMS <{sender}>"
+
+    # Determine reply-to
+    configured_reply_to = getattr(settings, "RESEND_REPLY_TO", "").strip() or "charanadabala16@gmail.com"
+    reply_address = reply_to.strip() if (reply_to and reply_to.strip()) else configured_reply_to
+
+    # Prepare attachments if any
+    attachments_payload = []
+    if attachments:
+        for att in attachments:
+            fname = att.get("filename", "attachment")
+            content = att.get("content", b"")
+            if isinstance(content, bytes):
+                content_b64 = base64.b64encode(content).decode("ascii")
+            elif isinstance(content, str):
+                try:
+                    base64.b64decode(content, validate=True)
+                    content_b64 = content
+                except Exception:
+                    content_b64 = base64.b64encode(content.encode("utf-8")).decode("ascii")
+            else:
+                content_b64 = ""
+            attachments_payload.append({
+                "filename": fname,
+                "content": content_b64,
+            })
+
+    payload = {
+        "from": sender,
+        "to": recipients,
+        "subject": subject,
+        "html": html,
+    }
+    if text:
+        payload["text"] = text
+    if reply_address:
+        payload["reply_to"] = reply_address
+    if attachments_payload:
+        payload["attachments"] = attachments_payload
+
+    api_key = getattr(settings, "RESEND_API_KEY", "").strip()
+    api_url = getattr(settings, "RESEND_API_URL", "https://api.resend.com/emails").strip()
+    timeout = getattr(settings, "EMAIL_TIMEOUT", 15)
+
+    if not api_key:
+        logger.error(
+            "Resend API key is not configured (RESEND_API_KEY). Unable to dispatch email to %s.",
+            clean_to,
+        )
+        return {
+            "success": False,
+            "status": "FAILED",
+            "message": MSG_SMTP_CONNECTION_FAILURE,
+            "error": "Resend API key is not configured.",
+            "is_recipient_error": False,
+            "id": None,
+        }
+
+    try:
+        encoded_data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            url=api_url,
+            data=encoded_data,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "User-Agent": "CareFlow-HMS/1.0",
+            },
+            method="POST",
+        )
+
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            resp_body = response.read().decode("utf-8")
+            resp_json = json.loads(resp_body) if resp_body else {}
+            resend_id = resp_json.get("id")
+
+            logger.info("Email successfully sent via Resend API to %s (Resend ID: %s)", clean_to, resend_id)
+            return {
+                "success": True,
+                "status": "ACCEPTED",
+                "message": MSG_EMAIL_ACCEPTED_BY_SMTP,
+                "error": None,
+                "is_recipient_error": False,
+                "id": resend_id,
+            }
+
+    except urllib.error.HTTPError as exc:
+        try:
+            err_body = exc.read().decode("utf-8")
+            err_json = json.loads(err_body)
+            api_message = err_json.get("message", "")
+            err_name = err_json.get("name", "http_error")
+        except Exception:
+            err_body = ""
+            api_message = str(exc)
+            err_name = "http_error"
+
+        status_code = exc.code
+        logger.error(
+            "Resend API HTTP error %d for recipient %s: %s - %s",
+            status_code,
+            clean_to,
+            err_name,
+            api_message,
+        )
+
+        is_recipient_error = status_code in (400, 422) or any(
+            w in api_message.lower() for w in ("recipient", "email", "invalid", "deliver", "verify", "only send to")
+        )
+
+        user_friendly_message = (
+            api_message if is_recipient_error and api_message
+            else MSG_SMTP_CONNECTION_FAILURE
+        )
+
+        return {
+            "success": False,
+            "status": "FAILED",
+            "message": user_friendly_message,
+            "error": f"HTTP {status_code}: {api_message or str(exc)}",
+            "is_recipient_error": is_recipient_error,
+            "id": None,
+        }
+
+    except urllib.error.URLError as exc:
+        logger.error("Resend API connection error for recipient %s: %s", clean_to, exc.reason)
+        return {
+            "success": False,
+            "status": "FAILED",
+            "message": MSG_SMTP_CONNECTION_FAILURE,
+            "error": f"Connection error: {exc.reason}",
+            "is_recipient_error": False,
+            "id": None,
+        }
+
+    except TimeoutError:
+        logger.error("Resend API request timed out for recipient %s", clean_to)
+        return {
+            "success": False,
+            "status": "FAILED",
+            "message": MSG_SMTP_CONNECTION_FAILURE,
+            "error": "Request timed out",
+            "is_recipient_error": False,
+            "id": None,
+        }
+
+    except Exception as exc:
+        logger.error("Unexpected error calling Resend API for %s: %s", clean_to, exc, exc_info=True)
+        return {
+            "success": False,
+            "status": "FAILED",
+            "message": MSG_SMTP_CONNECTION_FAILURE,
+            "error": str(exc),
+            "is_recipient_error": False,
+            "id": None,
+        }
+
+
 def send_otp_email(email: str, otp_code: str, user_name: str = "Valued Patient", purpose: str = "registration") -> dict:
     """
-    Sends a beautifully styled HTML email with a 6-digit OTP verification code.
-    Reads SMTP configurations from Django settings (settings.EMAIL_HOST_USER, etc.).
-    Returns dict: {"success": bool, "message": str, "error": Optional[str]}
+    Sends a beautifully styled HTML email with a 6-digit OTP verification code via Resend Email API.
+    Returns dict: {"success": bool, "status": str, "message": str, "error": Optional[str], "is_recipient_error": bool}
     """
     clean_email = email.strip().lower()
-    host_user = getattr(settings, "EMAIL_HOST_USER", "").strip()
-    default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip()
-    if default_from and "<" in default_from:
-        from_email = default_from
-    elif host_user:
-        from_email = f"CareFlow-HMS <{host_user}>"
-    else:
-        from_email = "CareFlow-HMS <noreply@careflow-hms.com>"
+    default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow-HMS <onboarding@resend.dev>"
+    from_email = default_from
 
     purpose_titles = {
         "registration": "Confirm Your Email Address",
@@ -147,65 +342,13 @@ CareFlow Hospital Management System
 Secure Clinical & Patient Portal
 """
 
-    try:
-        msg = EmailMultiAlternatives(
-            subject=subject,
-            body=text_content,
-            from_email=from_email,
-            to=[clean_email],
-        )
-        msg.attach_alternative(html_content, "text/html")
-        msg.send(fail_silently=False)
-
-        logger.info(f"Verification OTP email accepted by SMTP for {clean_email}")
-        return {
-            "success": True,
-            "status": "ACCEPTED",
-            "message": MSG_EMAIL_ACCEPTED_BY_SMTP,
-            "error": None,
-            "is_recipient_error": False,
-        }
-    except smtplib.SMTPRecipientsRefused as exc:
-        err_msg = str(exc)
-        logger.error(f"Recipient address rejected immediately by SMTP for {clean_email}: {err_msg}")
-        return {
-            "success": False,
-            "status": "FAILED",
-            "message": MSG_SMTP_IMMEDIATE_REJECTION,
-            "error": "recipient_refused",
-            "is_recipient_error": True,
-        }
-    except smtplib.SMTPDataError as exc:
-        err_msg = str(exc)
-        logger.error(f"SMTP data error for {clean_email}: {err_msg}")
-        is_recip = any(code in err_msg for code in ("550", "551", "552", "553", "554"))
-        return {
-            "success": False,
-            "status": "FAILED",
-            "message": MSG_SMTP_IMMEDIATE_REJECTION if is_recip else MSG_SMTP_CONNECTION_FAILURE,
-            "error": "data_error",
-            "is_recipient_error": is_recip,
-        }
-    except (smtplib.SMTPAuthenticationError, smtplib.SMTPConnectError, smtplib.SMTPServerDisconnected, TimeoutError) as exc:
-        err_msg = str(exc)
-        logger.error(f"SMTP connection/authentication failure for {clean_email}: {err_msg}")
-        return {
-            "success": False,
-            "status": "FAILED",
-            "message": MSG_SMTP_CONNECTION_FAILURE,
-            "error": "connection_error",
-            "is_recipient_error": False,
-        }
-    except Exception as exc:
-        err_msg = str(exc)
-        logger.error(f"Unexpected email dispatch error for {clean_email}: {err_msg}", exc_info=True)
-        return {
-            "success": False,
-            "status": "FAILED",
-            "message": MSG_SMTP_CONNECTION_FAILURE,
-            "error": err_msg,
-            "is_recipient_error": False,
-        }
+    return send_resend_email(
+        to=clean_email,
+        subject=subject,
+        html=html_content,
+        text=text_content,
+        from_email=from_email,
+    )
 
 
 def send_password_reset_link_email(email: str, reset_url: str, user_name: str = "Valued User") -> dict:
@@ -214,14 +357,8 @@ def send_password_reset_link_email(email: str, reset_url: str, user_name: str = 
     Returns dict: {"success": bool, "message": str, "error": Optional[str]}
     """
     clean_email = email.strip().lower()
-    host_user = getattr(settings, "EMAIL_HOST_USER", "").strip()
-    default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip()
-    if default_from and "<" in default_from:
-        from_email = default_from
-    elif host_user:
-        from_email = f"CareFlow-HMS <{host_user}>"
-    else:
-        from_email = "CareFlow-HMS <noreply@careflow-hms.com>"
+    default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow-HMS <onboarding@resend.dev>"
+    from_email = default_from
 
     subject = "CareFlow-HMS: Password Reset Request"
 
@@ -321,30 +458,25 @@ CareFlow Hospital Management System
 Secure Clinical & Patient Portal
 """
 
-    try:
-        msg = EmailMultiAlternatives(
-            subject=subject,
-            body=text_content,
-            from_email=from_email,
-            to=[clean_email],
-        )
-        msg.attach_alternative(html_content, "text/html")
-        msg.send(fail_silently=False)
-
+    res = send_resend_email(
+        to=clean_email,
+        subject=subject,
+        html=html_content,
+        text=text_content,
+        from_email=from_email,
+    )
+    if res["success"]:
         logger.info(f"Password reset link email successfully sent to {clean_email}")
         return {
             "success": True,
             "message": f"Password reset link sent to {clean_email}",
             "error": None,
         }
-    except Exception as exc:
-        err_msg = str(exc)
-        logger.error(f"Failed to send password reset email to {clean_email}: {err_msg}", exc_info=True)
-        return {
-            "success": False,
-            "message": f"Could not send password reset email to {clean_email}.",
-            "error": err_msg,
-        }
+    return {
+        "success": False,
+        "message": f"Could not send password reset email to {clean_email}.",
+        "error": res.get("error"),
+    }
 
 
 import threading
@@ -364,14 +496,8 @@ def send_user_welcome_credentials_email(
     containing their portal credentials, assigned role, ID, and login link.
     """
     clean_email = email.strip().lower()
-    host_user = getattr(settings, "EMAIL_HOST_USER", "").strip()
-    default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip()
-    if default_from and "<" in default_from:
-        from_email = default_from
-    elif host_user:
-        from_email = f"CareFlow-HMS <{host_user}>"
-    else:
-        from_email = "CareFlow-HMS <noreply@careflow-hms.com>"
+    default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow-HMS <onboarding@resend.dev>"
+    from_email = default_from
 
     portal_url = login_url or "http://localhost:3000/login"
     subject = f"Welcome to CareFlow-HMS: Your {role_display} Account Credentials"
@@ -520,16 +646,14 @@ CareFlow Hospital Management System
 Secure Clinical & Staff Portal
 """
 
-    try:
-        msg = EmailMultiAlternatives(
-            subject=subject,
-            body=text_content,
-            from_email=from_email,
-            to=[clean_email],
-        )
-        msg.attach_alternative(html_content, "text/html")
-        msg.send(fail_silently=False)
-
+    res = send_resend_email(
+        to=clean_email,
+        subject=subject,
+        html=html_content,
+        text=text_content,
+        from_email=from_email,
+    )
+    if res["success"]:
         logger.info(f"Welcome credentials email successfully sent to {clean_email}")
         return {
             "success": True,
@@ -537,24 +661,12 @@ Secure Clinical & Staff Portal
             "message": f"Welcome credentials email sent to {clean_email}",
             "error": None,
         }
-    except smtplib.SMTPRecipientsRefused as exc:
-        err_msg = str(exc)
-        logger.error(f"Recipient rejected for welcome email to {clean_email}: {err_msg}")
-        return {
-            "success": False,
-            "status": "FAILED",
-            "message": MSG_SMTP_IMMEDIATE_REJECTION,
-            "error": "recipient_refused",
-        }
-    except Exception as exc:
-        err_msg = str(exc)
-        logger.error(f"Failed to send welcome credentials email to {clean_email}: {err_msg}", exc_info=True)
-        return {
-            "success": False,
-            "status": "FAILED",
-            "message": MSG_SMTP_CONNECTION_FAILURE,
-            "error": err_msg,
-        }
+    return {
+        "success": False,
+        "status": "FAILED",
+        "message": res.get("message") or MSG_SMTP_CONNECTION_FAILURE,
+        "error": res.get("error"),
+    }
 
 
 def send_user_welcome_credentials_email_async(**kwargs):
@@ -581,14 +693,8 @@ def send_patient_welcome_email(user, email: str = None) -> dict:
         return {"success": False, "message": "No email provided for patient welcome.", "error": "Missing email"}
 
     user_name = f"{getattr(user, 'first_name', '')} {getattr(user, 'last_name', '')}".strip() or getattr(user, 'username', 'Valued Patient')
-    host_user = getattr(settings, "EMAIL_HOST_USER", "").strip()
-    default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip()
-    if default_from and "<" in default_from:
-        from_email = default_from
-    elif host_user:
-        from_email = f"CareFlow-HMS <{host_user}>"
-    else:
-        from_email = "CareFlow-HMS <noreply@careflow-hms.com>"
+    default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow-HMS <onboarding@resend.dev>"
+    from_email = default_from
 
     subject = "Welcome to CareFlow-HMS: Your Patient Healthcare Portal is Ready"
     portal_url = "http://localhost:3000/login"
@@ -676,22 +782,17 @@ Sign in to your patient portal to book doctor appointments, view prescriptions, 
 Thank you for choosing CareFlow-HMS.
 """
 
-    try:
-        msg = EmailMultiAlternatives(
-            subject=subject,
-            body=text_content,
-            from_email=from_email,
-            to=[clean_email],
-        )
-        msg.attach_alternative(html_content, "text/html")
-        msg.send(fail_silently=False)
-
+    res = send_resend_email(
+        to=clean_email,
+        subject=subject,
+        html=html_content,
+        text=text_content,
+        from_email=from_email,
+    )
+    if res["success"]:
         logger.info(f"Patient welcome email successfully sent to {clean_email}")
         return {"success": True, "message": f"Welcome email sent to {clean_email}", "error": None}
-    except Exception as exc:
-        err_msg = str(exc)
-        logger.error(f"Failed to send patient welcome email to {clean_email}: {err_msg}", exc_info=True)
-        return {"success": False, "message": f"Could not send email to {clean_email}.", "error": err_msg}
+    return {"success": False, "message": f"Could not send email to {clean_email}.", "error": res.get("error")}
 
 
 def send_patient_welcome_email_async(**kwargs):
@@ -745,14 +846,8 @@ def send_lab_report_email(order, recipient_email: str = None) -> dict:
     result_notes = order.result_notes or "Results have been reviewed and validated by CareFlow Diagnostic Pathology."
     completed_date = order.completed_at.strftime("%B %d, %Y at %I:%M %p") if order.completed_at else "Recently Completed"
 
-    host_user = getattr(settings, "EMAIL_HOST_USER", "").strip()
-    default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip()
-    if default_from and "<" in default_from:
-        from_email = default_from
-    elif host_user:
-        from_email = f"CareFlow Laboratory <{host_user}>"
-    else:
-        from_email = "CareFlow Laboratory <noreply@careflow-hms.com>"
+    default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow-HMS <onboarding@resend.dev>"
+    from_email = default_from
 
     subject = f"Diagnostic Test Report Ready: {test_name} ({order_id})"
     portal_url = "http://localhost:3000/patient/lab-tests"
@@ -865,33 +960,32 @@ Sign in to the CareFlow portal to view or download your verified clinical report
 CareFlow Hospital Management System
 """
 
-    try:
-        msg = EmailMultiAlternatives(
-            subject=subject,
-            body=text_content,
-            from_email=from_email,
-            to=[clean_email],
-        )
-        msg.attach_alternative(html_content, "text/html")
+    attachments = []
+    if order.report_file:
+        try:
+            order.report_file.open("rb")
+            file_content = order.report_file.read()
+            filename = os.path.basename(order.report_file.name)
+            mime_type, _ = mimetypes.guess_type(filename)
+            attachments.append({
+                "filename": filename,
+                "content": file_content,
+            })
+        except Exception as file_err:
+            logger.warning(f"Could not read report file for email: {file_err}")
 
-        # Attach report file if available on disk
-        if order.report_file:
-            try:
-                order.report_file.open("rb")
-                file_content = order.report_file.read()
-                filename = os.path.basename(order.report_file.name)
-                mime_type, _ = mimetypes.guess_type(filename)
-                msg.attach(filename, file_content, mime_type or "application/octet-stream")
-            except Exception as file_err:
-                logger.warning(f"Could not attach report file to email: {file_err}")
-
-        msg.send(fail_silently=False)
+    res = send_resend_email(
+        to=clean_email,
+        subject=subject,
+        html=html_content,
+        text=text_content,
+        from_email=from_email,
+        attachments=attachments,
+    )
+    if res["success"]:
         logger.info(f"Lab report email successfully sent to {clean_email} for order {order_id}")
         return {"success": True, "message": f"Diagnostic report sent to {clean_email}", "error": None}
-    except Exception as exc:
-        err_msg = str(exc)
-        logger.error(f"Failed to send lab report email to {clean_email}: {err_msg}", exc_info=True)
-        return {"success": False, "message": f"Could not send email to {clean_email}.", "error": err_msg}
+    return {"success": False, "message": f"Could not send email to {clean_email}.", "error": res.get("error")}
 
 
 def send_lab_report_email_async(**kwargs):
@@ -920,14 +1014,8 @@ def send_appointment_confirmation_email(appointment, recipient_email: str = None
     apt_time = appointment.appointment_time.strftime("%I:%M %p") if hasattr(appointment.appointment_time, "strftime") else str(appointment.appointment_time)
     reason = appointment.reason_for_visit or "Standard Consultation"
 
-    host_user = getattr(settings, "EMAIL_HOST_USER", "").strip()
-    default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip()
-    if default_from and "<" in default_from:
-        from_email = default_from
-    elif host_user:
-        from_email = f"CareFlow Appointments <{host_user}>"
-    else:
-        from_email = "CareFlow Appointments <noreply@careflow-hms.com>"
+    default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow-HMS <onboarding@resend.dev>"
+    from_email = default_from
 
     subject = f"Appointment Confirmed with {doctor_name} on {apt_date} ({apt_id})"
     portal_url = "http://localhost:3000/patient/appointments"
@@ -1039,22 +1127,17 @@ Manage your appointment in the portal:
 CareFlow Hospital Management System
 """
 
-    try:
-        msg = EmailMultiAlternatives(
-            subject=subject,
-            body=text_content,
-            from_email=from_email,
-            to=[clean_email],
-        )
-        msg.attach_alternative(html_content, "text/html")
-        msg.send(fail_silently=False)
-
+    res = send_resend_email(
+        to=clean_email,
+        subject=subject,
+        html=html_content,
+        text=text_content,
+        from_email=from_email,
+    )
+    if res["success"]:
         logger.info(f"Appointment confirmation email successfully sent to {clean_email} for {apt_id}")
         return {"success": True, "message": f"Appointment confirmation sent to {clean_email}", "error": None}
-    except Exception as exc:
-        err_msg = str(exc)
-        logger.error(f"Failed to send appointment confirmation email to {clean_email}: {err_msg}", exc_info=True)
-        return {"success": False, "message": f"Could not send email to {clean_email}.", "error": err_msg}
+    return {"success": False, "message": f"Could not send email to {clean_email}.", "error": res.get("error")}
 
 
 def send_appointment_confirmation_email_async(**kwargs):
@@ -1090,14 +1173,8 @@ def send_prescription_notification_email(prescription, recipient_email: str = No
         instructions = getattr(prescription, "instructions", None) or "Take medications strictly as instructed."
         portal_url = "http://localhost:3000/patient/prescriptions"
 
-        host_user = getattr(settings, "EMAIL_HOST_USER", "").strip()
-        default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip()
-        if default_from and "<" in default_from:
-            from_email = default_from
-        elif host_user:
-            from_email = f"CareFlow Pharmacy <{host_user}>"
-        else:
-            from_email = "CareFlow Pharmacy <noreply@careflow-hms.com>"
+        default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow-HMS <onboarding@resend.dev>"
+        from_email = default_from
 
         subject = f"New Medical Prescription Issued: {rx_id} by {doctor_name}"
 
@@ -1200,11 +1277,17 @@ View and order medications in the patient portal:
 {portal_url}
 """
 
-        msg = EmailMultiAlternatives(subject=subject, body=text_content, from_email=from_email, to=[clean_email])
-        msg.attach_alternative(html_content, "text/html")
-        msg.send(fail_silently=False)
-        logger.info(f"Prescription notification email sent to {clean_email} for {rx_id}")
-        return {"success": True, "message": f"Prescription notification sent to {clean_email}", "error": None}
+        res = send_resend_email(
+            to=clean_email,
+            subject=subject,
+            html=html_content,
+            text=text_content,
+            from_email=from_email,
+        )
+        if res["success"]:
+            logger.info(f"Prescription notification email sent to {clean_email} for {rx_id}")
+            return {"success": True, "message": f"Prescription notification sent to {clean_email}", "error": None}
+        return {"success": False, "message": "Could not send email.", "error": res.get("error")}
     except Exception as exc:
         err_msg = str(exc)
         logger.error(f"Failed to send prescription notification: {err_msg}", exc_info=True)
@@ -1234,8 +1317,8 @@ def send_medicine_dispense_email(dispense, recipient_email: str = None) -> dict:
         patient_name = f"{getattr(patient, 'first_name', '')} {getattr(patient, 'last_name', '')}".strip() or "Valued Patient"
         dispense_id = getattr(dispense, "dispense_id", "DSP-PENDING")
         total_amt = f"₹{float(getattr(dispense, 'total_amount', 0) or 0):.2f}"
-        host_user = getattr(settings, "EMAIL_HOST_USER", "").strip()
-        from_email = f"CareFlow Pharmacy <{host_user}>" if host_user else "CareFlow Pharmacy <noreply@careflow-hms.com>"
+        default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow-HMS <onboarding@resend.dev>"
+        from_email = default_from
 
         subject = f"Medications Dispensed Successfully — Ref #{dispense_id}"
 
@@ -1258,9 +1341,32 @@ Dispensed Medications:
 
 Thank you for utilizing CareFlow Hospital Dispensary.
 """
-        msg = EmailMultiAlternatives(subject=subject, body=text_content, from_email=from_email, to=[clean_email])
-        msg.send(fail_silently=False)
-        return {"success": True, "message": f"Dispense notification sent to {clean_email}", "error": None}
+        html_content = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Medications Dispensed</title></head>
+<body style="margin: 0; padding: 20px; background-color: #0b1120; font-family: sans-serif; color: #f1f5f9;">
+  <div style="max-width: 560px; margin: 0 auto; background: #131d33; padding: 24px; border-radius: 12px; border: 1px solid rgba(34, 211, 238, 0.2);">
+    <h2 style="color: #22d3ee; margin-top: 0;">CareFlow Pharmacy Dispensation Receipt</h2>
+    <p><strong>Patient:</strong> {patient_name}</p>
+    <p><strong>Dispense ID:</strong> {dispense_id}</p>
+    <p><strong>Total Amount:</strong> {total_amt}</p>
+    <div style="background: #0b1329; padding: 14px; border-radius: 8px; margin: 16px 0;">
+      <pre style="color: #cbd5e1; margin: 0; font-family: monospace;">{items_summary}</pre>
+    </div>
+    <p style="font-size: 13px; color: #94a3b8;">Thank you for utilizing CareFlow Hospital Dispensary.</p>
+  </div>
+</body>
+</html>"""
+        res = send_resend_email(
+            to=clean_email,
+            subject=subject,
+            html=html_content,
+            text=text_content,
+            from_email=from_email,
+        )
+        if res["success"]:
+            return {"success": True, "message": f"Dispense notification sent to {clean_email}", "error": None}
+        return {"success": False, "message": "Could not send email.", "error": res.get("error")}
     except Exception as exc:
         err_msg = str(exc)
         logger.error(f"Failed to send dispense email: {err_msg}", exc_info=True)
@@ -1306,8 +1412,8 @@ def send_payment_receipt_email(payment, recipient_email: str = None) -> dict:
         txn_ref = getattr(payment, "transaction_reference", None) or "N/A"
         pay_date = payment.payment_date.strftime("%B %d, %Y at %I:%M %p") if hasattr(payment.payment_date, "strftime") else str(payment.payment_date)
 
-        host_user = getattr(settings, "EMAIL_HOST_USER", "").strip()
-        from_email = f"CareFlow Billing <{host_user}>" if host_user else "CareFlow Billing <noreply@careflow-hms.com>"
+        default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow-HMS <onboarding@resend.dev>"
+        from_email = default_from
 
         subject = f"Official Payment Receipt: #{receipt_no} for Invoice #{bill_no}"
         portal_url = "http://localhost:3000/patient/bills"
@@ -1399,11 +1505,17 @@ Thank you for your payment.
 View complete statement at: {portal_url}
 """
 
-        msg = EmailMultiAlternatives(subject=subject, body=text_content, from_email=from_email, to=[clean_email])
-        msg.attach_alternative(html_content, "text/html")
-        msg.send(fail_silently=False)
-        logger.info(f"Payment receipt email sent to {clean_email} for receipt {receipt_no}")
-        return {"success": True, "message": f"Payment receipt sent to {clean_email}", "error": None}
+        res = send_resend_email(
+            to=clean_email,
+            subject=subject,
+            html=html_content,
+            text=text_content,
+            from_email=from_email,
+        )
+        if res["success"]:
+            logger.info(f"Payment receipt email sent to {clean_email} for receipt {receipt_no}")
+            return {"success": True, "message": f"Payment receipt sent to {clean_email}", "error": None}
+        return {"success": False, "message": "Could not send email.", "error": res.get("error")}
     except Exception as exc:
         err_msg = str(exc)
         logger.error(f"Failed to send payment receipt: {err_msg}", exc_info=True)
