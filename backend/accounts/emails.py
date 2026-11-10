@@ -1,14 +1,13 @@
 import base64
+import email.utils
 import json
 import logging
 import mimetypes
 import os
-import smtplib
 import threading
 import urllib.error
 import urllib.request
 from django.conf import settings
-from django.core.mail import EmailMultiAlternatives
 from django.utils.html import strip_tags
 from .email_validation import (
     MSG_EMAIL_ACCEPTED_BY_SMTP,
@@ -19,28 +18,58 @@ from .email_validation import (
 logger = logging.getLogger(__name__)
 
 
-def send_resend_email(
+def send_brevo_email(
     to,
     subject: str,
     html: str,
     text: str = None,
     from_email: str = None,
+    from_name: str = None,
     reply_to: str = None,
+    reply_name: str = None,
     attachments: list = None,
 ) -> dict:
     """
-    Dispatches an email via the Resend REST API (POST https://api.resend.com/emails).
-    Requires RESEND_API_KEY environment variable.
-    Returns dict: {"success": bool, "status": str, "message": str, "error": Optional[str], "is_recipient_error": bool, "id": Optional[str]}
+    Dispatches a transactional email via the official Brevo REST API (POST https://api.brevo.com/v3/smtp/email).
+    Requires BREVO_API_KEY and BREVO_SENDER_EMAIL environment variables.
+    Returns dict: {
+        "success": bool,
+        "status": str,
+        "message": str,
+        "error": Optional[str],
+        "is_recipient_error": bool,
+        "id": Optional[str]
+    }
     """
+    # 1. Normalize and validate recipient(s)
+    to_list = []
     if isinstance(to, str):
-        recipients = [to.strip().lower()] if to.strip() else []
+        cleaned = to.strip().lower()
+        if cleaned:
+            to_list = [{"email": cleaned}]
+    elif isinstance(to, dict):
+        email_val = str(to.get("email", "")).strip().lower()
+        if email_val:
+            rec = {"email": email_val}
+            if to.get("name"):
+                rec["name"] = str(to["name"]).strip()
+            to_list = [rec]
     elif isinstance(to, (list, tuple)):
-        recipients = [str(r).strip().lower() for r in to if str(r).strip()]
-    else:
-        recipients = []
+        for item in to:
+            if isinstance(item, str) and item.strip():
+                to_list.append({"email": item.strip().lower()})
+            elif isinstance(item, dict) and item.get("email"):
+                rec = {"email": str(item["email"]).strip().lower()}
+                if item.get("name"):
+                    rec["name"] = str(item["name"]).strip()
+                to_list.append(rec)
+            elif isinstance(item, (list, tuple)) and len(item) >= 1 and item[0]:
+                rec = {"email": str(item[0]).strip().lower()}
+                if len(item) >= 2 and item[1]:
+                    rec["name"] = str(item[1]).strip()
+                to_list.append(rec)
 
-    if not recipients:
+    if not to_list:
         return {
             "success": False,
             "status": "FAILED",
@@ -50,23 +79,64 @@ def send_resend_email(
             "id": None,
         }
 
-    clean_to = recipients[0] if len(recipients) == 1 else recipients
+    clean_to = to_list[0]["email"] if len(to_list) == 1 else [r["email"] for r in to_list]
 
-    # Determine sender address
-    default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow-HMS <onboarding@resend.dev>"
-    sender = from_email.strip() if (from_email and from_email.strip()) else default_from
-    if "<" not in sender and "@" in sender:
-        sender = f"CareFlow-HMS <{sender}>"
+    # 2. Determine and validate sender
+    brevo_sender_email = getattr(settings, "BREVO_SENDER_EMAIL", "").strip()
+    brevo_sender_name = getattr(settings, "BREVO_SENDER_NAME", "").strip() or "CareFlow HMS"
 
-    # Determine reply-to
-    configured_reply_to = getattr(settings, "RESEND_REPLY_TO", "").strip() or "charanadabala16@gmail.com"
-    reply_address = reply_to.strip() if (reply_to and reply_to.strip()) else configured_reply_to
+    sender_email = ""
+    sender_name = from_name or brevo_sender_name
 
-    # Prepare attachments if any
+    if from_email and from_email.strip():
+        parsed_name, parsed_email = email.utils.parseaddr(from_email.strip())
+        sender_email = parsed_email or from_email.strip()
+        if parsed_name and not from_name:
+            sender_name = parsed_name
+    elif brevo_sender_email:
+        sender_email = brevo_sender_email
+    else:
+        default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip()
+        if default_from:
+            parsed_name, parsed_email = email.utils.parseaddr(default_from)
+            sender_email = parsed_email or default_from
+            if parsed_name and not from_name:
+                sender_name = parsed_name
+
+    if not sender_email:
+        logger.error(
+            "Brevo sender email is not configured (BREVO_SENDER_EMAIL). Unable to dispatch email to %s.",
+            clean_to,
+        )
+        return {
+            "success": False,
+            "status": "FAILED",
+            "message": MSG_SMTP_CONNECTION_FAILURE,
+            "error": "Brevo sender email is not configured.",
+            "is_recipient_error": False,
+            "id": None,
+        }
+
+    # 3. Determine reply-to
+    reply_email = ""
+    reply_display_name = reply_name or sender_name
+
+    configured_reply_to = getattr(settings, "BREVO_REPLY_TO_EMAIL", "").strip()
+    if reply_to and reply_to.strip():
+        parsed_rname, parsed_remail = email.utils.parseaddr(reply_to.strip())
+        reply_email = parsed_remail or reply_to.strip()
+        if parsed_rname and not reply_name:
+            reply_display_name = parsed_rname
+    elif configured_reply_to:
+        reply_email = configured_reply_to
+    else:
+        reply_email = sender_email
+
+    # 4. Prepare attachments if any
     attachments_payload = []
     if attachments:
         for att in attachments:
-            fname = att.get("filename", "attachment")
+            fname = att.get("name") or att.get("filename", "attachment")
             content = att.get("content", b"")
             if isinstance(content, bytes):
                 content_b64 = base64.b64encode(content).decode("ascii")
@@ -79,49 +149,59 @@ def send_resend_email(
             else:
                 content_b64 = ""
             attachments_payload.append({
-                "filename": fname,
+                "name": fname,
                 "content": content_b64,
             })
 
+    # 5. Build Brevo API payload
     payload = {
-        "from": sender,
-        "to": recipients,
+        "sender": {
+            "name": sender_name,
+            "email": sender_email,
+        },
+        "to": to_list,
         "subject": subject,
-        "html": html,
+        "htmlContent": html,
     }
     if text:
-        payload["text"] = text
-    if reply_address:
-        payload["reply_to"] = reply_address
+        payload["textContent"] = text
+    if reply_email:
+        payload["replyTo"] = {
+            "email": reply_email,
+            "name": reply_display_name,
+        }
     if attachments_payload:
-        payload["attachments"] = attachments_payload
+        payload["attachment"] = attachments_payload
 
-    api_key = getattr(settings, "RESEND_API_KEY", "").strip()
-    api_url = getattr(settings, "RESEND_API_URL", "https://api.resend.com/emails").strip()
+    # 6. Validate API credentials
+    api_key = getattr(settings, "BREVO_API_KEY", "").strip() or getattr(settings, "RESEND_API_KEY", "").strip()
+    api_url = getattr(settings, "BREVO_API_URL", "https://api.brevo.com/v3/smtp/email").strip()
     timeout = getattr(settings, "EMAIL_TIMEOUT", 15)
 
     if not api_key:
         logger.error(
-            "Resend API key is not configured (RESEND_API_KEY). Unable to dispatch email to %s.",
+            "Brevo API key is not configured (BREVO_API_KEY). Unable to dispatch email to %s.",
             clean_to,
         )
         return {
             "success": False,
             "status": "FAILED",
             "message": MSG_SMTP_CONNECTION_FAILURE,
-            "error": "Resend API key is not configured.",
+            "error": "Brevo API key is not configured.",
             "is_recipient_error": False,
             "id": None,
         }
 
+    # 7. Execute HTTP request to Brevo API
     try:
         encoded_data = json.dumps(payload).encode("utf-8")
         req = urllib.request.Request(
             url=api_url,
             data=encoded_data,
             headers={
-                "Authorization": f"Bearer {api_key}",
+                "api-key": api_key,
                 "Content-Type": "application/json",
+                "Accept": "application/json",
                 "User-Agent": "CareFlow-HMS/1.0",
             },
             method="POST",
@@ -130,16 +210,16 @@ def send_resend_email(
         with urllib.request.urlopen(req, timeout=timeout) as response:
             resp_body = response.read().decode("utf-8")
             resp_json = json.loads(resp_body) if resp_body else {}
-            resend_id = resp_json.get("id")
+            brevo_id = resp_json.get("messageId") or resp_json.get("id")
 
-            logger.info("Email successfully sent via Resend API to %s (Resend ID: %s)", clean_to, resend_id)
+            logger.info("Email successfully accepted by Brevo API for %s (Message ID: %s)", clean_to, brevo_id)
             return {
                 "success": True,
                 "status": "ACCEPTED",
                 "message": MSG_EMAIL_ACCEPTED_BY_SMTP,
                 "error": None,
                 "is_recipient_error": False,
-                "id": resend_id,
+                "id": brevo_id,
             }
 
     except urllib.error.HTTPError as exc:
@@ -147,50 +227,59 @@ def send_resend_email(
             err_body = exc.read().decode("utf-8")
             err_json = json.loads(err_body)
             api_message = err_json.get("message", "")
-            err_name = err_json.get("name", "http_error")
+            api_code = err_json.get("code", "http_error")
         except Exception:
             err_body = ""
             api_message = str(exc)
-            err_name = "http_error"
+            api_code = "http_error"
 
         status_code = exc.code
         logger.error(
-            "Resend API HTTP error %d for recipient %s: %s - %s",
+            "Brevo API HTTP error %d for recipient %s: [%s] %s",
             status_code,
             clean_to,
-            err_name,
+            api_code,
             api_message,
         )
 
-        is_recipient_error = status_code in (400, 403, 422) or any(
+        is_recipient_error = status_code in (400, 422) and any(
             w in api_message.lower() for w in (
                 "recipient",
                 "email",
-                "invalid",
+                "invalid email",
                 "deliver",
-                "verify",
-                "only send",
-                "testing emails",
-                "resend.com",
+                "mailbox",
             )
         )
 
-        user_friendly_message = (
-            api_message if is_recipient_error and api_message
-            else MSG_SMTP_CONNECTION_FAILURE
-        )
+        if status_code == 401:
+            user_friendly_message = "Email service authentication failed. Please contact administrator."
+        elif status_code == 429:
+            user_friendly_message = "Email sending limit reached. Please try again later."
+        elif status_code == 400:
+            if is_recipient_error:
+                user_friendly_message = api_message or MSG_SMTP_IMMEDIATE_REJECTION
+            else:
+                user_friendly_message = api_message if ("sender" in api_message.lower() or "unauthorized" in api_message.lower()) else MSG_SMTP_CONNECTION_FAILURE
+        elif status_code == 403:
+            user_friendly_message = api_message if ("sender" in api_message.lower() or "domain" in api_message.lower()) else MSG_SMTP_CONNECTION_FAILURE
+        else:
+            user_friendly_message = (
+                api_message if is_recipient_error and api_message
+                else MSG_SMTP_CONNECTION_FAILURE
+            )
 
         return {
             "success": False,
             "status": "FAILED",
             "message": user_friendly_message,
-            "error": f"HTTP {status_code}: {api_message or str(exc)}",
+            "error": f"HTTP {status_code}: [{api_code}] {api_message or str(exc)}",
             "is_recipient_error": is_recipient_error,
             "id": None,
         }
 
     except urllib.error.URLError as exc:
-        logger.error("Resend API connection error for recipient %s: %s", clean_to, exc.reason)
+        logger.error("Brevo API connection error for recipient %s: %s", clean_to, exc.reason)
         return {
             "success": False,
             "status": "FAILED",
@@ -201,7 +290,7 @@ def send_resend_email(
         }
 
     except TimeoutError:
-        logger.error("Resend API request timed out for recipient %s", clean_to)
+        logger.error("Brevo API request timed out for recipient %s", clean_to)
         return {
             "success": False,
             "status": "FAILED",
@@ -212,7 +301,7 @@ def send_resend_email(
         }
 
     except Exception as exc:
-        logger.error("Unexpected error calling Resend API for %s: %s", clean_to, exc, exc_info=True)
+        logger.error("Unexpected error calling Brevo API for %s: %s", clean_to, exc, exc_info=True)
         return {
             "success": False,
             "status": "FAILED",
@@ -223,14 +312,20 @@ def send_resend_email(
         }
 
 
+def send_resend_email(*args, **kwargs):
+    """
+    Compatibility alias for send_brevo_email.
+    Routes legacy calls to the active Brevo Transactional Email API.
+    """
+    return send_brevo_email(*args, **kwargs)
+
+
 def send_otp_email(email: str, otp_code: str, user_name: str = "Valued Patient", purpose: str = "registration") -> dict:
     """
-    Sends a beautifully styled HTML email with a 6-digit OTP verification code via Resend Email API.
-    Returns dict: {"success": bool, "status": str, "message": str, "error": Optional[str], "is_recipient_error": bool}
+    Sends a beautifully styled HTML email with a 6-digit OTP verification code via Brevo Transactional Email API.
+    Returns dict: {"success": bool, "status": str, "message": str, "error": Optional[str], "is_recipient_error": bool, "id": Optional[str]}
     """
     clean_email = email.strip().lower()
-    default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow-HMS <onboarding@resend.dev>"
-    from_email = default_from
 
     purpose_titles = {
         "registration": "Confirm Your Email Address",
@@ -239,9 +334,10 @@ def send_otp_email(email: str, otp_code: str, user_name: str = "Valued Patient",
     }
     purpose_title = purpose_titles.get(purpose, "Email Verification Code")
 
-    subject = f"Your CareFlow-HMS Verification Code: {otp_code}"
+    # User requirement: Sender name: CareFlow HMS, Subject: CareFlow Email Verification
+    subject = "CareFlow Email Verification"
 
-    # Formatted OTP representation (e.g. 3 digits - 3 digits or spaced)
+    # Formatted OTP representation
     formatted_otp = f"{otp_code[:3]} {otp_code[3:]}"
 
     html_content = f"""<!DOCTYPE html>
@@ -351,12 +447,11 @@ CareFlow Hospital Management System
 Secure Clinical & Patient Portal
 """
 
-    return send_resend_email(
+    return send_brevo_email(
         to=clean_email,
         subject=subject,
         html=html_content,
         text=text_content,
-        from_email=from_email,
     )
 
 
@@ -467,7 +562,7 @@ CareFlow Hospital Management System
 Secure Clinical & Patient Portal
 """
 
-    res = send_resend_email(
+    res = send_brevo_email(
         to=clean_email,
         subject=subject,
         html=html_content,
@@ -655,7 +750,7 @@ CareFlow Hospital Management System
 Secure Clinical & Staff Portal
 """
 
-    res = send_resend_email(
+    res = send_brevo_email(
         to=clean_email,
         subject=subject,
         html=html_content,
@@ -791,7 +886,7 @@ Sign in to your patient portal to book doctor appointments, view prescriptions, 
 Thank you for choosing CareFlow-HMS.
 """
 
-    res = send_resend_email(
+    res = send_brevo_email(
         to=clean_email,
         subject=subject,
         html=html_content,
@@ -983,7 +1078,7 @@ CareFlow Hospital Management System
         except Exception as file_err:
             logger.warning(f"Could not read report file for email: {file_err}")
 
-    res = send_resend_email(
+    res = send_brevo_email(
         to=clean_email,
         subject=subject,
         html=html_content,
@@ -1136,7 +1231,7 @@ Manage your appointment in the portal:
 CareFlow Hospital Management System
 """
 
-    res = send_resend_email(
+    res = send_brevo_email(
         to=clean_email,
         subject=subject,
         html=html_content,
@@ -1286,7 +1381,7 @@ View and order medications in the patient portal:
 {portal_url}
 """
 
-        res = send_resend_email(
+        res = send_brevo_email(
             to=clean_email,
             subject=subject,
             html=html_content,
@@ -1366,7 +1461,7 @@ Thank you for utilizing CareFlow Hospital Dispensary.
   </div>
 </body>
 </html>"""
-        res = send_resend_email(
+        res = send_brevo_email(
             to=clean_email,
             subject=subject,
             html=html_content,
@@ -1514,7 +1609,7 @@ Thank you for your payment.
 View complete statement at: {portal_url}
 """
 
-        res = send_resend_email(
+        res = send_brevo_email(
             to=clean_email,
             subject=subject,
             html=html_content,

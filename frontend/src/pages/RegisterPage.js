@@ -322,8 +322,13 @@ const RegisterPage = () => {
           } else if (
             lowerEmailErr.includes('testing emails') ||
             lowerEmailErr.includes('resend.com') ||
+            lowerEmailErr.includes('brevo.com') ||
+            lowerEmailErr.includes('brevo') ||
             lowerEmailErr.includes('only send testing') ||
             lowerEmailErr.includes('verify a domain') ||
+            lowerEmailErr.includes('sender email is not valid') ||
+            lowerEmailErr.includes('sender domain') ||
+            lowerEmailErr.includes('not authorized') ||
             lowerEmailErr.includes('recipient restriction')
           ) {
             errorMsg = rawEmail;

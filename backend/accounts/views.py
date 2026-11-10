@@ -287,22 +287,38 @@ class EmailConfigStatusView(APIView):
 
     @extend_schema(
         summary="Check email service configuration",
-        description="Verifies whether Resend API credentials are set in the backend environment.",
+        description="Verifies whether Brevo API credentials are set in the backend environment.",
         responses={200: OpenApiTypes.OBJECT},
     )
     def get(self, request):
+        brevo_key = getattr(settings, "BREVO_API_KEY", "").strip()
         resend_key = getattr(settings, "RESEND_API_KEY", "").strip()
-        default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip() or "CareFlow-HMS <onboarding@resend.dev>"
-        reply_to = getattr(settings, "RESEND_REPLY_TO", "").strip() or "charanadabala16@gmail.com"
-        is_configured = bool(resend_key)
+        effective_key = brevo_key or resend_key
+
+        brevo_sender = getattr(settings, "BREVO_SENDER_EMAIL", "").strip()
+        brevo_name = getattr(settings, "BREVO_SENDER_NAME", "CareFlow HMS").strip()
+        default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "").strip()
+        sender_account = f"{brevo_name} <{brevo_sender}>" if brevo_sender else default_from
+
+        reply_to = (
+            getattr(settings, "BREVO_REPLY_TO_EMAIL", "").strip()
+            or getattr(settings, "RESEND_REPLY_TO", "").strip()
+            or brevo_sender
+            or "charanadabala16@gmail.com"
+        )
+        is_configured = bool(effective_key and (brevo_sender or default_from))
+        provider_name = "Brevo Transactional Email API" if brevo_key or not resend_key else "Resend Email API"
 
         return Response({
             "is_configured": is_configured,
-            "provider": "Resend Email API",
-            "sender_account": default_from,
+            "provider": provider_name,
+            "sender_account": sender_account,
+            "sender_email": brevo_sender,
+            "sender_name": brevo_name,
             "reply_to": reply_to,
-            "api_configured": is_configured,
-            "smtp_host": "api.resend.com (HTTPS Port 443)",
+            "api_configured": bool(effective_key),
+            "api_host": "api.brevo.com (HTTPS Port 443)",
+            "smtp_host": "api.brevo.com (HTTPS Port 443)",
             "use_tls": True,
         })
 

@@ -261,24 +261,24 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 
-# Resend Email API Configuration
-RESEND_API_KEY = os.getenv("RESEND_API_KEY", "").strip()
-RESEND_API_URL = os.getenv("RESEND_API_URL", "https://api.resend.com/emails").strip()
-RESEND_REPLY_TO = os.getenv("RESEND_REPLY_TO", "charanadabala16@gmail.com").strip()
+# Brevo Transactional Email API Configuration
+BREVO_API_KEY = os.getenv("BREVO_API_KEY", "").strip()
+BREVO_API_URL = os.getenv("BREVO_API_URL", "https://api.brevo.com/v3/smtp/email").strip()
+BREVO_SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL", "").strip()
+BREVO_SENDER_NAME = os.getenv("BREVO_SENDER_NAME", "CareFlow HMS").strip()
+BREVO_REPLY_TO_EMAIL = os.getenv("BREVO_REPLY_TO_EMAIL", "").strip()
+BREVO_REPLY_TO_NAME = os.getenv("BREVO_REPLY_TO_NAME", "CareFlow HMS").strip()
 DEFAULT_FROM_EMAIL = os.getenv(
     "DEFAULT_FROM_EMAIL",
-    "CareFlow-HMS <onboarding@resend.dev>"
+    f"{BREVO_SENDER_NAME} <{BREVO_SENDER_EMAIL}>" if BREVO_SENDER_EMAIL else f"{BREVO_SENDER_NAME} <noreply@careflow.com>"
 ).strip()
 EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "15"))
 
-# Legacy Email Configuration (Preserved for compatibility)
-EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
-EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
-EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
-EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() in ("true", "1", "yes")
-EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False").lower() in ("true", "1", "yes")
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "").strip()
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "").replace(" ", "").strip()
+# Fallback / transitional settings (Brevo is active provider; SMTP disabled)
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "").strip()
+RESEND_API_URL = os.getenv("RESEND_API_URL", "https://api.resend.com/emails").strip()
+RESEND_REPLY_TO = os.getenv("RESEND_REPLY_TO", "charanadabala16@gmail.com").strip()
 
 # Real-Time Email Address Validation & Mailbox Verification Provider
 EMAIL_VERIFICATION_PROVIDER = os.getenv("EMAIL_VERIFICATION_PROVIDER", "abstractapi").lower().strip()
