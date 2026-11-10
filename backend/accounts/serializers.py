@@ -52,7 +52,8 @@ class RegisterSerializer(serializers.Serializer):
             raise serializers.ValidationError("Username must be at least 3 characters long.")
         if not re.match(r"^[a-zA-Z0-9_.-]+$", clean):
             raise serializers.ValidationError("Username can only contain letters, numbers, underscores, dots, and hyphens.")
-        if User.objects.filter(username__iexact=clean, is_active=True).exists():
+        target_email = str(self.initial_data.get("email", "")).strip().lower()
+        if User.objects.filter(username__iexact=clean).exclude(email__iexact=target_email).exists():
             raise serializers.ValidationError("This username is already taken. Please choose another username.")
         return clean
 

@@ -33,7 +33,7 @@ export function getEmailValidationToastMessage(status, suggestedEmail = null) {
     case EMAIL_VALIDATION_STATES.POSSIBLE_TYPO:
       return suggestedEmail ? `Did you mean ${suggestedEmail}?` : 'Please check your email domain spelling.';
     case EMAIL_VALIDATION_STATES.UNKNOWN:
-      return "We couldn't verify this email address. Please try again.";
+      return 'Email format looks valid. Mailbox verification is unavailable.';
     case EMAIL_VALIDATION_STATES.CHECKING:
       return 'Checking email address...';
     case EMAIL_VALIDATION_STATES.VALID:
@@ -118,7 +118,8 @@ export function useRealtimeEmailValidation(email = '', options = {}) {
         setMessage(response.message || '');
         setSuggestedEmail(resSuggested);
         setDetails(response.details || null);
-        setAllowContinue(response.allow_continue !== undefined ? response.allow_continue : (resStatus === EMAIL_VALIDATION_STATES.VALID));
+        const canContinue = response.allow_continue !== undefined ? response.allow_continue : (resStatus === EMAIL_VALIDATION_STATES.VALID);
+        setAllowContinue(canContinue);
 
         if (showToastOnError && [
           EMAIL_VALIDATION_STATES.INVALID_FORMAT,
@@ -128,9 +129,11 @@ export function useRealtimeEmailValidation(email = '', options = {}) {
           EMAIL_VALIDATION_STATES.POSSIBLE_TYPO,
           EMAIL_VALIDATION_STATES.UNKNOWN,
         ].includes(resStatus)) {
-          const toastMsg = getEmailValidationToastMessage(resStatus, resSuggested);
+          const toastMsg = response.message || getEmailValidationToastMessage(resStatus, resSuggested);
           if (resStatus === EMAIL_VALIDATION_STATES.UNKNOWN) {
-            toast.warning(toastMsg, 'Email Verification');
+            if (!canContinue) {
+              toast.warning(toastMsg, 'Email Verification');
+            }
           } else {
             toast.error(toastMsg, 'Invalid Email');
           }
@@ -140,12 +143,12 @@ export function useRealtimeEmailValidation(email = '', options = {}) {
 
         // Graceful fallback for network disruptions
         setStatus(EMAIL_VALIDATION_STATES.UNKNOWN);
-        setMessage("We couldn't verify this email address. Please try again.");
+        setMessage('Email format looks valid. Mailbox verification is unavailable.');
         setSuggestedEmail(null);
         setAllowContinue(true); // Do not deadlock users if network dropped
 
         if (showToastOnError) {
-          toast.warning("We couldn't verify this email address. Please try again.", 'Verification Timeout');
+          toast.warning('Email format looks valid. Mailbox verification is unavailable.', 'Verification Notice');
         }
       }
     },

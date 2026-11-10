@@ -398,3 +398,83 @@ class CareFlowRegistrationAndResendIntegrationTests(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertIn("access", resp.data)
         self.assertIn("refresh", resp.data)
+
+    def test_validate_email_unconfigured_provider_returns_neutral_unknown(self):
+        """
+        When EMAIL_VERIFICATION_API_KEY is unconfigured, validate-email returns:
+        status='UNKNOWN', is_valid=None, allow_continue=True,
+        and message='Email format looks valid. Mailbox verification is unavailable.'
+        """
+        resp = self.client.post("/api/auth/validate-email/", {
+            "email": "dekisugi@gmail.com",
+            "check_mailbox": True,
+        }, format="json")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data["status"], "UNKNOWN")
+        self.assertIsNone(resp.data["is_valid"])
+        self.assertTrue(resp.data["allow_continue"])
+        self.assertEqual(resp.data["message"], "Email format looks valid. Mailbox verification is unavailable.")
+        self.assertTrue(resp.data["details"]["syntax"])
+        self.assertTrue(resp.data["details"]["domain"])
+        self.assertTrue(resp.data["details"]["mx"])
+        self.assertFalse(resp.data["details"]["disposable"])
+        self.assertEqual(resp.data["details"]["mailbox"], "UNKNOWN")
+
+    def test_validate_email_invalid_syntax_blocks_continue(self):
+        resp = self.client.post("/api/auth/validate-email/", {
+            "email": "invalid-email-address",
+        }, format="json")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data["status"], "INVALID_FORMAT")
+        self.assertFalse(resp.data["is_valid"])
+        self.assertFalse(resp.data["allow_continue"])
+        self.assertFalse(resp.data["details"]["syntax"])
+
+    def test_validate_email_disposable_blocks_continue(self):
+        resp = self.client.post("/api/auth/validate-email/", {
+            "email": "tempuser@mailinator.com",
+        }, format="json")
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data["status"], "DISPOSABLE")
+        self.assertFalse(resp.data["is_valid"])
+        self.assertFalse(resp.data["allow_continue"])
+        self.assertTrue(resp.data["details"]["disposable"])
+
+    @patch("urllib.request.urlopen")
+    def test_register_resend_testing_restriction_returns_clear_error(self, mock_urlopen):
+        """
+        When Resend returns HTTP 403 test sender restriction, the registration endpoint returns
+        HTTP 400 Bad Request with the Resend restriction message and does NOT activate the user.
+        """
+        err_message = (
+            "You can only send testing emails to your own email address (charanadabala16@gmail.com). "
+            "To send emails to other recipients, please verify a domain at resend.com/domains, "
+            "and change the from address to an email using this domain."
+        )
+        err_body = json.dumps({
+            "statusCode": 403,
+            "message": err_message,
+            "name": "validation_error"
+        }).encode("utf-8")
+        mock_urlopen.side_effect = urllib.error.HTTPError(
+            url="https://api.resend.com/emails",
+            code=403,
+            msg="Forbidden",
+            hdrs={},
+            fp=io.BytesIO(err_body)
+        )
+
+        resp = self.client.post("/api/auth/register/", self.register_payload, format="json")
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("testing emails to your own email address", str(resp.data.get("email", "")))
+
+        # User is created but unverified (is_active=False)
+        user = User.objects.filter(email=self.register_payload["email"]).first()
+        self.assertIsNotNone(user)
+        self.assertFalse(user.is_active)
+        self.assertFalse(user.profile.is_email_verified)
+        # Patient is NOT created
+        self.assertFalse(Patient.objects.filter(email=self.register_payload["email"]).exists())

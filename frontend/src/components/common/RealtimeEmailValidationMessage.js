@@ -96,11 +96,15 @@ export function RealtimeEmailValidationMessage({
 
   // 6. Unknown / inconclusive result
   if (status === EMAIL_VALIDATION_STATES.UNKNOWN) {
+    const isNeutral = validation.allowContinue !== false;
     return (
-      <div className={`careflow-email-feedback email-feedback-unknown ${className}`}>
-        <AlertTriangle size={13} />
-        <span>{message || "We couldn't verify this email address. Please try again."}</span>
-        {onRetry && (
+      <div
+        className={`careflow-email-feedback ${isNeutral ? 'email-feedback-neutral' : 'email-feedback-unknown'} ${className}`}
+        style={isNeutral ? { color: '#94a3b8' } : undefined}
+      >
+        {isNeutral ? <CheckCircle2 size={13} style={{ color: '#38bdf8' }} /> : <AlertTriangle size={13} />}
+        <span>{message || (isNeutral ? 'Email format looks valid. Mailbox verification is unavailable.' : "We couldn't verify this email address. Please try again.")}</span>
+        {!isNeutral && onRetry && (
           <button
             type="button"
             className="email-retry-btn"

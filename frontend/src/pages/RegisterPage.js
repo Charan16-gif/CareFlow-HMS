@@ -4,6 +4,8 @@ import Logo from '../components/common/Logo';
 import doctorImage from '../assets/doctor-hospital.webp';
 import authService from '../services/authService';
 import { toast } from '../context/ToastContext';
+import { useRealtimeEmailValidation } from '../hooks/useRealtimeEmailValidation';
+import { RealtimeEmailValidationMessage } from '../components/common/RealtimeEmailValidationMessage';
 import {
   User,
   Phone,
@@ -36,6 +38,14 @@ const RegisterPage = () => {
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Real-time email validation hook with debounced checking
+  const emailValidation = useRealtimeEmailValidation(email, {
+    debounceMs: 500,
+    enabled: true,
+    checkMailbox: true,
+    showToastOnError: false,
+  });
 
   // Field touch states for inline feedback
   const [touched, setTouched] = useState({
@@ -196,40 +206,70 @@ const RegisterPage = () => {
       // Check deliverability, domain existence, mailbox, disposable, typo, and service availability
       const isInvalid = valResult.is_valid === false;
       const cannotContinue = valResult.allow_continue === false;
-      const isUnknownService = valResult.status === 'UNKNOWN' && valResult.details?.configured === true;
 
-      if (isInvalid || cannotContinue || isUnknownService) {
+      // If allow_continue is true, permit registration to continue.
+      // If syntax, domain and MX validation pass, do not classify the email as invalid merely because mailbox verification is unavailable.
+      if (cannotContinue || isInvalid) {
         let errorMsg = 'Please enter a valid email address.';
+        let errorTitle = 'Invalid Email';
 
-        if (valResult.status === 'UNKNOWN' || (valResult.status === 'UNKNOWN' && valResult.details?.configured)) {
-          errorMsg = 'Email verification is temporarily unavailable. Please try again later.';
+        if (valResult.details?.syntax === false) {
+          errorMsg = 'Please enter a valid email address.';
+          errorTitle = 'Invalid Email';
+        } else if (valResult.details?.disposable === true || valResult.status === 'DISPOSABLE') {
+          errorMsg = valResult.message || 'Temporary email addresses are not allowed.';
+          errorTitle = 'Disposable Email';
+        } else if (valResult.status === 'POSSIBLE_TYPO') {
+          errorMsg = valResult.suggested_email
+            ? `Did you mean ${valResult.suggested_email}?`
+            : (valResult.message || 'Please check your email domain spelling.');
+          errorTitle = 'Email Typo';
+        } else if (valResult.status === 'MAILBOX_NOT_FOUND') {
+          errorMsg = valResult.message || 'This email address does not exist.';
+          errorTitle = 'Mailbox Not Found';
+        } else if (valResult.status === 'INVALID_DOMAIN') {
+          errorMsg = valResult.message || 'This email domain cannot receive emails.';
+          errorTitle = 'Invalid Domain';
+        } else if (valResult.status === 'UNKNOWN') {
+          errorMsg = valResult.message || 'Email verification is temporarily unavailable. Please try again later.';
+          errorTitle = 'Verification Notice';
         } else if (valResult.message) {
           errorMsg = valResult.message;
-        } else {
-          errorMsg = 'Please enter a valid email address.';
         }
 
-        toast.error(errorMsg, 'Invalid Email');
+        toast.error(errorMsg, errorTitle);
         setIsSubmitting(false);
         // STRICTLY STOP: DO NOT PROCEED TO REGISTER, DO NOT CREATE USER, DO NOT SEND OTP, DO NOT NAVIGATE!
         return;
       }
     } catch (valErr) {
-      let valErrMsg = 'Please enter a valid email address.';
+      let valErrMsg = 'Unable to verify email address. Please try again.';
+      let valErrTitle = 'Validation Error';
+
       if (valErr.response?.data?.email) {
         const rawErr = Array.isArray(valErr.response.data.email)
           ? valErr.response.data.email[0]
           : valErr.response.data.email;
-        if (rawErr.includes('temporarily unavailable') || rawErr.includes('try again later')) {
+        const lowerRawErr = String(rawErr || '').toLowerCase();
+        if (lowerRawErr.includes('already registered')) {
+          valErrMsg = rawErr;
+          valErrTitle = 'Already Registered';
+        } else if (lowerRawErr.includes('temporarily unavailable') || lowerRawErr.includes('try again later')) {
           valErrMsg = 'Email verification is temporarily unavailable. Please try again later.';
+          valErrTitle = 'Service Unavailable';
         } else {
-          valErrMsg = 'Please enter a valid email address.';
+          valErrMsg = rawErr;
+          valErrTitle = 'Invalid Email';
         }
       } else if (valErr.message && (valErr.message.includes('Network Error') || valErr.message.includes('connect') || valErr.message.includes('timeout'))) {
+        valErrMsg = 'Unable to connect to email verification service. Please check your internet connection.';
+        valErrTitle = 'Network Error';
+      } else if (valErr.response?.status >= 500) {
         valErrMsg = 'Email verification is temporarily unavailable. Please try again later.';
+        valErrTitle = 'Service Unavailable';
       }
 
-      toast.error(valErrMsg, 'Invalid Email');
+      toast.error(valErrMsg, valErrTitle);
       setIsSubmitting(false);
       // STRICTLY STOP: DO NOT PROCEED TO REGISTER!
       return;
@@ -274,14 +314,28 @@ const RegisterPage = () => {
           const rawEmail = Array.isArray(err.response.data.email)
             ? err.response.data.email[0]
             : err.response.data.email;
-          if (rawEmail.includes('already registered')) {
+          const lowerEmailErr = String(rawEmail || '').toLowerCase();
+
+          if (lowerEmailErr.includes('already registered')) {
             errorMsg = rawEmail;
             errorTitle = 'Already Registered';
-          } else if (rawEmail.includes('temporarily unavailable') || rawEmail.includes('try again later')) {
+          } else if (
+            lowerEmailErr.includes('testing emails') ||
+            lowerEmailErr.includes('resend.com') ||
+            lowerEmailErr.includes('only send testing') ||
+            lowerEmailErr.includes('verify a domain') ||
+            lowerEmailErr.includes('recipient restriction')
+          ) {
+            errorMsg = rawEmail;
+            errorTitle = 'Email Delivery Restricted';
+          } else if (lowerEmailErr.includes('temporarily unavailable') || lowerEmailErr.includes('try again later')) {
             errorMsg = 'Email verification is temporarily unavailable. Please try again later.';
             errorTitle = 'Service Unavailable';
+          } else if (lowerEmailErr.includes('temporary email') || lowerEmailErr.includes('disposable')) {
+            errorMsg = rawEmail;
+            errorTitle = 'Disposable Email';
           } else {
-            errorMsg = 'Please enter a valid email address.';
+            errorMsg = rawEmail;
             errorTitle = 'Invalid Email';
           }
         } else if (err.response.data.username) {
@@ -303,8 +357,8 @@ const RegisterPage = () => {
         } else if (err.response.data.detail) {
           errorMsg = err.response.data.detail;
         }
-      } else if (err.message && (err.message.includes('Network Error') || err.message.includes('connect'))) {
-        errorMsg = 'Unable to connect to the server. Please try again.';
+      } else if (err.message && (err.message.includes('Network Error') || err.message.includes('connect') || err.message.includes('timeout'))) {
+        errorMsg = 'Unable to connect to the server. Please check your internet connection.';
         errorTitle = 'Connection Error';
       }
 
@@ -637,15 +691,33 @@ const RegisterPage = () => {
                     <input
                       id={emailId}
                       type="email"
-                      className="form-input"
+                      className={`form-input ${
+                        touched.email && email.trim() && (emailValidation.isInvalid || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
+                          ? 'form-input-error'
+                          : ''
+                      }`}
                       placeholder="name@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      onBlur={() => handleBlur('email')}
+                      onBlur={() => {
+                        handleBlur('email');
+                        emailValidation.validateImmediately();
+                      }}
                       autoComplete="email"
                       required
                     />
                   </div>
+                  <RealtimeEmailValidationMessage
+                    validation={emailValidation}
+                    onApplySuggestion={(sug) => setEmail(sug)}
+                    onRetry={() => emailValidation.retry()}
+                  />
+                  {touched.email && !email.trim() && (
+                    <p className="field-error-msg">
+                      <AlertCircle size={13} />
+                      <span>Please enter your email address.</span>
+                    </p>
+                  )}
                 </div>
               </div>
 

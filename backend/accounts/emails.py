@@ -162,8 +162,17 @@ def send_resend_email(
             api_message,
         )
 
-        is_recipient_error = status_code in (400, 422) or any(
-            w in api_message.lower() for w in ("recipient", "email", "invalid", "deliver", "verify", "only send to")
+        is_recipient_error = status_code in (400, 403, 422) or any(
+            w in api_message.lower() for w in (
+                "recipient",
+                "email",
+                "invalid",
+                "deliver",
+                "verify",
+                "only send",
+                "testing emails",
+                "resend.com",
+            )
         )
 
         user_friendly_message = (

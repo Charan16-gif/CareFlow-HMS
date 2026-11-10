@@ -15,6 +15,7 @@ MSG_MAILBOX_NOT_FOUND = "This email address does not exist."
 MSG_INVALID_DOMAIN = "This email domain cannot receive emails."
 MSG_DISPOSABLE = "Temporary email addresses are not allowed."
 MSG_UNKNOWN = "We couldn't verify this email address. Please try again."
+MSG_MAILBOX_UNAVAILABLE = "Email format looks valid. Mailbox verification is unavailable."
 
 MSG_SMTP_IMMEDIATE_REJECTION = "Email could not be sent. Please check your email address."
 MSG_SMTP_CONNECTION_FAILURE = "Unable to send verification email. Please try again later."
@@ -630,7 +631,7 @@ def verify_email_comprehensive(email: str, check_mailbox: bool = True) -> Dict[s
             "email": clean_email,
             "status": "UNKNOWN",
             "is_valid": None,
-            "message": MSG_UNKNOWN,
+            "message": MSG_UNKNOWN if is_svc_unavailable else MSG_MAILBOX_UNAVAILABLE,
             "suggested_email": None,
             "allow_continue": False if is_svc_unavailable else True,
             "details": {

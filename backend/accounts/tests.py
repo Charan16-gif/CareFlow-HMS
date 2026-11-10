@@ -583,14 +583,14 @@ class EmailOTPAuthenticationTests(TestCase):
     def test_realtime_email_validation_unknown_when_unconfigured(self):
         from django.core.cache import cache
         cache.clear()
-        # Without provider credentials, deliverability is unknown / inconclusive
+        # Without provider credentials, deliverability is unknown / inconclusive but allow_continue is True
         with patch("django.conf.settings.EMAIL_VERIFICATION_API_KEY", ""):
             res = self.client.post("/api/auth/validate-email/", {"email": "charan@careflow.com"}, format="json")
             self.assertEqual(res.status_code, status.HTTP_200_OK)
             self.assertEqual(res.data["status"], "UNKNOWN")
             self.assertIsNone(res.data["is_valid"])
             self.assertTrue(res.data["allow_continue"])
-            self.assertEqual(res.data["message"], "We couldn't verify this email address. Please try again.")
+            self.assertEqual(res.data["message"], "Email format looks valid. Mailbox verification is unavailable.")
 
     @patch("accounts.email_verification_provider.AbstractAPIProvider.verify")
     def test_realtime_email_validation_timeout_and_rate_limits(self, mock_verify):
