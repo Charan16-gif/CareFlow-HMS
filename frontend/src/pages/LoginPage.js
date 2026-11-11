@@ -18,6 +18,7 @@ import {
   UserCheck,
   FlaskConical,
   Pill,
+  ChevronDown,
 } from 'lucide-react';
 
 const ROLES = [
@@ -67,6 +68,13 @@ const LoginPage = () => {
   const isUsernameValid = username.trim().length >= 2;
   const isPasswordValid = password.length >= 1;
   const isFormValid = isUsernameValid && isPasswordValid;
+
+  const handleScrollToForm = () => {
+    const formElement = document.querySelector('.register-form-column') || document.querySelector('.register-glass-card');
+    if (formElement) {
+      formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   const handleBlur = (field) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
@@ -249,6 +257,17 @@ const LoginPage = () => {
               </div>
             </div>
           </div>
+
+          {/* Minimal Mobile Scroll Indicator */}
+          <button
+            type="button"
+            className="mobile-scroll-indicator"
+            onClick={handleScrollToForm}
+            aria-label="Scroll to continue to sign in form"
+          >
+            <span>Scroll to continue</span>
+            <ChevronDown size={18} className="scroll-indicator-arrow" />
+          </button>
         </section>
 
         {/* ─────────────────────────────────────────────────────────────

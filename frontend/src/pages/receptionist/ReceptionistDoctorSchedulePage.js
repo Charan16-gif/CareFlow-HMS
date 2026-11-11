@@ -278,7 +278,7 @@ const ReceptionistDoctorSchedulePage = () => {
       </div>
 
       {/* Main Grid: Doctors List (Left) + Slot Inspector (Right) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '1.5rem', alignItems: 'start' }}>
         
         {/* Left: Doctor Cards */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

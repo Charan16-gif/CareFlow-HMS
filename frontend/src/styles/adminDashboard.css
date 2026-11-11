@@ -408,6 +408,8 @@
 .admin-sidebar {
   width: var(--admin-sidebar-w);
   height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
   position: fixed;
   top: 0;
   left: 0;
@@ -418,6 +420,7 @@
   color: var(--admin-text-main);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   z-index: 40;
   box-shadow: var(--admin-shadow-md);
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background var(--transition-normal);
@@ -514,9 +517,11 @@
 }
 
 .admin-sidebar-nav {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 1.25rem 0.85rem;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .admin-nav-list {
@@ -568,10 +573,12 @@
 
 .admin-sidebar-footer {
   padding: 1.25rem;
+  padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
   border-top: 1px solid var(--admin-border-subtle);
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  flex-shrink: 0;
 }
 
 .admin-sidebar-ext-link {
@@ -1954,17 +1961,49 @@ body.modal-active-freeze .admin-overview-container {
   background: var(--admin-card-hover);
 }
 
+select option,
 .admin-input option,
-.admin-form-select option {
+.admin-select option,
+.admin-form-select option,
+.dash-input option,
+.form-input option {
   background: #0f172a;
   color: #f8fafc;
   padding: 0.6rem 0.8rem;
 }
 
+[data-theme="white"] select option,
 [data-theme="white"] .admin-input option,
-[data-theme="white"] .admin-form-select option {
+[data-theme="white"] .admin-select option,
+[data-theme="white"] .admin-form-select option,
+[data-theme="white"] .dash-input option,
+[data-theme="white"] .form-input option {
   background: #ffffff;
   color: #0f172a;
+}
+
+[data-theme="black"] select option,
+[data-theme="black"] .admin-input option,
+[data-theme="black"] .admin-select option,
+[data-theme="black"] .admin-form-select option,
+[data-theme="black"] .dash-input option,
+[data-theme="black"] .form-input option {
+  background: #000000;
+  color: #ffffff;
+}
+
+/* Radio button theme consistency */
+input[type="radio"] {
+  accent-color: var(--primary-teal, #0d9488);
+  cursor: pointer;
+}
+
+[data-theme="white"] input[type="radio"] {
+  accent-color: #0891b2;
+}
+
+[data-theme="black"] input[type="radio"] {
+  accent-color: #22d3ee;
 }
 
 /* Explicit date input styling */
@@ -6541,9 +6580,141 @@ td.text-right > div,
 
 .admin-table-container,
 .dash-table-container,
-.table-responsive {
+.dash-table-wrapper,
+.table-responsive,
+.table-container,
+.receipt-table-container,
+.lab-table-container {
+  width: 100% !important;
+  max-width: 100% !important;
   overflow-x: auto !important;
-  -webkit-overflow-scrolling: touch;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* Ensure data tables maintain structured column layout on mobile */
+.admin-table-container > table,
+.dash-table-container > table,
+.dash-table-wrapper > table,
+.table-responsive > table {
+  min-width: 580px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   RESPONSIVE GRID & CARD UTILITIES ACROSS ALL 6 DASHBOARDS
+   ══════════════════════════════════════════════════════════════════════════════ */
+.lab-results-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 1.5rem;
+}
+
+.receptionist-bill-item-row {
+  display: grid;
+  grid-template-columns: 120px 1fr 60px 90px 32px;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+@media (max-width: 1024px) {
+  .lab-results-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-cart-items-card {
+    grid-column: auto !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .receptionist-bill-item-row {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.6rem !important;
+  }
+  .receptionist-bill-item-row > input:first-of-type {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   MOBILE MODAL & CANCEL BUTTON OVERFLOW PROTECTION
+   ══════════════════════════════════════════════════════════════════════════════ */
+.admin-modal-card,
+.dash-modal-content,
+.dash-modal-card,
+.receipt-modal-card,
+.doc-viewer-modal-card {
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.admin-modal-header,
+.dash-modal-header {
+  flex-shrink: 0 !important;
+}
+
+.admin-modal-body,
+.dash-modal-body,
+.dash-modal-scrollable,
+.receipt-modal-body,
+.doc-viewer-modal-body {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+.admin-modal-footer,
+.dash-modal-footer {
+  flex-shrink: 0 !important;
+  position: sticky !important;
+  bottom: 0 !important;
+  z-index: 5 !important;
+}
+
+@media (max-width: 640px) {
+  .admin-modal-card,
+  .dash-modal-content,
+  .dash-modal-card,
+  .receipt-modal-card,
+  .doc-viewer-modal-card {
+    max-width: calc(100vw - 1rem) !important;
+    width: calc(100vw - 1rem) !important;
+    margin: auto 0.5rem !important;
+    max-height: calc(100vh - 1.5rem) !important;
+    max-height: calc(100dvh - 1.5rem) !important;
+  }
+
+  .admin-modal-header,
+  .dash-modal-header {
+    padding: 0.85rem 1rem !important;
+  }
+
+  .admin-modal-body,
+  .dash-modal-body,
+  .receipt-modal-body {
+    padding: 1rem 0.85rem !important;
+  }
+
+  .admin-modal-footer,
+  .dash-modal-footer {
+    padding: 0.75rem 0.85rem !important;
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom)) !important;
+  }
+
+  .admin-modal-footer .admin-btn,
+  .dash-modal-footer .dash-btn {
+    flex: 1 1 auto !important;
+    min-width: 105px !important;
+    justify-content: center !important;
+  }
 }
 
 /* ==========================================================================

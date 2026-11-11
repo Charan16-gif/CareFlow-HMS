@@ -779,7 +779,7 @@ const LabStaffOverviewPage = () => {
                   )}
 
                   {/* Patient & Doctor Two-Col */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem' }}>
                     <div className="admin-glass-card" style={{ padding: '0.9rem' }}>
                       <span style={{ fontSize: '0.75rem', color: 'var(--admin-text-muted)', textTransform: 'uppercase' }}>
                         Patient Profile
@@ -814,7 +814,7 @@ const LabStaffOverviewPage = () => {
                       {selectedOrder.test_name} ({selectedOrder.test_code || 'LAB-TEST'})
                     </h4>
                     <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--admin-text-muted)' }}>
-                      Category: {selectedOrder.test_category} • Standard Fee: ${selectedOrder.test_price || '0.00'}
+                      Category: {selectedOrder.test_category} • Standard Fee: ₹{selectedOrder.test_price || '0.00'}
                     </p>
                     {selectedOrder.clinical_notes && (
                       <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--admin-border-subtle)' }}>

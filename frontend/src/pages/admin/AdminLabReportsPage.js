@@ -603,7 +603,7 @@ const AdminLabReportsPage = () => {
                   </div>
 
                   {/* Metadata Grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.85rem' }}>
                     <div className="admin-glass-card" style={{ padding: '0.9rem' }}>
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
                         Patient Reference
@@ -638,7 +638,7 @@ const AdminLabReportsPage = () => {
                       {selectedReport.test_name} ({selectedReport.test_code || 'LAB'})
                     </h4>
                     <p style={{ margin: '0.2rem 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                      Category: {selectedReport.test_category || 'Diagnostic'} • Fee: ${selectedReport.test_price || '0.00'}
+                      Category: {selectedReport.test_category || 'Diagnostic'} • Fee: ₹{selectedReport.test_price || '0.00'}
                     </p>
                     {selectedReport.clinical_notes && (
                       <p style={{ margin: '0.4rem 0 0 0', fontSize: '0.85rem', color: 'var(--text-muted)', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '0.4rem' }}>
@@ -662,7 +662,7 @@ const AdminLabReportsPage = () => {
 
                     {selectedReport.status === 'COMPLETED' ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '0.75rem' }}>
                           <div style={{ background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '8px' }}>
                             <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block' }}>
                               Recorded Result Value

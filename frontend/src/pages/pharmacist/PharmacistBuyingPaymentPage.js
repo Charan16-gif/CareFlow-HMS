@@ -1135,14 +1135,15 @@ const PharmacistBuyingPaymentPage = () => {
          ───────────────────────────────────────────────────────────── */}
       {!loading && activeTab === 'cart' && (
         <div
+          className="admin-cart-checkout-grid"
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))',
             gap: '1.5rem',
           }}
         >
           {/* Left Column: Cart Items Table */}
-          <section className="admin-card" style={{ gridColumn: 'span 2' }}>
+          <section className="admin-card admin-cart-items-card">
             <div className="admin-card-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <ShoppingCart size={18} style={{ color: '#10b981' }} />

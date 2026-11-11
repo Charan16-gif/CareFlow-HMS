@@ -312,7 +312,7 @@ const LabStaffEnterResultsPage = () => {
           )}
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '1.5rem' }}>
+        <div className="lab-results-grid">
           {/* Main Result Form */}
           <div className="admin-content-card" style={{ padding: '1.75rem' }}>
             {/* Lock / Status Banners */}

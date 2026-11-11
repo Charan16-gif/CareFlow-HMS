@@ -664,7 +664,7 @@ const PatientLabTestsPage = () => {
                   </div>
 
                   {/* Test Details Card */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.75rem' }}>
                     <div className="admin-glass-card" style={{ padding: '0.85rem' }}>
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
                         Ordering Physician
@@ -700,7 +700,7 @@ const PatientLabTestsPage = () => {
 
                     {selectedOrder.status === 'COMPLETED' ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '0.75rem' }}>
                           <div style={{ background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '8px' }}>
                             <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block' }}>
                               Observed Value

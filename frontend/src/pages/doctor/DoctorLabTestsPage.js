@@ -902,7 +902,7 @@ const DoctorLabTestsPage = () => {
                       <option value="">-- Select Standard Diagnostic Test --</option>
                       {labTestsCatalogue.map((t) => (
                         <option key={t.id} value={t.id}>
-                          {t.test_code} - {t.test_name} ({t.category}) • ${t.price}
+                          {t.test_code} - {t.test_name} ({t.category}) • ₹{t.price}
                         </option>
                       ))}
                     </select>
@@ -1102,7 +1102,7 @@ const DoctorLabTestsPage = () => {
                   )}
 
                   {/* Metadata Grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem' }}>
                     <div className="admin-glass-card" style={{ padding: '0.9rem' }}>
                       <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
                         Patient Profile
@@ -1153,7 +1153,7 @@ const DoctorLabTestsPage = () => {
 
                     {selectedOrder.status === 'COMPLETED' ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '0.75rem' }}>
                           <div style={{ background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '8px' }}>
                             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>
                               Quantitative / Qualitative Value

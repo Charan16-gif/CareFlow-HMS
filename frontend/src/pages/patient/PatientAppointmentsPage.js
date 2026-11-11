@@ -967,7 +967,7 @@ const PatientAppointmentsPage = () => {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', fontSize: '0.85rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '0.75rem', fontSize: '0.85rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
                   <div>
                     <span style={{ color: 'var(--admin-text-muted)', display: 'block' }}>Date</span>
                     <strong>{confirmedBooking.appointment_date}</strong>

@@ -959,7 +959,7 @@ const ReceptionistPaymentsPage = () => {
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                     {billItems.map((item, idx) => (
-                      <div key={idx} className="dash-card" style={{ padding: '0.75rem', display: 'grid', gridTemplateColumns: '120px 1fr 60px 90px 32px', gap: '0.5rem', alignItems: 'center' }}>
+                      <div key={idx} className="dash-card receptionist-bill-item-row" style={{ padding: '0.75rem' }}>
                         <select
                           className="dash-input"
                           value={item.item_type}

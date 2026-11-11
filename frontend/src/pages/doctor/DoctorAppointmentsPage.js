@@ -571,7 +571,7 @@ const DoctorAppointmentsPage = () => {
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(2, 1fr)',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 160px), 1fr))',
                     gap: '1rem',
                     marginBottom: '1.25rem',
                   }}

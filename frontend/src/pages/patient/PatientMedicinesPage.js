@@ -850,7 +850,7 @@ const PatientMedicinesPage = () => {
                       <label className="admin-form-label">
                         Select Payment Method *
                       </label>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 130px), 1fr))', gap: '0.75rem' }}>
                         {[
                           { id: 'UPI', label: 'UPI / QR Code', icon: QrCode },
                           { id: 'CARD', label: 'Credit / Debit Card', icon: CreditCard },

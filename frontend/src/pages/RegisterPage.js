@@ -21,6 +21,7 @@ import {
   Info,
   AlertCircle,
   Loader2,
+  ChevronDown,
 } from 'lucide-react';
 
 const RegisterPage = () => {
@@ -125,6 +126,13 @@ const RegisterPage = () => {
   const isDateOfBirthValid = Boolean(dateOfBirth && dateOfBirth <= new Date().toISOString().split('T')[0]);
   const isGenderValid = Boolean(gender && ['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY'].includes(gender));
   const isConfirmPasswordValid = confirmPassword.length > 0 && confirmPassword === password;
+
+  const handleScrollToForm = () => {
+    const formElement = document.querySelector('.register-form-column') || document.querySelector('.register-glass-card');
+    if (formElement) {
+      formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   const handleBlur = (field) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
@@ -445,6 +453,17 @@ const RegisterPage = () => {
               </div>
             </div>
           </div>
+
+          {/* Minimal Mobile Scroll Indicator */}
+          <button
+            type="button"
+            className="mobile-scroll-indicator"
+            onClick={handleScrollToForm}
+            aria-label="Scroll to continue to registration form"
+          >
+            <span>Scroll to continue</span>
+            <ChevronDown size={18} className="scroll-indicator-arrow" />
+          </button>
         </section>
 
         {/* ─────────────────────────────────────────────────────────────
