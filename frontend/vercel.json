@@ -1,9 +1,11 @@
 {
+  "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/(admin|doctor|patient|pharmacist|receptionist|lab-staff|dashboard|verify-email|verify-otp|forgot-password|reset-password)(.*)",
       "destination": "/index.html"
     }
   ]
 }
+
 
