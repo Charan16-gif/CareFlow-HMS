@@ -14,7 +14,6 @@ import {
   XCircle,
   Info,
   Check,
-  Sparkles,
   Star,
 } from 'lucide-react';
 import { toast } from '../../context/ToastContext';
@@ -666,7 +665,7 @@ const PatientAppointmentsPage = () => {
                       gap: '0.65rem',
                     }}
                   >
-                    <Sparkles size={18} style={{ color: 'var(--primary-cyan, #06b6d4)', flexShrink: 0, marginTop: '2px' }} />
+                    <Stethoscope size={18} style={{ color: 'var(--primary-cyan, #06b6d4)', flexShrink: 0, marginTop: '2px' }} />
                     <div style={{ fontSize: '0.82rem', lineHeight: '1.4' }}>
                       <strong style={{ color: 'var(--primary-cyan, #06b6d4)', display: 'block', marginBottom: '2px' }}>
                         Automatic Physician Matching

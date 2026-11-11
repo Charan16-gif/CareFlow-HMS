@@ -186,9 +186,9 @@ const ResetPasswordPage = () => {
                   <ShieldCheck size={22} />
                 </div>
                 <div>
-                  <h4 className="register-info-title">Zero-Knowledge Storage</h4>
+                  <h4 className="register-info-title">Credential Security</h4>
                   <p className="register-info-desc">
-                    Your password is cryptographically salted and hashed before persistence. It is never stored in plain text.
+                    Passphrases are salted and hashed using industry-standard cryptography.
                   </p>
                 </div>
               </div>
@@ -198,6 +198,13 @@ const ResetPasswordPage = () => {
 
         {/* Right Side: Floating Glass Reset Card */}
         <section className="register-form-column" aria-label="Reset Password Form">
+          {/* Mobile Branded Header (Visible on screens <= 900px) */}
+          <div className="auth-mobile-brand">
+            <Link to="/" style={{ display: 'inline-block', textDecoration: 'none' }}>
+              <Logo size="md" light={true} />
+            </Link>
+          </div>
+
           <div className="register-glass-card">
             <div>
               <span className="register-step-badge">

@@ -11,7 +11,6 @@ import {
   Home,
   Building2,
   Stethoscope,
-  Sparkles,
   Users,
   PhoneCall,
   Activity,
@@ -40,7 +39,7 @@ const navLinks = [
   {
     href: 'how-it-works',
     label: 'How It Works',
-    icon: Sparkles,
+    icon: Activity,
     description: 'Seamless patient journey',
   },
   {

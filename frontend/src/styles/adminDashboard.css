@@ -40,12 +40,13 @@
   /* Dimensions & Typography */
   --admin-sidebar-w: 260px;
   --admin-header-h: 72px;
-  --admin-radius-sm: var(--radius-sm, 8px);
-  --admin-radius-md: var(--radius-md, 14px);
-  --admin-radius-lg: var(--radius-lg, 20px);
-  --admin-shadow-sm: var(--glass-shadow-sm, 0 4px 16px rgba(0, 0, 0, 0.3));
-  --admin-shadow-md: var(--glass-shadow-md, 0 10px 30px rgba(0, 0, 0, 0.45));
-  --admin-shadow-lg: var(--glass-shadow-lg, 0 20px 45px rgba(0, 0, 0, 0.55));
+  --admin-radius-sm: var(--radius-sm, 6px);
+  --admin-radius-md: var(--radius-md, 8px);
+  --admin-radius-lg: var(--radius-lg, 12px);
+  --admin-radius-xl: var(--radius-xl, 14px);
+  --admin-shadow-sm: var(--glass-shadow-sm);
+  --admin-shadow-md: var(--glass-shadow-md);
+  --admin-shadow-lg: var(--glass-shadow-lg);
   --font-admin-heading: var(--font-heading, 'Plus Jakarta Sans', system-ui, sans-serif);
   --font-admin-body: var(--font-body, 'Inter', system-ui, sans-serif);
 
@@ -191,23 +192,18 @@
 
 .admin-dashboard-ambient-glow {
   position: absolute;
-  width: 500px;
-  height: 500px;
-  top: -150px;
-  right: -100px;
+  width: 420px;
+  height: 420px;
+  top: -120px;
+  right: -80px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(34, 211, 238, 0.09) 0%, transparent 70%);
-  filter: blur(60px);
-  animation: pulse-ambient 8s ease-in-out infinite alternate;
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.04) 0%, transparent 70%);
+  filter: blur(40px);
+  pointer-events: none;
 }
 
 [data-theme="white"] .admin-dashboard-ambient-glow {
-  background: radial-gradient(circle, rgba(6, 182, 212, 0.12) 0%, transparent 70%);
-}
-
-@keyframes pulse-ambient {
-  0% { transform: scale(1) translateY(0); opacity: 0.5; }
-  100% { transform: scale(1.15) translateY(20px); opacity: 0.85; }
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.05) 0%, transparent 70%);
 }
 
 .admin-main-wrapper {
@@ -554,11 +550,28 @@
 }
 
 .admin-nav-link-active {
-  background: linear-gradient(135deg, var(--primary-cyan, #06b6d4) 0%, var(--primary-teal, #006a61) 100%) !important;
-  color: #04121d !important;
-  font-weight: 700;
-  box-shadow: 0 4px 14px rgba(6, 182, 212, 0.35), var(--glow-cyan, 0 0 20px rgba(6, 182, 212, 0.4));
-  border-color: rgba(255, 255, 255, 0.2) !important;
+  background: rgba(13, 148, 136, 0.16) !important;
+  color: #2dd4bf !important;
+  font-weight: 600;
+  border-left: 3px solid var(--primary-teal-light, #14b8a6) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  border-color: rgba(20, 184, 166, 0.3) !important;
+}
+
+[data-theme="white"] .admin-nav-link-active {
+  background: rgba(13, 148, 136, 0.12) !important;
+  color: #0f766e !important;
+  border-left: 3px solid #0d9488 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  border-color: rgba(13, 148, 136, 0.25) !important;
+}
+
+[data-theme="black"] .admin-nav-link-active {
+  background: rgba(34, 211, 238, 0.14) !important;
+  color: #38bdf8 !important;
+  border-left: 3px solid #22d3ee !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  border-color: rgba(34, 211, 238, 0.3) !important;
 }
 
 .admin-nav-icon {
@@ -568,7 +581,7 @@
 
 .admin-nav-link-active .admin-nav-icon {
   opacity: 1;
-  color: #04121d;
+  color: inherit;
 }
 
 .admin-sidebar-footer {
@@ -720,18 +733,18 @@
 }
 
 .admin-btn-primary {
-  background: linear-gradient(135deg, var(--primary-cyan, #06b6d4) 0%, var(--primary-teal, #006a61) 100%);
-  color: #04121d;
-  font-weight: 700;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 4px 14px rgba(6, 182, 212, 0.35);
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+  color: #ffffff;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .admin-btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, var(--primary-cyan-light, #22d3ee) 0%, var(--primary-teal-light, #14b8a6) 100%);
-  box-shadow: 0 6px 20px rgba(6, 182, 212, 0.5), var(--glow-cyan, 0 0 20px rgba(6, 182, 212, 0.4));
-  transform: translateY(-2px);
-  color: #021019;
+  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.35);
+  transform: translateY(-1px);
+  color: #ffffff;
 }
 
 .admin-btn-secondary,
@@ -811,47 +824,47 @@
 .admin-summary-card,
 .admin-stat-card {
   background: var(--admin-card-bg);
-  backdrop-filter: var(--glass-blur-md, blur(16px));
-  -webkit-backdrop-filter: var(--glass-blur-md, blur(16px));
+  backdrop-filter: var(--glass-blur-md, blur(12px));
+  -webkit-backdrop-filter: var(--glass-blur-md, blur(12px));
   border: 1px solid var(--admin-border-subtle);
   border-radius: var(--admin-radius-lg);
-  padding: 1.45rem 1.5rem;
+  padding: 1.25rem 1.4rem;
   box-shadow: var(--admin-shadow-sm);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   cursor: pointer;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
   position: relative;
   overflow: hidden;
 }
 
 .admin-summary-card:hover,
 .admin-stat-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   background: var(--admin-card-hover);
   border-color: var(--admin-border-highlight);
-  box-shadow: var(--admin-shadow-md), var(--glow-cyan, 0 0 24px -4px rgba(6, 182, 212, 0.45));
+  box-shadow: var(--admin-shadow-md);
 }
 
 .admin-stat-card-teal:hover {
-  border-color: rgba(20, 184, 166, 0.5);
-  box-shadow: var(--admin-shadow-md), 0 0 24px -4px rgba(20, 184, 166, 0.45);
+  border-color: rgba(20, 184, 166, 0.45);
+  box-shadow: var(--admin-shadow-md);
 }
 
 .admin-stat-card-navy:hover {
-  border-color: rgba(59, 130, 246, 0.5);
-  box-shadow: var(--admin-shadow-md), 0 0 24px -4px rgba(59, 130, 246, 0.45);
+  border-color: rgba(59, 130, 246, 0.45);
+  box-shadow: var(--admin-shadow-md);
 }
 
 .admin-stat-card-green:hover {
-  border-color: rgba(34, 197, 94, 0.5);
-  box-shadow: var(--admin-shadow-md), 0 0 24px -4px rgba(34, 197, 94, 0.45);
+  border-color: rgba(34, 197, 94, 0.45);
+  box-shadow: var(--admin-shadow-md);
 }
 
 .admin-stat-card-cyan:hover {
-  border-color: rgba(6, 182, 212, 0.5);
-  box-shadow: var(--admin-shadow-md), 0 0 24px -4px rgba(6, 182, 212, 0.45);
+  border-color: rgba(6, 182, 212, 0.45);
+  box-shadow: var(--admin-shadow-md);
 }
 
 .admin-card-top,
@@ -1006,11 +1019,11 @@
 .admin-dashboard-panel,
 .admin-card {
   background: var(--admin-card-bg);
-  backdrop-filter: var(--glass-blur-md, blur(16px));
-  -webkit-backdrop-filter: var(--glass-blur-md, blur(16px));
+  backdrop-filter: var(--glass-blur-md, blur(12px));
+  -webkit-backdrop-filter: var(--glass-blur-md, blur(12px));
   border: 1px solid var(--admin-border-subtle);
   border-radius: var(--admin-radius-lg);
-  padding: 1.6rem 1.75rem;
+  padding: 1.25rem 1.5rem;
   box-shadow: var(--admin-shadow-sm);
   display: flex;
   flex-direction: column;
@@ -1019,6 +1032,7 @@
 
 .admin-card:hover {
   border-color: var(--admin-border-highlight);
+  box-shadow: var(--admin-shadow-md);
 }
 
 .admin-card-header,
@@ -1443,8 +1457,8 @@
    ========================================================================== */
 .admin-table-container {
   background: var(--admin-card-bg);
-  backdrop-filter: var(--glass-blur-md, blur(16px));
-  -webkit-backdrop-filter: var(--glass-blur-md, blur(16px));
+  backdrop-filter: var(--glass-blur-md, blur(12px));
+  -webkit-backdrop-filter: var(--glass-blur-md, blur(12px));
   border: 1px solid var(--admin-border-subtle);
   border-radius: var(--admin-radius-lg);
   overflow-x: auto;
@@ -1455,23 +1469,23 @@
   width: 100%;
   border-collapse: collapse;
   text-align: left;
-  font-size: 0.875rem;
+  font-size: 0.85rem;
 }
 
 .admin-table th {
   background: var(--admin-surface-secondary);
   color: var(--admin-text-muted);
   font-weight: 600;
-  font-size: 0.775rem;
+  font-size: 0.725rem;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 0.95rem 1.25rem;
+  letter-spacing: 0.05em;
+  padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--admin-border);
   white-space: nowrap;
 }
 
 .admin-table td {
-  padding: 1.05rem 1.25rem;
+  padding: 0.85rem 1rem;
   border-bottom: 1px solid var(--admin-border-subtle);
   color: var(--admin-text-main);
   vertical-align: middle;
@@ -1482,7 +1496,15 @@
 }
 
 .admin-table tbody tr:hover {
-  background: var(--glass-bg-highlight, rgba(6, 182, 212, 0.08));
+  background: rgba(255, 255, 255, 0.035);
+}
+
+[data-theme="white"] .admin-table tbody tr:hover {
+  background: rgba(15, 23, 42, 0.025);
+}
+
+[data-theme="black"] .admin-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .admin-table tbody tr:last-child td {
@@ -1559,10 +1581,11 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.75rem;
+  font-size: 0.725rem;
   font-weight: 600;
-  padding: 0.25rem 0.65rem;
-  border-radius: var(--admin-radius-full);
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  letter-spacing: 0.02em;
 }
 
 .admin-badge-teal {
@@ -4259,23 +4282,23 @@ input[type="date"].admin-form-input {
 
 .admin-metric-card {
   background: var(--admin-card-bg);
-  backdrop-filter: var(--glass-blur-md, blur(16px));
-  -webkit-backdrop-filter: var(--glass-blur-md, blur(16px));
+  backdrop-filter: var(--glass-blur-md, blur(12px));
+  -webkit-backdrop-filter: var(--glass-blur-md, blur(12px));
   border: 1px solid var(--admin-border-subtle);
   border-radius: var(--admin-radius-lg);
-  padding: 1.35rem 1.45rem;
+  padding: 1.2rem 1.35rem;
   box-shadow: var(--admin-shadow-sm);
   display: flex;
   align-items: center;
-  gap: 1.25rem;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+  gap: 1.15rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
 
 .admin-metric-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   background: var(--admin-card-hover);
   border-color: var(--admin-border-highlight);
-  box-shadow: var(--admin-shadow-md), 0 0 24px -4px rgba(6, 182, 212, 0.35);
+  box-shadow: var(--admin-shadow-md);
 }
 
 .admin-metric-icon-box {
@@ -5066,45 +5089,45 @@ input[type="date"].admin-form-input {
 }
 
 .pharm-stat-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   background: var(--admin-card-hover);
   border-color: var(--admin-border-highlight);
-  box-shadow: var(--admin-shadow-md), 0 0 24px -4px rgba(6, 182, 212, 0.4);
+  box-shadow: var(--admin-shadow-md);
 }
 
 .pharm-stat-card-teal:hover {
-  border-color: rgba(20, 184, 166, 0.55);
-  box-shadow: var(--admin-shadow-md), 0 0 24px -4px rgba(20, 184, 166, 0.4);
+  border-color: rgba(20, 184, 166, 0.45);
+  box-shadow: var(--admin-shadow-md);
 }
 
 .pharm-stat-card-emerald:hover {
-  border-color: rgba(16, 185, 129, 0.55);
-  box-shadow: var(--admin-shadow-md), 0 0 24px -4px rgba(16, 185, 129, 0.4);
+  border-color: rgba(16, 185, 129, 0.45);
+  box-shadow: var(--admin-shadow-md);
 }
 
 .pharm-stat-card-amber:hover {
-  border-color: rgba(245, 158, 11, 0.55);
-  box-shadow: var(--admin-shadow-md), 0 0 24px -4px rgba(245, 158, 11, 0.4);
+  border-color: rgba(245, 158, 11, 0.45);
+  box-shadow: var(--admin-shadow-md);
 }
 
 .pharm-stat-card-rose:hover {
-  border-color: rgba(244, 63, 94, 0.55);
-  box-shadow: var(--admin-shadow-md), 0 0 24px -4px rgba(244, 63, 94, 0.4);
+  border-color: rgba(244, 63, 94, 0.45);
+  box-shadow: var(--admin-shadow-md);
 }
 
 .pharm-stat-card-purple:hover {
-  border-color: rgba(168, 85, 247, 0.55);
-  box-shadow: var(--admin-shadow-md), 0 0 24px -4px rgba(168, 85, 247, 0.4);
+  border-color: rgba(168, 85, 247, 0.45);
+  box-shadow: var(--admin-shadow-md);
 }
 
 .pharm-stat-card-cyan:hover {
-  border-color: rgba(6, 182, 212, 0.55);
-  box-shadow: var(--admin-shadow-md), 0 0 24px -4px rgba(6, 182, 212, 0.4);
+  border-color: rgba(6, 182, 212, 0.45);
+  box-shadow: var(--admin-shadow-md);
 }
 
 .pharm-stat-card-blue:hover {
-  border-color: rgba(59, 130, 246, 0.55);
-  box-shadow: var(--admin-shadow-md), 0 0 24px -4px rgba(59, 130, 246, 0.4);
+  border-color: rgba(59, 130, 246, 0.45);
+  box-shadow: var(--admin-shadow-md);
 }
 
 .pharm-stat-top {
@@ -5473,7 +5496,7 @@ input[type="date"].admin-form-input {
 
 .active-border {
   border-color: #0ea5e9 !important;
-  box-shadow: 0 0 20px -2px rgba(14, 165, 233, 0.45) !important;
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.25) !important;
   background: var(--admin-card-hover) !important;
 }
 

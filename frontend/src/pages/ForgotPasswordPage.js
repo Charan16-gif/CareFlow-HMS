@@ -130,15 +130,15 @@ const ForgotPasswordPage = () => {
                 Restoring access to your medical records, clinical notes, and healthcare portal is quick and securely verified.
               </p>
 
-              {/* Translucent Glass Information Security Panel */}
+              {/* Healthcare Security Notice */}
               <div className="register-info-panel">
                 <div className="register-info-icon">
                   <ShieldCheck size={22} />
                 </div>
                 <div>
-                  <h4 className="register-info-title">Encrypted Recovery Dispatch</h4>
+                  <h4 className="register-info-title">Secure Account Recovery</h4>
                   <p className="register-info-desc">
-                    One-time cryptographically hashed links with automatic expiration safeguard your medical privacy.
+                    Time-limited verification links sent directly to your registered contact address.
                   </p>
                 </div>
               </div>
@@ -148,6 +148,13 @@ const ForgotPasswordPage = () => {
 
         {/* Right Side: Floating Glass Form Card */}
         <section className="register-form-column" aria-label="Password Reset Request Form">
+          {/* Mobile Branded Header (Visible on screens <= 900px) */}
+          <div className="auth-mobile-brand">
+            <Link to="/" style={{ display: 'inline-block', textDecoration: 'none' }}>
+              <Logo size="md" light={true} />
+            </Link>
+          </div>
+
           <div className="register-glass-card">
             {/* Step / Purpose Badge */}
             <div>

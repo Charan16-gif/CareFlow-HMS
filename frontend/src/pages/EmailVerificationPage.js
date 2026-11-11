@@ -440,9 +440,9 @@ const EmailVerificationPage = () => {
                   <ShieldCheck size={22} />
                 </div>
                 <div>
-                  <h4 className="register-info-title">Zero-Trust Healthcare Security</h4>
+                  <h4 className="register-info-title">Identity Verification</h4>
                   <p className="register-info-desc">
-                    Time-bound 6-digit cryptographic verification codes protect sensitive patient health information (PHI).
+                    Time-sensitive verification codes ensure account ownership before granting portal access.
                   </p>
                 </div>
               </div>
@@ -454,6 +454,13 @@ const EmailVerificationPage = () => {
             Right Side: Glass OTP Verification Card (50% width)
         ───────────────────────────────────────────────────────────── */}
         <section className="register-form-column" aria-label="Email Verification Code Form">
+          {/* Mobile Branded Header (Visible on screens <= 900px) */}
+          <div className="auth-mobile-brand">
+            <Link to="/" style={{ display: 'inline-block', textDecoration: 'none' }}>
+              <Logo size="md" light={true} />
+            </Link>
+          </div>
+
           <div className="register-glass-card">
             {/* Step Badge */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

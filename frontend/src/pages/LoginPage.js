@@ -243,15 +243,15 @@ const LoginPage = () => {
                 Access your medical records, upcoming appointments, prescriptions, and communicate directly with your care team in one secure place.
               </p>
 
-              {/* Translucent Glass Information Security Panel */}
+              {/* Healthcare Security & Privacy Panel */}
               <div className="register-info-panel">
                 <div className="register-info-icon">
                   <ShieldCheck size={22} />
                 </div>
                 <div>
-                  <h4 className="register-info-title">Enterprise-Grade Protection</h4>
+                  <h4 className="register-info-title">HIPAA-Compliant EHR Portal</h4>
                   <p className="register-info-desc">
-                    HIPAA compliant, end-to-end encrypted session with biometric & token validation.
+                    Encrypted clinical sessions with verified role-based access for patient safety and data privacy.
                   </p>
                 </div>
               </div>
@@ -274,6 +274,13 @@ const LoginPage = () => {
             Right Side: Floating Glass Login Card (50% width)
         ───────────────────────────────────────────────────────────── */}
         <section className="register-form-column" aria-label="Patient & Staff Login Form">
+          {/* Mobile Branded Header (Visible on screens <= 900px) */}
+          <div className="auth-mobile-brand">
+            <Link to="/" style={{ display: 'inline-block', textDecoration: 'none' }}>
+              <Logo size="md" light={true} />
+            </Link>
+          </div>
+
           <div className="register-glass-card">
             {/* Top Navigation Row: Back to Home & Portal Badge */}
             <div className="login-top-nav-bar">

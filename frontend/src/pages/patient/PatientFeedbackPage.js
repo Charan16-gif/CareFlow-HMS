@@ -13,7 +13,6 @@ import {
   ThumbsUp,
   Award,
   Calendar,
-  Sparkles,
 } from 'lucide-react';
 import { toast } from '../../context/ToastContext';
 
@@ -217,7 +216,7 @@ const PatientFeedbackPage = () => {
             className={`admin-tab-btn ${activeTab === 'eligible' ? 'active' : ''}`}
             onClick={() => setActiveTab('eligible')}
           >
-            <Sparkles size={16} />
+            <MessageSquare size={16} />
             <span>Eligible for Review ({eligibleAppointments.length})</span>
           </button>
           <button

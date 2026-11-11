@@ -470,6 +470,13 @@ const RegisterPage = () => {
             Right Side: Floating Glass Registration Card (48% width)
         ───────────────────────────────────────────────────────────── */}
         <section className="register-form-column" aria-label="Patient Registration Form">
+          {/* Mobile Branded Header (Visible on screens <= 900px) */}
+          <div className="auth-mobile-brand">
+            <Link to="/" style={{ display: 'inline-block', textDecoration: 'none' }}>
+              <Logo size="md" light={true} />
+            </Link>
+          </div>
+
           <div className="register-glass-card">
             {/* Top Navigation Row: Back to Home & Step Indicator */}
             <div className="login-top-nav-bar">

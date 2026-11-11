@@ -14,7 +14,6 @@ import {
   Microscope,
   PackageCheck,
   ArrowRight,
-  Sparkles,
   ClipboardList,
   CheckCircle2,
   Layers,
@@ -46,7 +45,7 @@ const HomePage = () => {
           {/* Left Column: Headlines & Actions */}
           <div>
             <div className="section-tag" style={{ marginBottom: '1.25rem' }}>
-              <Sparkles size={14} color="var(--primary-cyan)" />
+              <Activity size={14} color="var(--primary-cyan)" />
               <span>Hospital Management System</span>
             </div>
 
