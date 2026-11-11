@@ -1,3 +1,33 @@
-# https://www.robotstxt.org/robotstxt.html
+# CareFlow Hospital Management System - Robots Configuration
+# Production URL: https://care-flow-hms-opal.vercel.app/
+
 User-agent: *
-Disallow:
+# Allow public information and marketing routes
+Allow: /$
+Allow: /about
+Allow: /contact
+Allow: /privacy
+Allow: /privacy-policy
+Allow: /terms
+Allow: /terms-and-conditions
+Allow: /login
+Allow: /register
+Allow: /static/
+Allow: /favicon.svg
+Allow: /og-image.png
+
+# Disallow private authenticated EHR portals and internal endpoints
+Disallow: /admin/
+Disallow: /doctor/
+Disallow: /patient/
+Disallow: /pharmacist/
+Disallow: /receptionist/
+Disallow: /lab-staff/
+Disallow: /dashboard/
+Disallow: /verify-email
+Disallow: /verify-otp
+Disallow: /reset-password
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://care-flow-hms-opal.vercel.app/sitemap.xml

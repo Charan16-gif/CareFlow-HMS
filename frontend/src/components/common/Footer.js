@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Logo from './Logo';
+import { Mail } from 'lucide-react';
 
 const Footer = ({ showNavigation }) => {
   const location = useLocation();
@@ -10,8 +11,9 @@ const Footer = ({ showNavigation }) => {
     return null;
   }
 
+  const isHome = location.pathname === '/';
   const shouldShowNav =
-    showNavigation !== undefined ? showNavigation : location.pathname === '/';
+    showNavigation !== undefined ? showNavigation : isHome;
 
   return (
     <footer
@@ -26,24 +28,33 @@ const Footer = ({ showNavigation }) => {
           gap: shouldShowNav ? '2.5rem' : '0',
         }}
       >
-        {/* Top Row: Brand & In-Page Section Links (Only on Landing Page) */}
+        {/* Top Row: Brand & In-Page Section Links */}
         {shouldShowNav && (
           <div
             style={{
-              display: 'flex',
-              flexWrap: 'wrap',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))',
+              gap: '2.5rem 2rem',
               alignItems: 'flex-start',
-              justifyContent: 'space-between',
-              gap: '2rem',
             }}
           >
             {/* Brand Info */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', maxWidth: '420px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', gridColumn: 'span 1' }}>
               <Logo size="md" animated={false} />
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                CareFlow is a modern hospital management system designed to bring patient records,
-                appointments, laboratory tests, medicines, and billing together in one place.
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.65 }}>
+                CareFlow is a hospital management system designed to simplify daily healthcare operations
+                by connecting patients, doctors, receptionists, laboratory staff, pharmacists and administrators
+                through one centralized platform.
               </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
+                <Mail size={15} color="var(--primary-cyan)" />
+                <a
+                  href="mailto:careflowofficial@gmail.com"
+                  style={{ fontSize: '0.85rem', color: 'var(--primary-cyan)', textDecoration: 'none' }}
+                >
+                  careflowofficial@gmail.com
+                </a>
+              </div>
             </div>
 
             {/* Quick Section Navigation Links */}
@@ -51,62 +62,80 @@ const Footer = ({ showNavigation }) => {
               <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                 Navigation
               </span>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(2, minmax(110px, 1fr))',
-                  gap: '0.65rem 1.5rem',
-                  fontSize: '0.875rem',
-                }}
-              >
-                <a
-                  href="#home"
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem' }}>
+                <Link
+                  to="/"
                   style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'color var(--transition-fast)' }}
                   onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--primary-cyan)')}
                   onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
                 >
                   Home
-                </a>
-                <a
-                  href="#about"
+                </Link>
+                <Link
+                  to="/about"
                   style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'color var(--transition-fast)' }}
                   onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--primary-cyan)')}
                   onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
                 >
-                  About
-                </a>
+                  About CareFlow
+                </Link>
                 <a
-                  href="#services"
+                  href={isHome ? '#services' : '/#services'}
                   style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'color var(--transition-fast)' }}
                   onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--primary-cyan)')}
                   onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
                 >
-                  Services
+                  Hospital Services
                 </a>
                 <a
-                  href="#how-it-works"
+                  href={isHome ? '#how-it-works' : '/#how-it-works'}
                   style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'color var(--transition-fast)' }}
                   onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--primary-cyan)')}
                   onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
                 >
-                  How It Works
+                  Hospital Workflow
                 </a>
                 <a
-                  href="#our-team"
+                  href={isHome ? '#our-team' : '/#our-team'}
                   style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'color var(--transition-fast)' }}
                   onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--primary-cyan)')}
                   onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
                 >
-                  Our Team
+                  Supported Roles
                 </a>
-                <a
-                  href="#contact"
+                <Link
+                  to="/contact"
                   style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'color var(--transition-fast)' }}
                   onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--primary-cyan)')}
                   onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
                 >
-                  Contact
-                </a>
+                  Contact Support
+                </Link>
+              </div>
+            </div>
+
+            {/* Legal & Compliance Policies */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Legal &amp; Policy
+              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem' }}>
+                <Link
+                  to="/privacy"
+                  style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'color var(--transition-fast)' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--primary-cyan)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+                >
+                  Privacy Policy
+                </Link>
+                <Link
+                  to="/terms"
+                  style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'color var(--transition-fast)' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--primary-cyan)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+                >
+                  Terms and Conditions
+                </Link>
               </div>
             </div>
 
@@ -122,7 +151,7 @@ const Footer = ({ showNavigation }) => {
                   onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--primary-cyan)')}
                   onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
                 >
-                  Login
+                  Sign In to Portal
                 </Link>
                 <Link
                   to="/register"
@@ -130,7 +159,7 @@ const Footer = ({ showNavigation }) => {
                   onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--primary-teal-light)')}
                   onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
                 >
-                  Register
+                  Register as Patient
                 </Link>
               </div>
             </div>
@@ -153,8 +182,16 @@ const Footer = ({ showNavigation }) => {
             &copy; {new Date().getFullYear()} CareFlow-HMS. All rights reserved.
           </div>
 
-          <div style={{ fontSize: '0.825rem', color: 'var(--text-dim)' }}>
-            Hospital Management System Project
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.825rem', color: 'var(--text-dim)', flexWrap: 'wrap' }}>
+            <span>Hospital Management System Project</span>
+            <span>•</span>
+            <Link to="/privacy" style={{ color: 'var(--text-dim)', textDecoration: 'none' }}>
+              Privacy Policy
+            </Link>
+            <span>•</span>
+            <Link to="/terms" style={{ color: 'var(--text-dim)', textDecoration: 'none' }}>
+              Terms &amp; Conditions
+            </Link>
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Logo from '../components/common/Logo';
 import GlassCard from '../components/common/GlassCard';
@@ -25,6 +25,10 @@ import {
 } from 'lucide-react';
 
 const HomePage = () => {
+  useEffect(() => {
+    document.title = 'CareFlow – Smart Hospital Management System';
+  }, []);
+
   return (
     <div style={{ position: 'relative', overflow: 'hidden' }}>
       {/* Ambient Radial Mesh Lighting in Hero Background */}
@@ -52,15 +56,15 @@ const HomePage = () => {
             <h1
               className="home-hero-title"
               style={{
-                fontSize: 'clamp(2.4rem, 4.5vw, 3.8rem)',
-                lineHeight: 1.15,
+                fontSize: 'clamp(2.3rem, 4.2vw, 3.6rem)',
+                lineHeight: 1.18,
                 fontWeight: 800,
                 color: 'var(--text-primary)',
                 letterSpacing: '-0.03em',
                 marginBottom: '1.5rem',
               }}
             >
-              Smarter Hospital Management.{' '}
+              CareFlow –{' '}
               <span
                 style={{
                   background: 'linear-gradient(135deg, #22d3ee 0%, #0d9488 100%)',
@@ -68,40 +72,51 @@ const HomePage = () => {
                   WebkitTextFillColor: 'transparent',
                 }}
               >
-                Better Connected Care.
+                Smart Hospital Management System
               </span>
             </h1>
 
             <p
               className="home-hero-subtitle"
               style={{
-                fontSize: 'clamp(1.05rem, 1.8vw, 1.2rem)',
+                fontSize: 'clamp(1.05rem, 1.8vw, 1.18rem)',
                 color: 'var(--text-secondary)',
                 lineHeight: 1.65,
                 marginBottom: '2.5rem',
-                maxWidth: '560px',
+                maxWidth: '580px',
               }}
             >
-              Meet CareFlow, a hospital management system designed to bring patient
-              records, appointments, laboratory tests, medicines, and billing together in
-              one place.
+              CareFlow is a hospital management system designed to simplify daily healthcare operations by connecting patients, doctors, receptionists, laboratory staff, pharmacists and administrators through one centralized platform.
             </p>
 
             {/* Hero CTAs */}
             <div className="home-hero-ctas">
               <Link
-                to="/register"
+                to="/login"
                 className="glass-btn glass-btn-primary"
                 style={{ padding: '0.85rem 1.75rem', fontSize: '0.95rem' }}
               >
-                <span>Get Started</span>
+                <span>Sign In to Portal</span>
                 <ArrowRight size={17} />
+              </Link>
+
+              <Link
+                to="/register"
+                className="glass-btn glass-btn-secondary"
+                style={{ padding: '0.85rem 1.75rem', fontSize: '0.95rem' }}
+              >
+                <span>Register as Patient</span>
               </Link>
 
               <a
                 href="#about"
-                className="glass-btn glass-btn-secondary"
-                style={{ padding: '0.85rem 1.75rem', fontSize: '0.95rem' }}
+                className="glass-btn"
+                style={{
+                  padding: '0.85rem 1.5rem',
+                  fontSize: '0.95rem',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid var(--glass-border-subtle)',
+                }}
               >
                 <span>Explore CareFlow</span>
               </a>
@@ -400,7 +415,7 @@ const HomePage = () => {
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-          SECTION 3: SERVICES — WHAT CAREFLOW OFFERS (5 CARDS)
+          SECTION 3: SERVICES — WHAT CAREFLOW OFFERS (7 MODULES)
       ───────────────────────────────────────────────────────────── */}
       <section
         id="services"
@@ -409,7 +424,7 @@ const HomePage = () => {
         <div style={{ textAlign: 'center', maxWidth: '720px', margin: '0 auto 3.5rem' }}>
           <div className="section-tag">
             <Layers size={14} color="var(--primary-cyan)" />
-            <span>Hospital Services</span>
+            <span>Hospital Capabilities</span>
           </div>
 
           <h2 style={{ fontSize: 'clamp(2rem, 3.5vw, 2.75rem)', fontWeight: 800, marginBottom: '1rem' }}>
@@ -417,11 +432,11 @@ const HomePage = () => {
           </h2>
 
           <p style={{ fontSize: '1.05rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-            Five core capabilities designed to support everyday hospital activities.
+            Seven core implemented capabilities designed to support everyday hospital activities.
           </p>
         </div>
 
-        {/* 5 Feature Cards */}
+        {/* 7 Feature Cards */}
         <div className="home-grid-services">
           {/* Service 1: Patient Management */}
           <GlassCard>
@@ -444,8 +459,8 @@ const HomePage = () => {
               Patient Management
             </h3>
             <p style={{ fontSize: '0.925rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-              Organize patient information and medical records in a structured format.
-              Keep contact details, emergency information, and visit summaries organized.
+              Organize patient registration, demographic profiles, emergency contacts, appointment history,
+              and personal medical records in one structured format.
             </p>
           </GlassCard>
 
@@ -470,12 +485,12 @@ const HomePage = () => {
               Appointment Management
             </h3>
             <p style={{ fontSize: '0.925rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-              Schedule and manage patient visits with clear time slots.
-              Coordinate doctor availability, manage check-ins, and avoid double-booking.
+              Schedule patient visits with real-time consultation slots. Coordinate doctor availability,
+              manage front-desk check-ins, and track visit status from arrival to completion.
             </p>
           </GlassCard>
 
-          {/* Service 3: Laboratory Management */}
+          {/* Service 3: Doctor Management */}
           <GlassCard>
             <div
               style={{
@@ -490,18 +505,44 @@ const HomePage = () => {
                 border: '1px solid rgba(56, 189, 248, 0.3)',
               }}
             >
-              <FlaskConical size={24} color="#38bdf8" />
+              <Stethoscope size={24} color="#38bdf8" />
+            </div>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.65rem' }}>
+              Doctor Management
+            </h3>
+            <p style={{ fontSize: '0.925rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+              Manage physician schedules, review patient queues, record clinical consultation notes,
+              author electronic prescriptions with dosages, and order diagnostic tests directly.
+            </p>
+          </GlassCard>
+
+          {/* Service 4: Laboratory Management */}
+          <GlassCard>
+            <div
+              style={{
+                width: '46px',
+                height: '46px',
+                borderRadius: 'var(--radius-md)',
+                background: 'rgba(168, 85, 247, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '1.25rem',
+                border: '1px solid rgba(168, 85, 247, 0.3)',
+              }}
+            >
+              <FlaskConical size={24} color="#c084fc" />
             </div>
             <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.65rem' }}>
               Laboratory Management
             </h3>
             <p style={{ fontSize: '0.925rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-              Handle ordered tests and record results clearly.
-              Track test requests from doctor orders to specimen collection and result entry.
+              Handle ordered diagnostic tests, track specimen processing, record verified clinical metrics,
+              and generate downloadable diagnostic reports accessible to clinicians and patients.
             </p>
           </GlassCard>
 
-          {/* Service 4: Pharmacy Management */}
+          {/* Service 5: Pharmacy Management */}
           <GlassCard>
             <div
               style={{
@@ -522,12 +563,12 @@ const HomePage = () => {
               Pharmacy Management
             </h3>
             <p style={{ fontSize: '0.925rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-              Manage medicine information, stock, and dispensing.
-              Verify doctor prescriptions and update medicine quantities when items are dispensed.
+              Maintain medicine inventory, verify doctor prescriptions, dispense prescribed medications,
+              and automatically adjust stock levels with every purchase or fulfillment.
             </p>
           </GlassCard>
 
-          {/* Service 5: Billing Management */}
+          {/* Service 6: Billing Management */}
           <GlassCard>
             <div
               style={{
@@ -548,15 +589,41 @@ const HomePage = () => {
               Billing Management
             </h3>
             <p style={{ fontSize: '0.925rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-              Prepare bills and track payments for hospital services.
-              Consolidate consultations, laboratory tests, and medicines into clear, transparent invoices.
+              Prepare itemized bills and track payment status for consultations, laboratory tests,
+              and dispensed medicines with transparent receipts and financial accounting.
+            </p>
+          </GlassCard>
+
+          {/* Service 7: User and Role Management */}
+          <GlassCard>
+            <div
+              style={{
+                width: '46px',
+                height: '46px',
+                borderRadius: 'var(--radius-md)',
+                background: 'rgba(239, 68, 68, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '1.25rem',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+              }}
+            >
+              <Shield size={24} color="#f87171" />
+            </div>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.65rem' }}>
+              User &amp; Role Management
+            </h3>
+            <p style={{ fontSize: '0.925rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+              Enforce role-based access control safeguarding data privacy across six user tiers:
+              Administrator, Doctor, Receptionist, Laboratory Staff, Pharmacist, and Patient.
             </p>
           </GlassCard>
         </div>
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-          SECTION 4: HOW IT WORKS (5 STEPS WORKFLOW)
+          SECTION 4: HOW IT WORKS (6 STEPS WORKFLOW)
       ───────────────────────────────────────────────────────────── */}
       <section
         id="how-it-works"
@@ -569,15 +636,15 @@ const HomePage = () => {
           </div>
 
           <h2 style={{ fontSize: 'clamp(2rem, 3.5vw, 2.75rem)', fontWeight: 800, marginBottom: '1rem' }}>
-            How It Works
+            How CareFlow Works
           </h2>
 
           <p style={{ fontSize: '1.05rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-            A clear step-by-step hospital workflow designed for smooth patient care.
+            A structured six-step hospital workflow designed for smooth patient care and departmental coordination.
           </p>
         </div>
 
-        {/* 5 Steps Grid */}
+        {/* 6 Steps Grid */}
         <div className="home-grid-steps">
           {/* Step 1 */}
           <div
@@ -588,10 +655,10 @@ const HomePage = () => {
               1
             </div>
             <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
-              Register a Patient
+              Register Patient
             </h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
-              Patient information is entered and saved with a unique identification record.
+              Patient information is registered and verified with email OTP authentication.
             </p>
           </div>
 
@@ -604,10 +671,10 @@ const HomePage = () => {
               2
             </div>
             <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
-              Schedule Appointment
+              Book Appointment
             </h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
-              A visit is scheduled with a doctor at an available consultation time slot.
+              Consultation is scheduled with an appropriate specialist based on symptoms.
             </p>
           </div>
 
@@ -623,7 +690,7 @@ const HomePage = () => {
               Doctor Consultation
             </h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
-              The doctor examines the patient, records observations, and provides care guidance.
+              The doctor examines the patient, documents findings, and records clinical diagnoses.
             </p>
           </div>
 
@@ -636,10 +703,10 @@ const HomePage = () => {
               4
             </div>
             <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
-              Lab Tests & Prescriptions
+              Orders &amp; Prescriptions
             </h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
-              Diagnostic tests are managed by lab staff and medicines are dispensed by pharmacy.
+              Doctor writes electronic prescriptions and requests diagnostic laboratory tests.
             </p>
           </div>
 
@@ -652,10 +719,26 @@ const HomePage = () => {
               5
             </div>
             <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
-              Billing & Payment
+              Fulfillment &amp; Testing
             </h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
-              Bills are generated from services provided, and payments are recorded with receipts.
+              Lab staff process tests and publish reports; pharmacists dispense medications.
+            </p>
+          </div>
+
+          {/* Step 6 */}
+          <div
+            className="glass-card"
+            style={{ padding: '1.5rem', position: 'relative' }}
+          >
+            <div className="workflow-step-badge" style={{ marginBottom: '1rem' }}>
+              6
+            </div>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+              Billing &amp; Payment
+            </h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
+              Consolidated fees are reconciled with itemized receipts and payment tracking.
             </p>
           </div>
         </div>
@@ -1021,7 +1104,7 @@ const HomePage = () => {
               marginBottom: '1rem',
             }}
           >
-            Let's Connect.
+            Have Questions About CareFlow?
           </h2>
 
           <p
@@ -1029,29 +1112,59 @@ const HomePage = () => {
               fontSize: '1.05rem',
               color: 'var(--text-secondary)',
               maxWidth: '640px',
-              margin: '0 auto 2rem',
+              margin: '0 auto 1.5rem',
               lineHeight: 1.65,
             }}
           >
-            CareFlow Hospital Management System Project. Learn more about the project,
-            explore its capabilities, or reach out to the development team.
+            Connect directly with our team for technical inquiries, platform demonstrations,
+            or portal access assistance.
           </p>
 
           <div
-            className="home-contact-pills-box"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.65rem',
+              padding: '0.75rem 1.5rem',
+              background: 'var(--panel-inner-bg)',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--glass-border-regular)',
+              marginBottom: '2rem',
+            }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-              <Building size={18} color="var(--primary-cyan)" />
-              <span style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 600 }}>
-                CareFlow Hospital Management System Project
-              </span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-              <Activity size={18} color="var(--primary-teal-light)" />
-              <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                Integrated Full-Stack Architecture
-              </span>
-            </div>
+            <Mail size={18} color="var(--primary-cyan)" />
+            <a
+              href="mailto:careflowofficial@gmail.com"
+              style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--primary-cyan)', textDecoration: 'none' }}
+            >
+              careflowofficial@gmail.com
+            </a>
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '1rem',
+              flexWrap: 'wrap',
+            }}
+          >
+            <Link
+              to="/contact"
+              className="glass-btn glass-btn-primary"
+              style={{ padding: '0.85rem 1.75rem', fontSize: '0.95rem' }}
+            >
+              <span>Contact Support Desk</span>
+              <ArrowRight size={16} />
+            </Link>
+
+            <Link
+              to="/about"
+              className="glass-btn glass-btn-secondary"
+              style={{ padding: '0.85rem 1.75rem', fontSize: '0.95rem' }}
+            >
+              <span>Explore Architecture &amp; Modules</span>
+            </Link>
           </div>
         </div>
       </section>
@@ -1102,20 +1215,20 @@ const HomePage = () => {
 
             <div className="home-final-ctas">
               <Link
-                to="/register"
+                to="/login"
                 className="glass-btn glass-btn-primary"
                 style={{ padding: '0.9rem 2rem', fontSize: '1rem' }}
               >
-                <span>Register as a Patient</span>
+                <span>Sign In to Portal</span>
                 <ArrowRight size={18} />
               </Link>
 
               <Link
-                to="/login"
+                to="/register"
                 className="glass-btn glass-btn-secondary"
                 style={{ padding: '0.9rem 2rem', fontSize: '1rem' }}
               >
-                <span>Login to CareFlow</span>
+                <span>Register as Patient</span>
               </Link>
             </div>
           </div>

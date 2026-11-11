@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Logo from './Logo';
 import ThemeSwitcher from './ThemeSwitcher';
 import {
@@ -19,40 +19,52 @@ import {
 
 const navLinks = [
   {
-    href: 'home',
+    path: '/',
+    hash: 'home',
     label: 'Home',
     icon: Home,
     description: 'Welcome & portal overview',
+    isDirectRoute: false,
   },
   {
-    href: 'about',
+    path: '/about',
+    hash: 'about',
     label: 'About',
     icon: Building2,
-    description: 'Mission, values & story',
+    description: 'Mission, architecture & modules',
+    isDirectRoute: true,
   },
   {
-    href: 'services',
+    path: '/#services',
+    hash: 'services',
     label: 'Services',
     icon: Stethoscope,
     description: 'Clinical & pharmacy care',
+    isDirectRoute: false,
   },
   {
-    href: 'how-it-works',
+    path: '/#how-it-works',
+    hash: 'how-it-works',
     label: 'How It Works',
     icon: Activity,
     description: 'Seamless patient journey',
+    isDirectRoute: false,
   },
   {
-    href: 'our-team',
+    path: '/#our-team',
+    hash: 'our-team',
     label: 'Our Team',
     icon: Users,
     description: 'Specialists & medical staff',
+    isDirectRoute: false,
   },
   {
-    href: 'contact',
+    path: '/contact',
+    hash: 'contact',
     label: 'Contact',
     icon: PhoneCall,
-    description: '24/7 patient support line',
+    description: 'Project support & inquiries',
+    isDirectRoute: true,
   },
 ];
 
@@ -61,10 +73,9 @@ const Navbar = ({
   onThemeChange,
 }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const isHome = location.pathname === '/';
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  const getNavHref = (hash) => (isHome ? `#${hash}` : `/#${hash}`);
 
   // Automatically close mobile menu if viewport expands to laptop size
   useEffect(() => {
@@ -98,14 +109,27 @@ const Navbar = ({
     };
   }, [isMobileMenuOpen]);
 
-  // Handle in-page smooth navigation link click
-  const handleNavClick = (hash) => {
+  // Handle navigation click for both direct routes and in-page hash anchors
+  const handleNavClick = (e, item) => {
     setIsMobileMenuOpen(false);
+
+    if (item.isDirectRoute) {
+      // Let React Router Link do its work
+      return;
+    }
+
     if (isHome) {
-      const targetElement = document.getElementById(hash);
+      e.preventDefault();
+      const targetElement = document.getElementById(item.hash);
       if (targetElement) {
         targetElement.scrollIntoView({ behavior: 'smooth' });
+      } else if (item.hash === 'home') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
+    } else {
+      // If we are on /about, /contact, etc., navigate to home with hash
+      e.preventDefault();
+      navigate(`/#${item.hash}`);
     }
   };
 
@@ -125,16 +149,30 @@ const Navbar = ({
 
         {/* Center: Desktop Navigation Links (hidden on tablet/mobile) */}
         <nav className="navbar-desktop-nav" aria-label="Desktop Navigation">
-          {navLinks.map((item) => (
-            <a
-              key={item.href}
-              href={getNavHref(item.href)}
-              className="navbar-nav-link"
-              onClick={() => handleNavClick(item.href)}
-            >
-              {item.label}
-            </a>
-          ))}
+          {navLinks.map((item) => {
+            if (item.isDirectRoute) {
+              return (
+                <Link
+                  key={item.hash}
+                  to={item.path}
+                  className={`navbar-nav-link ${location.pathname === item.path ? 'active' : ''}`}
+                  onClick={(e) => handleNavClick(e, item)}
+                >
+                  {item.label}
+                </Link>
+              );
+            }
+            return (
+              <a
+                key={item.hash}
+                href={isHome ? `#${item.hash}` : `/#${item.hash}`}
+                className="navbar-nav-link"
+                onClick={(e) => handleNavClick(e, item)}
+              >
+                {item.label}
+              </a>
+            );
+          })}
         </nav>
 
         {/* Right: Desktop Actions (Theme Switcher, Login, Register) */}
@@ -192,12 +230,36 @@ const Navbar = ({
           <ul className="navbar-mobile-links">
             {navLinks.map((item) => {
               const Icon = item.icon;
+              if (item.isDirectRoute) {
+                return (
+                  <li key={item.hash} className="navbar-mobile-item">
+                    <Link
+                      to={item.path}
+                      className="navbar-mobile-link"
+                      onClick={(e) => handleNavClick(e, item)}
+                    >
+                      <div className="navbar-mobile-link-content">
+                        <div className="navbar-mobile-icon-box">
+                          <Icon size={18} />
+                        </div>
+                        <div className="navbar-mobile-text-group">
+                          <span className="navbar-mobile-label">{item.label}</span>
+                          <span className="navbar-mobile-subtext">{item.description}</span>
+                        </div>
+                      </div>
+                      <div className="navbar-mobile-arrow">
+                        <ChevronRight size={16} />
+                      </div>
+                    </Link>
+                  </li>
+                );
+              }
               return (
-                <li key={item.href} className="navbar-mobile-item">
+                <li key={item.hash} className="navbar-mobile-item">
                   <a
-                    href={getNavHref(item.href)}
+                    href={isHome ? `#${item.hash}` : `/#${item.hash}`}
                     className="navbar-mobile-link"
-                    onClick={() => handleNavClick(item.href)}
+                    onClick={(e) => handleNavClick(e, item)}
                   >
                     <div className="navbar-mobile-link-content">
                       <div className="navbar-mobile-icon-box">
@@ -242,11 +304,11 @@ const Navbar = ({
           <div className="navbar-mobile-footer-status">
             <div className="navbar-mobile-status-item">
               <Activity size={13} className="navbar-mobile-status-icon" />
-              <span>24/7 Hotline: 1-800-CAREFLOW</span>
+              <span>Centralized Healthcare Platform</span>
             </div>
             <div className="navbar-mobile-status-item">
               <ShieldCheck size={13} className="navbar-mobile-status-icon" />
-              <span>HIPAA Certified</span>
+              <span>Role-Based Security</span>
             </div>
           </div>
         </div>

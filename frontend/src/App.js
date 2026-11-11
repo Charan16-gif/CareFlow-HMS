@@ -3,6 +3,10 @@ import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'r
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import HomePage from './pages/HomePage';
+import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import TermsPage from './pages/TermsPage';
 import RegisterPage from './pages/RegisterPage';
 import LoginPage from './pages/LoginPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
@@ -104,7 +108,15 @@ const getInitialTheme = () => {
 
 function AppContent({ backendConnected, backendChecking }) {
   const location = useLocation();
-  const isLandingPage = location.pathname === '/';
+  const isPublicPage = [
+    '/',
+    '/about',
+    '/contact',
+    '/privacy',
+    '/privacy-policy',
+    '/terms',
+    '/terms-and-conditions',
+  ].includes(location.pathname);
   const isAdminPage = location.pathname.startsWith('/admin');
   const isPatientPage = location.pathname.startsWith('/patient');
   const isDoctorPage = location.pathname.startsWith('/doctor');
@@ -319,16 +331,22 @@ function AppContent({ backendConnected, backendChecking }) {
       className={`careflow-app-layout ${isAuthPage ? 'auth-layout-no-scroll' : ''}`}
       data-theme={theme}
     >
-      {/* Navbar present ONLY on landing page */}
-      {isLandingPage && (
+      {/* Navbar present on landing and public informational pages */}
+      {isPublicPage && (
         <Navbar
           currentTheme={theme}
           onThemeChange={handleThemeChange}
         />
       )}
-      <main className={`careflow-main-content ${isLandingPage ? 'has-fixed-navbar' : ''} ${isAuthPage ? 'auth-main-no-scroll' : ''}`}>
+      <main className={`careflow-main-content ${isPublicPage ? 'has-fixed-navbar' : ''} ${isAuthPage ? 'auth-main-no-scroll' : ''}`}>
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/terms-and-conditions" element={<TermsPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/verify-email" element={<EmailVerificationPage />} />
           <Route path="/verify-otp" element={<EmailVerificationPage />} />
@@ -340,8 +358,8 @@ function AppContent({ backendConnected, backendChecking }) {
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </main>
-      {/* Footer: full navigation on landing page only; completely removed on login and register */}
-      {!isAuthPage && <Footer showNavigation={isLandingPage} />}
+      {/* Footer: full navigation on landing and public pages; completely removed on login and register */}
+      {!isAuthPage && <Footer showNavigation={isPublicPage} />}
     </div>
   );
 }
