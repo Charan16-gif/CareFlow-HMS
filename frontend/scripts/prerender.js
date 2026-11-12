@@ -816,7 +816,10 @@ pages.forEach((page) => {
     </div>
   `;
 
-  outputHtml = outputHtml.replace(/<div id="root">.*?<\/div>/is, fullRootContent.trim());
+  outputHtml = outputHtml.replace(
+    /<div id="root">[\s\S]*?<\/div>(?=\s*(?:<noscript>|<\/body>|$))/is,
+    fullRootContent.trim()
+  );
 
   // 7. Update noscript fallback
   const noscriptFallback = `
